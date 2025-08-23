@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import LoginPage from "./page/LoginPage";
+import RegisterPage from "./page/RegisterPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 // import SupplierDashboard from "./page/SupplierDashboard";
 import { AuthProvider } from "./context/AuthProvider";
@@ -13,6 +14,7 @@ const App = () => {
       <Routes>
         {/* Route công khai */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/dashboard"
           element={<div>Trang Bảng Điều Khiển Người Dùng</div>}
