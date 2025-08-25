@@ -24,7 +24,7 @@ export default function RegisterPage() {
       if (!res?.data?.success)
         throw new Error(res?.data?.message || "Đăng ký thất bại!");
 
-      toast.update(toastId, {
+      toast.success(toastId, {
         render: "🎉 Đăng ký thành công! Vui lòng đăng nhập.",
         type: "success",
         isLoading: false,
@@ -69,11 +69,10 @@ export default function RegisterPage() {
                 id="name"
                 type="text"
                 placeholder="Nguyễn Văn A"
-                className={`w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition ${
-                  errors.name
+                className={`w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition ${errors.name
                     ? "border-rose-300"
                     : "border-gray-200 hover:border-gray-300"
-                }`}
+                  }`}
                 {...register("name", { required: "Tên là bắt buộc" })}
               />
             </div>
@@ -99,11 +98,10 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="name@example.com"
                 autoComplete="email"
-                className={`w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition ${
-                  errors.email
+                className={`w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition ${errors.email
                     ? "border-rose-300"
                     : "border-gray-200 hover:border-gray-300"
-                }`}
+                  }`}
                 {...register("email", {
                   required: "Email là bắt buộc",
                   pattern: {
@@ -135,11 +133,10 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="••••••••"
                 autoComplete="new-password"
-                className={`w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition ${
-                  errors.password
+                className={`w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition ${errors.password
                     ? "border-rose-300"
                     : "border-gray-200 hover:border-gray-300"
-                }`}
+                  }`}
                 {...register("password", {
                   required: "Mật khẩu là bắt buộc",
                   minLength: { value: 6, message: "Tối thiểu 6 ký tự" },
@@ -168,11 +165,10 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="••••••••"
                 autoComplete="new-password"
-                className={`w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition ${
-                  errors.confirmPassword
+                className={`w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition ${errors.confirmPassword
                     ? "border-rose-300"
                     : "border-gray-200 hover:border-gray-300"
-                }`}
+                  }`}
                 {...register("confirmPassword", {
                   required: "Xác nhận mật khẩu là bắt buộc",
                   validate: (value, formValues) =>

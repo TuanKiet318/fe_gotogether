@@ -4,10 +4,6 @@ export const APILogin = async (data) => {
   return await API.post("/auth/login", data);
 };
 
-export const APILoginSupplier = async (data) => {
-  return await API.post("/auth/login/supplier", data);
-};
-
 export const APILogout = async () => {
   return await API.post("/auth/logout", {});
 };

@@ -4,6 +4,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import LoginPage from "./page/LoginPage";
 import RegisterPage from "./page/RegisterPage";
+import HomePage from "./page/HomePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 // import SupplierDashboard from "./page/SupplierDashboard";
 import { AuthProvider } from "./context/AuthProvider";
@@ -20,22 +21,14 @@ const App = () => {
           element={<div>Trang Bảng Điều Khiển Người Dùng</div>}
         />
         <Route
-          path="/supplier/:id/store"
-          element={<div>Trang Gian Hàng Công Khai</div>}
-        />
-        <Route
-          path="/supplier/:id/products"
-          element={<div>Trang Sản Phẩm Công Khai</div>}
-        />
-        <Route
           path="/forgot-password"
           element={<div>Trang Quên Mật Khẩu</div>}
         />
-        <Route path="/register" element={<div>Trang Đăng Ký</div>} />
-        <Route path="/" element={<div>Trang Chủ</div>} />
-        <Route path="*" element={<div>Trang Khác</div>} />
+        {/* <Route path="/register" element={<div>Trang Đăng Ký</div>} /> */}
+        <Route path="/" element={<HomePage />} />
+        {/* <Route path="*" element={<div>Trang Khác</div>} /> */}
 
-        {/* Route quản lý nhà cung cấp */}
+        {/* Route quản lý nhà cung cấp
         <Route element={<ProtectedRoute />}>
           <Route
             path="/supplier/manage"
@@ -69,7 +62,7 @@ const App = () => {
             path="/supplier/manage/add-product"
             element={<div>Thêm Sản Phẩm</div>}
           />
-        </Route>
+        </Route> */}
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} />
     </AuthProvider>
