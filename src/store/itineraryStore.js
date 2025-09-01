@@ -9,16 +9,16 @@ const useItineraryStore = create(
       endDate: null,
       partySize: 2,
       pace: 'Normal', // Slow, Normal, Fast
-      
+
       // Stops array
       stops: [],
-      
+
       // Actions
       setDates: (startDate, endDate) => set({ startDate, endDate }),
       setPartySize: (size) => set({ partySize: size }),
       setPace: (pace) => set({ pace }),
-      
-      addStop: (place) => {
+
+      addStop: (place, day = 1) => {
         const stops = get().stops;
         const newStop = {
           id: Date.now().toString(),
@@ -32,29 +32,41 @@ const useItineraryStore = create(
           rating: place.rating,
           photoUrl: place.photoUrl,
           addedAt: new Date().toISOString(),
+          day, // mặc định ngày 1
         };
         set({ stops: [...stops, newStop] });
       },
-      
+
+      updateStopDay: (stopId, newDay) => {
+        const stops = get().stops.map(stop =>
+          stop.id === stopId ? { ...stop, day: newDay } : stop
+        );
+        set({ stops });
+      },
+
       removeStop: (stopId) => {
         const stops = get().stops.filter(stop => stop.id !== stopId);
         set({ stops });
       },
-      
-      reorderStops: (fromIndex, toIndex) => {
+
+      reorderStops: (fromIndex, toIndex, day) => {
         const stops = [...get().stops];
-        const [removed] = stops.splice(fromIndex, 1);
-        stops.splice(toIndex, 0, removed);
-        set({ stops });
+        const dayStops = stops.filter(s => s.day === day);
+        const [removed] = dayStops.splice(fromIndex, 1);
+        dayStops.splice(toIndex, 0, removed);
+
+        // giữ nguyên các stop của ngày khác
+        const otherStops = stops.filter(s => s.day !== day);
+        set({ stops: [...otherStops, ...dayStops] });
       },
-      
+
       updateStopDuration: (stopId, durationHours) => {
         const stops = get().stops.map(stop =>
           stop.id === stopId ? { ...stop, durationHours } : stop
         );
         set({ stops });
       },
-      
+
       clearItinerary: () => set({
         startDate: null,
         endDate: null,
@@ -62,7 +74,7 @@ const useItineraryStore = create(
         pace: 'Normal',
         stops: []
       }),
-      
+
       // Computed values
       getTotalDays: () => {
         const { startDate, endDate } = get();
@@ -70,29 +82,21 @@ const useItineraryStore = create(
         const diffTime = Math.abs(new Date(endDate) - new Date(startDate));
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
       },
-      
+
       getStopsByDay: () => {
-        const { stops, getTotalDays, pace } = get();
+        const { stops, getTotalDays } = get();
         const totalDays = getTotalDays();
         if (totalDays === 0) return [];
-        
-        const stopsPerDay = getStopsPerDay(pace, stops.length, totalDays);
+
         const dayGroups = [];
-        
-        for (let day = 0; day < totalDays; day++) {
-          const startIdx = day * stopsPerDay;
-          const endIdx = Math.min(startIdx + stopsPerDay, stops.length);
-          const dayStops = stops.slice(startIdx, endIdx);
-          
-          if (dayStops.length > 0 || day === 0) {
-            dayGroups.push({
-              day: day + 1,
-              stops: dayStops,
-              totalHours: dayStops.reduce((sum, stop) => sum + stop.durationHours, 0)
-            });
-          }
+        for (let day = 1; day <= totalDays; day++) {
+          const dayStops = stops.filter(s => s.day === day);
+          dayGroups.push({
+            day,
+            stops: dayStops,
+            totalHours: dayStops.reduce((sum, stop) => sum + stop.durationHours, 0),
+          });
         }
-        
         return dayGroups;
       }
     }),
@@ -115,19 +119,8 @@ function getDurationByCategory(category) {
     church: 0.5,
     default: 1.0
   };
-  
-  return durations[category] || durations.default;
-}
 
-function getStopsPerDay(pace, totalStops, totalDays) {
-  const paceMultipliers = {
-    Slow: 0.7,
-    Normal: 1.0,
-    Fast: 1.4
-  };
-  
-  const baseStopsPerDay = Math.ceil(totalStops / totalDays);
-  return Math.max(1, Math.round(baseStopsPerDay * paceMultipliers[pace]));
+  return durations[category] || durations.default;
 }
 
 export default useItineraryStore;

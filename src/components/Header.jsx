@@ -132,7 +132,7 @@ export default function Header({ setActiveSection }) {
                 value={searchQuery}
                 onChange={(e) => handleSearchInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Where do you want to go?"
+                placeholder="Bạn muốn đi đâu?"
                 className="input-field pl-10 pr-4"
                 role="combobox"
                 aria-expanded={showSuggestions}
@@ -179,12 +179,12 @@ export default function Header({ setActiveSection }) {
 
           {/* Action buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/login" className="btn-secondary">
-              Log in
+            <Link to="/login" className="btn-primary">
+              Log out
             </Link>
-            <Link to="/register" className="btn-primary">
+            {/* <Link to="/register" className="btn-primary">
               Sign up
-            </Link>
+            </Link> */}
           </div>
 
           {/* Mobile menu button */}
@@ -213,7 +213,7 @@ export default function Header({ setActiveSection }) {
               value={searchQuery}
               onChange={(e) => handleSearchInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Where do you want to go?"
+              placeholder="Bạn muốn đi đâu?"
               className="input-field pl-10 pr-4"
               role="combobox"
               aria-expanded={showSuggestions}

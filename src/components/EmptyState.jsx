@@ -26,7 +26,7 @@ export default function EmptyState({
         </div>
       )}
 
-      <div className="mt-8 pt-6 border-t border-slate-200">
+      {/* <div className="mt-8 pt-6 border-t border-slate-200">
         <h4 className="text-sm font-medium text-slate-700 mb-3">
           Suggestions:
         </h4>
@@ -36,7 +36,7 @@ export default function EmptyState({
           <li>• Remove some filters</li>
           <li>• Search in a different area</li>
         </ul>
-      </div>
+      </div> */}
     </div>
   );
 }

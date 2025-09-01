@@ -11,25 +11,25 @@ export default function ItineraryTimeline() {
     clearItinerary,
     getTotalDays
   } = useItineraryStore();
-  
+
   const [draggedStop, setDraggedStop] = useState(null);
-  
+
   const dayGroups = getStopsByDay();
   const totalDays = getTotalDays();
-  
+
   const handleDurationChange = (stopId, duration) => {
     updateStopDuration(stopId, parseFloat(duration));
   };
-  
+
   const handleDragStart = (e, stop) => {
     setDraggedStop(stop);
     e.dataTransfer.effectAllowed = 'move';
   };
-  
+
   const handleDragEnd = () => {
     setDraggedStop(null);
   };
-  
+
   const formatDuration = (hours) => {
     if (hours < 1) {
       return `${Math.round(hours * 60)}m`;
@@ -41,7 +41,7 @@ export default function ItineraryTimeline() {
       return `${h}h ${m}m`;
     }
   };
-  
+
   if (stops.length === 0) {
     return (
       <div className="card-elevated p-8 text-center">
@@ -53,7 +53,7 @@ export default function ItineraryTimeline() {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -64,7 +64,7 @@ export default function ItineraryTimeline() {
           </div>
           <h2 className="text-xl font-bold text-slate-900">Your Itinerary</h2>
         </div>
-        
+
         {stops.length > 0 && (
           <button
             onClick={clearItinerary}
@@ -74,11 +74,21 @@ export default function ItineraryTimeline() {
           </button>
         )}
       </div>
-      
+
       {/* Timeline */}
       <div className="space-y-6">
         {dayGroups.map(dayGroup => (
-          <div key={dayGroup.day} className="card-elevated p-6">
+          <div
+            key={dayGroup.day}
+            className="card-elevated p-6"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => {
+              if (draggedStop) {
+                updateStopDay(draggedStop.id, dayGroup.day);
+                setDraggedStop(null);
+              }
+            }}
+          >
             {/* Day header */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
@@ -90,7 +100,7 @@ export default function ItineraryTimeline() {
                 {formatDuration(dayGroup.totalHours)}
               </div>
             </div>
-            
+
             {/* Stops */}
             <div className="space-y-3">
               {dayGroup.stops.map((stop, index) => (
@@ -99,15 +109,14 @@ export default function ItineraryTimeline() {
                   draggable
                   onDragStart={(e) => handleDragStart(e, stop)}
                   onDragEnd={handleDragEnd}
-                  className={`group relative bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-all duration-200 cursor-move ${
-                    draggedStop?.id === stop.id ? 'opacity-50' : ''
-                  }`}
+                  className={`group relative bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-all duration-200 cursor-move ${draggedStop?.id === stop.id ? 'opacity-50' : ''
+                    }`}
                 >
                   {/* Drag handle */}
                   <div className="absolute left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <GripVertical className="w-4 h-4 text-slate-400" />
                   </div>
-                  
+
                   {/* Remove button */}
                   <button
                     onClick={() => removeStop(stop.id)}
@@ -115,7 +124,7 @@ export default function ItineraryTimeline() {
                   >
                     <X className="w-4 h-4" />
                   </button>
-                  
+
                   <div className="ml-6 mr-8">
                     {/* Stop info */}
                     <div className="flex items-start justify-between mb-2">
@@ -127,7 +136,7 @@ export default function ItineraryTimeline() {
                             {stop.address}
                           </p>
                         )}
-                        
+
                         {/* Rating */}
                         {stop.rating && (
                           <div className="flex items-center gap-1 text-sm text-slate-600">
@@ -136,7 +145,7 @@ export default function ItineraryTimeline() {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Photo */}
                       {stop.photoUrl && (
                         <img
@@ -146,7 +155,7 @@ export default function ItineraryTimeline() {
                         />
                       )}
                     </div>
-                    
+
                     {/* Duration control */}
                     <div className="flex items-center gap-3">
                       <label className="text-sm font-medium text-slate-700">Duration:</label>
@@ -166,7 +175,7 @@ export default function ItineraryTimeline() {
                       </select>
                     </div>
                   </div>
-                  
+
                   {/* Connection line to next stop */}
                   {index < dayGroup.stops.length - 1 && (
                     <div className="absolute left-8 bottom-0 w-px h-3 bg-slate-300 translate-y-full" />
@@ -174,7 +183,7 @@ export default function ItineraryTimeline() {
                 </div>
               ))}
             </div>
-            
+
             {/* Empty day state */}
             {dayGroup.stops.length === 0 && (
               <div className="text-center p-8 text-slate-500">
@@ -184,30 +193,8 @@ export default function ItineraryTimeline() {
             )}
           </div>
         ))}
-        
-        {/* Additional empty days */}
-        {totalDays > dayGroups.length && (
-          Array.from({ length: totalDays - dayGroups.length }, (_, i) => (
-            <div key={dayGroups.length + i + 1} className="card-elevated p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-sky-600" />
-                  Day {dayGroups.length + i + 1}
-                </h3>
-                <div className="text-sm text-slate-600 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  0h
-                </div>
-              </div>
-              
-              <div className="text-center p-8 text-slate-500">
-                <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No activities planned for this day</p>
-              </div>
-            </div>
-          ))
-        )}
       </div>
+
     </div>
   );
 }

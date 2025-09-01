@@ -16,7 +16,6 @@ export default function HomePage() {
     const { stops } = useItineraryStore();
 
     useEffect(() => {
-        // Auto-switch to appropriate section based on user actions
         if (stops.length > 0) {
             setActiveSection('itinerary');
         } else if (hasSearched) {
@@ -32,64 +31,58 @@ export default function HomePage() {
     };
 
     const sections = [
-        { id: 'search', label: 'Search', icon: Compass },
-        { id: 'itinerary', label: 'Itinerary', icon: Calendar },
-        { id: 'map', label: 'Map', icon: Map }
+        { id: 'search', label: 'Tìm kiếm', icon: Compass },
+        { id: 'itinerary', label: 'Lịch trình', icon: Calendar },
+        { id: 'map', label: 'Bản đồ', icon: Map }
     ];
 
     const howItWorksSteps = [
         {
             icon: Compass,
-            title: 'Search & Discover',
-            description: 'Find amazing places, restaurants, and attractions for your destination'
+            title: 'Tìm kiếm & Khám phá',
+            description: 'Khám phá những địa điểm, nhà hàng và điểm tham quan thú vị cho chuyến đi của bạn'
         },
         {
             icon: Calendar,
-            title: 'Plan Your Days',
-            description: 'Organize your finds into a day-by-day itinerary with smart recommendations'
+            title: 'Lên kế hoạch ngày',
+            description: 'Sắp xếp các điểm đến thành lịch trình từng ngày với gợi ý thông minh'
         },
         {
             icon: Map,
-            title: 'View on Map',
-            description: 'See your entire trip route and get directions between locations'
+            title: 'Xem trên bản đồ',
+            description: 'Theo dõi toàn bộ hành trình và tìm đường đi giữa các điểm'
         },
         {
             icon: Share2,
-            title: 'Share & Go',
-            description: 'Export your itinerary and share it with travel companions'
+            title: 'Chia sẻ & Bắt đầu',
+            description: 'Xuất lịch trình và chia sẻ cùng bạn đồng hành'
         }
     ];
 
     return (
         <div className="min-h-screen background-pattern">
             <Header setActiveSection={setActiveSection} />
-            {/* ...rest of your layout... */}
-            {/* {activeSection === 'search' && (
-                <SearchResults />
-            )} */}
-            {/* ...other sections... */}
 
             {/* Hero Section */}
             <section className="py-16 lg:py-24">
                 <div className="container-custom">
                     <div className="text-center max-w-4xl mx-auto">
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
-                            Plan your trip{' '}
+                            Lên kế hoạch chuyến đi{' '}
                             <span className="bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
-                                effortlessly
+                                dễ dàng
                             </span>
                         </h1>
 
                         <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-                            Discover amazing places, create perfect itineraries, and visualize your journey
-                            with our intelligent travel planning platform.
+                            Khám phá những địa điểm tuyệt vời, tạo lịch trình hoàn hảo và hình dung chuyến đi của bạn với nền tảng lập kế hoạch du lịch thông minh.
                         </p>
 
                         <button
                             onClick={handleStartPlanning}
                             className="btn-primary text-lg px-8 py-4 inline-flex items-center gap-3 group"
                         >
-                            Start planning
+                            Bắt đầu lên kế hoạch
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </div>
@@ -101,10 +94,10 @@ export default function HomePage() {
                 <div className="container-custom">
                     <div className="text-center mb-12">
                         <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                            Popular Destinations
+                            Điểm đến phổ biến
                         </h2>
                         <p className="text-slate-600 max-w-2xl mx-auto">
-                            Get inspired by these amazing destinations and start planning your next adventure
+                            Hãy để những điểm đến tuyệt vời này truyền cảm hứng cho bạn và bắt đầu hành trình sắp tới
                         </p>
                     </div>
 
@@ -143,7 +136,7 @@ export default function HomePage() {
 
                     {/* Content Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Left Column - Search Results or Forms */}
+                        {/* Left Column */}
                         <div className="lg:col-span-2 space-y-8">
                             {activeSection === 'search' && (
                                 <SearchResults />
@@ -160,17 +153,15 @@ export default function HomePage() {
                                 <div className="space-y-6">
                                     <div className="text-center">
                                         <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                                            Your Trip Map
+                                            Bản đồ chuyến đi
                                         </h2>
-                                        <p className="text-slate-600">
-                                        </p>
                                     </div>
                                     <MapView />
                                 </div>
                             )}
                         </div>
 
-                        {/* Right Column - Context-aware content */}
+                        {/* Right Column */}
                         <div className="space-y-8">
                             {activeSection === 'search' && !hasSearched && (
                                 <ItineraryForm />
@@ -198,46 +189,6 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* How It Works */}
-            <section className="py-16 bg-slate-50">
-                <div className="container-custom">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                            How It Works
-                        </h2>
-                        <p className="text-slate-600 max-w-2xl mx-auto">
-                            Create the perfect itinerary in just a few simple steps
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {howItWorksSteps.map((step, index) => {
-                            const Icon = step.icon;
-                            return (
-                                <div key={index} className="text-center group">
-                                    <div className="relative mb-6">
-                                        <div className="w-16 h-16 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-                                            <Icon className="w-7 h-7 text-white" />
-                                        </div>
-                                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-slate-700 border-2 border-sky-200">
-                                            {index + 1}
-                                        </div>
-                                    </div>
-
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                                        {step.title}
-                                    </h3>
-
-                                    <p className="text-slate-600 leading-relaxed">
-                                        {step.description}
-                                    </p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </section>
-
             {/* Footer */}
             <footer className="py-12 bg-slate-900">
                 <div className="container-custom">
@@ -250,14 +201,14 @@ export default function HomePage() {
                         </div>
 
                         <div className="flex items-center gap-8 text-slate-400">
-                            <a href="#" className="hover:text-white transition-colors">Terms</a>
-                            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-                            <a href="#" className="hover:text-white transition-colors">Support</a>
+                            <a href="#" className="hover:text-white transition-colors">Điều khoản</a>
+                            <a href="#" className="hover:text-white transition-colors">Chính sách</a>
+                            <a href="#" className="hover:text-white transition-colors">Hỗ trợ</a>
                         </div>
                     </div>
 
                     <div className="border-t border-slate-800 mt-8 pt-8 text-center text-slate-500">
-                        <p>&copy; 2025 GoTogether. All rights reserved.</p>
+                        <p>&copy; 2025 GoTogether. Bảo lưu mọi quyền.</p>
                     </div>
                 </div>
             </footer>
