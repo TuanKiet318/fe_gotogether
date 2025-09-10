@@ -3,6 +3,7 @@ import { Search, Menu, X, MapPin, Clock } from 'lucide-react';
 import { autocompleteSearch } from '../lib/places.js';
 import useSearchStore from '../store/searchStore.js';
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 export default function Header({ setActiveSection }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,6 +14,8 @@ export default function Header({ setActiveSection }) {
   const searchRef = useRef(null);
   const suggestionsRef = useRef(null);
   const debounceRef = useRef(null);
+  const navigate = useNavigate();
+
 
   const { setQuery, setCenterLocation } = useSearchStore();
 
@@ -55,38 +58,36 @@ export default function Header({ setActiveSection }) {
   };
 
   const handleKeyDown = (event) => {
-    if (!showSuggestions || suggestions.length === 0) {
-      if (event.key === 'Enter') {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (activeSuggestionIndex >= 0 && suggestions.length > 0) {
+        selectSuggestion(suggestions[activeSuggestionIndex]);
+      } else {
         handleSearch();
       }
-      return;
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSuggestionIndex(prev =>
+        prev < suggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSuggestionIndex(prev =>
+        prev > 0 ? prev - 1 : suggestions.length - 1
+      );
+    } else if (event.key === 'Escape') {
+      setShowSuggestions(false);
+      setActiveSuggestionIndex(-1);
     }
+  };
 
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        setActiveSuggestionIndex(prev =>
-          prev < suggestions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        setActiveSuggestionIndex(prev =>
-          prev > 0 ? prev - 1 : suggestions.length - 1
-        );
-        break;
-      case 'Enter':
-        event.preventDefault();
-        if (activeSuggestionIndex >= 0) {
-          selectSuggestion(suggestions[activeSuggestionIndex]);
-        } else {
-          handleSearch();
-        }
-        break;
-      case 'Escape':
-        setShowSuggestions(false);
-        setActiveSuggestionIndex(-1);
-        break;
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      setQuery(searchQuery.trim());
+      setShowSuggestions(false);
+
+      // Điều hướng sang /destination/<searchQuery>
+      navigate(`/destination/${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -95,15 +96,8 @@ export default function Header({ setActiveSection }) {
     setShowSuggestions(false);
     setActiveSuggestionIndex(-1);
     setQuery(suggestion.name);
-    if (setActiveSection) setActiveSection('search'); // Chuyển sang tab Search
-  };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      setQuery(searchQuery.trim());
-      setShowSuggestions(false);
-      if (setActiveSection) setActiveSection('search'); // Chuyển sang tab Search
-    }
+    navigate(`/destination/${encodeURIComponent(suggestion.name)}`);
   };
 
 

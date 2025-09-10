@@ -6,7 +6,8 @@ export const popularDestinations = [
     rating: 4.7,
     description: 'Thủ đô nghìn năm văn hiến',
     lat: 21.0278,
-    lng: 105.8342
+    lng: 105.8342,
+    category: 'attraction'
   },
   {
     id: 'halong',
@@ -15,7 +16,8 @@ export const popularDestinations = [
     rating: 4.8,
     description: 'Kỳ quan thiên nhiên thế giới',
     lat: 20.9101,
-    lng: 107.1839
+    lng: 107.1839,
+    category: 'attraction'
   },
   {
     id: 'sapa',
@@ -24,7 +26,8 @@ export const popularDestinations = [
     rating: 4.6,
     description: 'Thành phố trong sương',
     lat: 22.3350,
-    lng: 103.8430
+    lng: 103.8430,
+    category: 'attraction'
   },
   {
     id: 'danang',
@@ -33,7 +36,8 @@ export const popularDestinations = [
     rating: 4.7,
     description: 'Thành phố đáng sống bên biển',
     lat: 16.0544,
-    lng: 108.2022
+    lng: 108.2022,
+    category: 'attraction'
   },
   {
     id: 'hue',
@@ -42,7 +46,8 @@ export const popularDestinations = [
     rating: 4.5,
     description: 'Cố đô và di sản văn hóa',
     lat: 16.4637,
-    lng: 107.5909
+    lng: 107.5909,
+    category: 'attraction'
   },
   {
     id: 'nhatrang',
@@ -51,7 +56,8 @@ export const popularDestinations = [
     rating: 4.6,
     description: 'Thiên đường biển xanh cát trắng',
     lat: 12.2388,
-    lng: 109.1967
+    lng: 109.1967,
+    category: 'attraction'
   },
   {
     id: 'phuquoc',
@@ -60,7 +66,8 @@ export const popularDestinations = [
     rating: 4.8,
     description: 'Đảo ngọc giữa vịnh Thái Lan',
     lat: 10.2270,
-    lng: 103.9637
+    lng: 103.9637,
+    category: 'attraction'
   },
   {
     id: 'hochiminh',
@@ -69,7 +76,8 @@ export const popularDestinations = [
     rating: 4.6,
     description: 'Thành phố năng động và hiện đại',
     lat: 10.7769,
-    lng: 106.7009
+    lng: 106.7009,
+    category: 'attraction'
   }
 ];
 
@@ -98,3 +106,102 @@ export const paceOptions = [
   { value: 'Normal', label: 'Balanced', description: 'Perfect mix of activities and rest' },
   { value: 'Fast', label: 'Action Packed', description: 'See and do as much as possible' }
 ];
+
+export const popularDestinationes = [
+  {
+    id: 1,
+    name: "Eo Gió",
+    category: "attraction",
+    rating: 4.7,
+    reviews: 1523,
+    tag: "Tham quan",
+    description:
+      "Eo Gió là địa điểm du lịch nổi tiếng ở Quy Nhơn với cảnh quan hùng vĩ, bãi đá độc đáo và gió biển mát lành.",
+    image:
+      "https://cdn.tcdulichtphcm.vn/upload/2-2021/images/2021-08-11/1628671577-eo-gio-quy-nhon.jpg",
+    review:
+      "Khung cảnh rất đẹp, gió mạnh nhưng dễ chịu. Đường đi hơi dốc nhưng xứng đáng để trải nghiệm.",
+    reviewer: "Lan Phạm — Google Review",
+    address: "Nhơn Lý, Quy Nhơn, Bình Định, Việt Nam",
+    link: "https://goo.gl/maps/eo-gio",
+    lat: 13.8665,
+    lng: 109.2251,
+  },
+  {
+    id: 2,
+    name: "Kỳ Co Beach",
+    category: "attraction",
+    rating: 4.6,
+    reviews: 1898,
+    tag: "Bãi biển",
+    description:
+      "Bãi biển Kỳ Co nổi bật với cát trắng mịn, nước biển xanh ngọc và những vách đá tự nhiên hùng vĩ.",
+    image:
+      "https://statics.vinpearl.com/bai-ky-co-quy-nhon-1_1680070780.jpg",
+    review:
+      "Biển rất trong, đẹp như Maldives. Có dịch vụ cano đưa đón, hơi đông vào mùa cao điểm.",
+    reviewer: "Kevin L — Google Review",
+    address: "Nhơn Lý, Quy Nhơn, Bình Định, Việt Nam",
+    link: "https://goo.gl/maps/ky-co",
+    lat: 13.7616,
+    lng: 109.2784,
+  },
+  {
+    id: 3,
+    name: "Cù Lao Hòn Khô",
+    category: "attraction",
+    rating: 4.4,
+    reviews: 123,
+    tag: "Hòn đảo",
+    description:
+      "Một hòn đảo hoang sơ gần Quy Nhơn, nổi tiếng với làn nước trong vắt và rạn san hô đầy màu sắc.",
+    image:
+      "https://ik.imagekit.io/tvlk/blog/2022/07/cu-lao-hon-kho-1.jpg",
+    review:
+      "Nước rất sạch, có thể lặn ngắm san hô ngay gần bờ. Đảo nhỏ nhưng yên bình.",
+    reviewer: "Quý B — Google Review",
+    address: "Quy Nhơn, Bình Định, Việt Nam",
+    link: "https://goo.gl/maps/hon-kho",
+    lat: 13.8643,
+    lng: 109.2869,
+  },
+  {
+    id: 4,
+    name: "Bánh Xèo Tôm Nhảy Ông Hùng",
+    category: "restaurant",
+    rating: 4.5,
+    reviews: 876,
+    tag: "Ẩm thực",
+    description:
+      "Quán bánh xèo nổi tiếng ở Quy Nhơn với món bánh xèo tôm nhảy giòn rụm, tươi ngon.",
+    image:
+      "https://bepmina.vn/wp-content/uploads/2021/06/banh-xeo-tom-nhay.jpg",
+    review:
+      "Bánh xèo giòn, tôm tươi, nước chấm ngon. Quán hơi đông nên phải chờ.",
+    reviewer: "Tuấn Anh — Google Review",
+    address: "Đường Diên Hồng, Quy Nhơn, Bình Định",
+    link: "https://goo.gl/maps/banh-xeo",
+    lat: 13.7719,
+    lng: 109.2226,
+  },
+  {
+    id: 5,
+    name: "Surf Bar Quy Nhơn",
+    category: "cafe",
+    rating: 4.3,
+    reviews: 543,
+    tag: "Quán cà phê",
+    description:
+      "Quán cà phê ven biển nổi tiếng, view biển cực chill, thích hợp ngắm hoàng hôn.",
+    image:
+      "https://ik.imagekit.io/tvlk/blog/2022/07/surf-bar-quy-nhon.jpg",
+    review:
+      "Cà phê ngon, khung cảnh lãng mạn, nhưng buổi tối khá đông khách.",
+    reviewer: "Mai Hương — Google Review",
+    address: "Đường Xuân Diệu, Quy Nhơn, Bình Định",
+    link: "https://goo.gl/maps/surf-bar",
+    lat: 13.7722,
+    lng: 109.2319,
+  },
+];
+

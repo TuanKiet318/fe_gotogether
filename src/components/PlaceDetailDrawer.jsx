@@ -291,7 +291,7 @@ export default function PlaceDetailDrawer() {
         {/* Bottom actions */}
         <div className="p-4 border-t border-slate-200 bg-white flex gap-3">
           <button onClick={handleClose} className="flex-1 btn-secondary">
-            Close
+            Đóng
           </button>
           <button
             onClick={handleAddToItinerary}
@@ -299,9 +299,9 @@ export default function PlaceDetailDrawer() {
             disabled={!place}
           >
             <Plus className="w-4 h-4" />
-            Add to Trip
+            Thêm vào chuyến đi
           </button>
-        </div>
+        </div>  
       </div>
     </div>
   );
