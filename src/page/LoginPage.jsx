@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { Mail, Lock, Eye, EyeOff, Compass } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../service/api";
+import { AuthContext } from "../context/AuthContext";
 
 export default function LoginPage() {
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const {
@@ -13,7 +15,6 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm({ mode: "onTouched" });
-
   const onSubmit = handleSubmit(async (payload) => {
     const toastId = toast.loading("Đang đăng nhập...");
     try {
@@ -27,8 +28,11 @@ export default function LoginPage() {
         withCredentials: true,
       });
       const accessToken = res?.data?.data?.accessToken;
-      if (!accessToken) throw new Error("Không nhận được access token từ máy chủ.");
-      localStorage.setItem("token", accessToken);
+
+      if (!accessToken)
+        throw new Error("Không nhận được access token từ máy chủ.");
+      login(accessToken, deviceId);
+
       toast.update(toastId, {
         render: "Đăng nhập thành công!",
         type: "success",
@@ -42,7 +46,12 @@ export default function LoginPage() {
         (err?.message === "Network Error"
           ? "Không thể kết nối đến máy chủ."
           : err?.message || "Đăng nhập thất bại.");
-      toast.update(toastId, { render: message, type: "error", isLoading: false, autoClose: 2200 });
+      toast.update(toastId, {
+        render: message,
+        type: "error",
+        isLoading: false,
+        autoClose: 2200,
+      });
     }
   });
 
@@ -60,7 +69,9 @@ export default function LoginPage() {
           <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 flex items-center justify-center shadow-md">
             <Compass className="w-5 h-5 text-white" />
           </div>
-          <span className="text-lg font-semibold text-slate-800">GoTogether</span>
+          <span className="text-lg font-semibold text-slate-800">
+            GoTogether
+          </span>
         </div>
       </div>
 
@@ -79,7 +90,10 @@ export default function LoginPage() {
               <form onSubmit={onSubmit} className="space-y-5" noValidate>
                 {/* Email */}
                 <div>
-                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
                     Email
                   </label>
                   <div className="relative">
@@ -90,9 +104,14 @@ export default function LoginPage() {
                       placeholder="name@example.com"
                       autoComplete="email"
                       aria-invalid={!!errors.email}
-                      aria-describedby={errors.email ? "email-error" : undefined}
-                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-3 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${errors.email ? "border-rose-300" : "border-slate-200 hover:border-slate-300"
-                        }`}
+                      aria-describedby={
+                        errors.email ? "email-error" : undefined
+                      }
+                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-3 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${
+                        errors.email
+                          ? "border-rose-300"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
                       {...register("email", {
                         required: "Email là bắt buộc",
                         pattern: {
@@ -103,7 +122,10 @@ export default function LoginPage() {
                     />
                   </div>
                   {errors.email && (
-                    <p id="email-error" className="mt-1.5 text-sm text-rose-600">
+                    <p
+                      id="email-error"
+                      className="mt-1.5 text-sm text-rose-600"
+                    >
                       {errors.email?.message}
                     </p>
                   )}
@@ -112,10 +134,16 @@ export default function LoginPage() {
                 {/* Password */}
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="password"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Mật khẩu
                     </label>
-                    <Link to="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                    >
                       Quên mật khẩu?
                     </Link>
                   </div>
@@ -127,9 +155,14 @@ export default function LoginPage() {
                       placeholder="••••••••"
                       autoComplete="current-password"
                       aria-invalid={!!errors.password}
-                      aria-describedby={errors.password ? "password-error" : undefined}
-                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-10 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${errors.password ? "border-rose-300" : "border-slate-200 hover:border-slate-300"
-                        }`}
+                      aria-describedby={
+                        errors.password ? "password-error" : undefined
+                      }
+                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-10 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${
+                        errors.password
+                          ? "border-rose-300"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
                       {...register("password", {
                         required: "Mật khẩu là bắt buộc",
                         minLength: { value: 6, message: "Tối thiểu 6 ký tự" },
@@ -139,13 +172,22 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 hover:bg-slate-50"
-                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      aria-label={
+                        showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                      }
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
                     </button>
                   </div>
                   {errors.password && (
-                    <p id="password-error" className="mt-1.5 text-sm text-rose-600">
+                    <p
+                      id="password-error"
+                      className="mt-1.5 text-sm text-rose-600"
+                    >
                       {errors.password?.message}
                     </p>
                   )}
@@ -164,14 +206,19 @@ export default function LoginPage() {
               {/* Divider */}
               <div className="my-6 flex items-center gap-3">
                 <div className="h-px flex-1 bg-slate-200" />
-                <span className="text-xs uppercase tracking-wider text-slate-500">hoặc</span>
+                <span className="text-xs uppercase tracking-wider text-slate-500">
+                  hoặc
+                </span>
                 <div className="h-px flex-1 bg-slate-200" />
               </div>
 
               {/* Sign up link */}
               <p className="text-center text-sm text-slate-600">
                 Chưa có tài khoản?{" "}
-                <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-700">
+                <Link
+                  to="/register"
+                  className="font-semibold text-indigo-600 hover:text-indigo-700"
+                >
                   Đăng ký ngay
                 </Link>
               </p>

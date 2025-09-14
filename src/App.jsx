@@ -6,8 +6,8 @@ import LoginPage from "./page/LoginPage";
 import RegisterPage from "./page/RegisterPage";
 import HomePage from "./page/HomePage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ResultPage from "./page/ResultPage";
-import DestinationDetail from "./page/DestinationDetail";
+import DestinationDetail from "./page/DestinationDetailPage";
+import PlaceDetail from "./page/PlaceDetailPage";
 import SearchCategoryPage from "./page/SearchCategoryPage";
 // import SupplierDashboard from "./page/SupplierDashboard";
 import { AuthProvider } from "./context/AuthProvider";
@@ -29,8 +29,8 @@ const App = () => {
         />
         {/* <Route path="/register" element={<div>Trang Đăng Ký</div>} /> */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/destination/:place" element={<ResultPage />} />
-        <Route path="/destination/place/:id" element={<DestinationDetail />} />
+        <Route path="/destination/:place" element={<DestinationDetail />} />
+        <Route path="/destination/place/:id" element={<PlaceDetail />} />
         <Route path="/category/:category" element={<SearchCategoryPage />} />
         {/* <Route path="*" element={<div>Trang Khác</div>} /> */}
 

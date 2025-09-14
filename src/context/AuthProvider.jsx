@@ -16,7 +16,6 @@ export const AuthProvider = ({ children }) => {
     if (token && storedDeviceId) {
       try {
         const decoded = jwtDecode(token);
-        // Nếu token chưa hết hạn
         if (decoded.exp * 1000 > Date.now()) {
           setUser({
             id: decoded.id,
@@ -25,18 +24,18 @@ export const AuthProvider = ({ children }) => {
           });
           setDeviceId(storedDeviceId);
         } else {
-          handleLogout();
+          logout();
         }
       } catch {
-        handleLogout();
+        logout();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = (token, deviceId) => {
     localStorage.setItem("token", token);
     localStorage.setItem("deviceId", deviceId);
+
     const decoded = jwtDecode(token);
     setUser({
       id: decoded.id,
@@ -47,20 +46,16 @@ export const AuthProvider = ({ children }) => {
     navigate("/");
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    setUser(null);
-    setDeviceId(null);
-    navigate("/login");
-  };
-
   const logout = async () => {
     try {
       await APILogout();
     } catch (err) {
       console.error("Lỗi khi đăng xuất:", err);
     } finally {
-      handleLogout();
+      localStorage.clear();
+      setUser(null);
+      setDeviceId(null);
+      navigate("/login");
     }
   };
 
@@ -69,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     if (!token) return false;
     try {
       const decoded = jwtDecode(token);
-      return decoded.exp * 1000 > Date.now(); // Token chưa hết hạn
+      return decoded.exp * 1000 > Date.now();
     } catch {
       return false;
     }

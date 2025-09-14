@@ -1,11 +1,10 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 @import "slick-carousel/slick/slick.css";
 @import "slick-carousel/slick/slick-theme.css";
 @config "../tailwind.config.js";
 
 /* Google Font (tuỳ chọn) */
-
 
 /* Base layer */
 @layer base {
@@ -46,7 +45,21 @@
 
 /* Background helpers */
 .background-pattern {
-  background-image:
-    radial-gradient(ellipse at top right, rgba(14, 165, 233, 0.12), transparent 40%),
-    radial-gradient(ellipse at bottom left, rgba(99, 102, 241, 0.12), transparent 40%);
+  background-image: radial-gradient(
+      ellipse at top right,
+      rgba(14, 165, 233, 0.12),
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at bottom left,
+      rgba(99, 102, 241, 0.12),
+      transparent 40%
+    );
+}
+
+.input-field {
+  @apply w-full border border-gray-300 rounded-lg py-2
+         focus:outline-none focus:ring-2
+         focus:ring-[oklch(68.5%_0.169_237.323)]
+         bg-white text-gray-800;
 }
