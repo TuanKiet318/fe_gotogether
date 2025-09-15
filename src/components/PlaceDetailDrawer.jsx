@@ -1,11 +1,25 @@
-import { useState, useEffect } from 'react';
-import { X, Star, MapPin, Phone, Globe, Clock, Plus, ExternalLink } from 'lucide-react';
-import useSearchStore from '../store/searchStore.js';
-import useItineraryStore from '../store/itineraryStore.js';
-import { getPlaceDetails } from '../lib/places.js';
+import { useState, useEffect } from "react";
+import {
+  X,
+  Star,
+  MapPin,
+  Phone,
+  Globe,
+  Clock,
+  Plus,
+  ExternalLink,
+} from "lucide-react";
+import useSearchStore from "../store/searchStore.js";
+import useItineraryStore from "../store/itineraryStore.js";
+import { getPlaceDetails } from "../lib/places.js";
 
 export default function PlaceDetailDrawer() {
-  const { selectedResult, showDetailDrawer, setShowDetailDrawer, setSelectedResult } = useSearchStore();
+  const {
+    selectedResult,
+    showDetailDrawer,
+    setShowDetailDrawer,
+    setSelectedResult,
+  } = useSearchStore();
   const { addStop } = useItineraryStore();
   const [placeDetails, setPlaceDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -14,7 +28,11 @@ export default function PlaceDetailDrawer() {
   const placeRaw = placeDetails || selectedResult;
 
   useEffect(() => {
-    if (showDetailDrawer && selectedResult?.placeId && selectedResult.source === 'google') {
+    if (
+      showDetailDrawer &&
+      selectedResult?.placeId &&
+      selectedResult.source === "google"
+    ) {
       fetchPlaceDetails();
     } else if (showDetailDrawer && selectedResult) {
       setPlaceDetails(selectedResult);
@@ -28,8 +46,8 @@ export default function PlaceDetailDrawer() {
       const details = await getPlaceDetails(selectedResult.placeId);
       setPlaceDetails(details || selectedResult);
     } catch (err) {
-      console.error('Failed to fetch place details:', err);
-      setError('Failed to load place details');
+      console.error("Failed to fetch place details:", err);
+      setError("Failed to load place details");
       setPlaceDetails(selectedResult);
     } finally {
       setIsLoading(false);
@@ -54,26 +72,44 @@ export default function PlaceDetailDrawer() {
 
   const place = placeRaw
     ? {
-      ...placeRaw,
-      photos: placeRaw.photos ?? placeRaw.images?.map(img => img.imageUrl) ?? [],
-      photoUrl: placeRaw.photoUrl ?? placeRaw.images?.[0]?.imageUrl ?? null,
-      address: placeRaw.address ?? (placeRaw.destination ? `${placeRaw.destination.name}, ${placeRaw.destination.country ?? ''}`.trim() : ''),
-    }
+        ...placeRaw,
+        photos:
+          placeRaw.photos ?? placeRaw.images?.map((img) => img.imageUrl) ?? [],
+        photoUrl: placeRaw.photoUrl ?? placeRaw.images?.[0]?.imageUrl ?? null,
+        address:
+          placeRaw.address ??
+          (placeRaw.destination
+            ? `${placeRaw.destination.name}, ${
+                placeRaw.destination.country ?? ""
+              }`.trim()
+            : ""),
+      }
     : null;
 
   return (
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={handleClose}
+      />
 
       {/* Drawer */}
       <div className="absolute right-0 top-0 h-full w-full max-w-lg bg-white shadow-2xl flex flex-col">
         {/* Header with image */}
         <div className="relative h-56 w-full">
           {place?.photos?.length > 0 ? (
-            <img src={place.photos[0]} alt={place.name} className="w-full h-full object-cover" />
+            <img
+              src={place.photos[0]}
+              alt={place.name}
+              className="w-full h-full object-cover"
+            />
           ) : place?.photoUrl ? (
-            <img src={place.photoUrl} alt={place.name} className="w-full h-full object-cover" />
+            <img
+              src={place.photoUrl}
+              alt={place.name}
+              className="w-full h-full object-cover"
+            />
           ) : (
             <div className="h-full flex items-center justify-center bg-slate-100">
               <MapPin className="w-12 h-12 text-slate-400" />
@@ -101,7 +137,9 @@ export default function PlaceDetailDrawer() {
             <>
               {/* Title & Rating */}
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">{place.name}</h1>
+                <h1 className="text-2xl font-bold text-slate-900">
+                  {place.name}
+                </h1>
                 {place.rating && (
                   <div className="flex items-center gap-2 mt-2">
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
@@ -126,7 +164,10 @@ export default function PlaceDetailDrawer() {
               {/* Info blocks */}
               <div className="divide-y divide-slate-200">
                 {place.phone && (
-                  <a href={`tel:${place.phone}`} className="flex items-center gap-3 py-3 text-slate-700 hover:text-sky-600">
+                  <a
+                    href={`tel:${place.phone}`}
+                    className="flex items-center gap-3 py-3 text-slate-700 hover:text-sky-600"
+                  >
                     <Phone className="w-4 h-4" />
                     {place.phone}
                   </a>
@@ -162,16 +203,22 @@ export default function PlaceDetailDrawer() {
                 {place.isOpenNow !== undefined && (
                   <div className="py-3 flex items-center gap-2">
                     <span
-                      className={`w-3 h-3 rounded-full ${place.isOpenNow ? 'bg-green-500' : 'bg-red-500'}`}
+                      className={`w-3 h-3 rounded-full ${
+                        place.isOpenNow ? "bg-green-500" : "bg-red-500"
+                      }`}
                     />
-                    <span className={`font-medium ${place.isOpenNow ? 'text-green-700' : 'text-red-700'}`}>
-                      {place.isOpenNow ? 'Open now' : 'Closed now'}
+                    <span
+                      className={`font-medium ${
+                        place.isOpenNow ? "text-green-700" : "text-red-700"
+                      }`}
+                    >
+                      {place.isOpenNow ? "Open now" : "Closed now"}
                     </span>
                   </div>
                 )}
               </div>
               {/* Reviews (mock data for demo) */}
-              {(!place.reviews || place.reviews.length === 0) ? (
+              {!place.reviews || place.reviews.length === 0 ? (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-slate-900">Reviews</h3>
                   <div className="space-y-4">
@@ -181,24 +228,27 @@ export default function PlaceDetailDrawer() {
                         rating: 5,
                         text: "Địa điểm tuyệt vời, nhân viên thân thiện và phục vụ nhanh chóng!",
                         relativeTimeDescription: "2 tuần trước",
-                        profilePhotoUrl: "https://i.pravatar.cc/40?img=1"
+                        profilePhotoUrl: "https://i.pravatar.cc/40?img=1",
                       },
                       {
                         authorName: "Trần Thị B",
                         rating: 4,
                         text: "Không gian đẹp, đồ ăn ngon nhưng hơi đông khách.",
                         relativeTimeDescription: "1 tháng trước",
-                        profilePhotoUrl: "https://i.pravatar.cc/40?img=2"
+                        profilePhotoUrl: "https://i.pravatar.cc/40?img=2",
                       },
                       {
                         authorName: "Lê Văn C",
                         rating: 3,
                         text: "Ổn nhưng không có gì đặc biệt, giá hơi cao.",
                         relativeTimeDescription: "3 tháng trước",
-                        profilePhotoUrl: "https://i.pravatar.cc/40?img=3"
+                        profilePhotoUrl: "https://i.pravatar.cc/40?img=3",
                       },
                     ].map((review, idx) => (
-                      <div key={idx} className="p-3 border border-slate-200 rounded-lg">
+                      <div
+                        key={idx}
+                        className="p-3 border border-slate-200 rounded-lg"
+                      >
                         <div className="flex items-center gap-3 mb-2">
                           {review.profilePhotoUrl ? (
                             <img
@@ -210,9 +260,13 @@ export default function PlaceDetailDrawer() {
                             <div className="w-8 h-8 rounded-full bg-slate-200" />
                           )}
                           <div>
-                            <p className="font-medium text-slate-900">{review.authorName}</p>
+                            <p className="font-medium text-slate-900">
+                              {review.authorName}
+                            </p>
                             {review.relativeTimeDescription && (
-                              <p className="text-xs text-slate-500">{review.relativeTimeDescription}</p>
+                              <p className="text-xs text-slate-500">
+                                {review.relativeTimeDescription}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -220,7 +274,11 @@ export default function PlaceDetailDrawer() {
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`}
+                              className={`w-4 h-4 ${
+                                i < review.rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-slate-300"
+                              }`}
                             />
                           ))}
                         </div>
@@ -234,7 +292,10 @@ export default function PlaceDetailDrawer() {
                   <h3 className="font-semibold text-slate-900">Reviews</h3>
                   <div className="space-y-4">
                     {place.reviews.slice(0, 5).map((review, idx) => (
-                      <div key={idx} className="p-3 border border-slate-200 rounded-lg">
+                      <div
+                        key={idx}
+                        className="p-3 border border-slate-200 rounded-lg"
+                      >
                         <div className="flex items-center gap-3 mb-2">
                           {review.profilePhotoUrl ? (
                             <img
@@ -246,9 +307,13 @@ export default function PlaceDetailDrawer() {
                             <div className="w-8 h-8 rounded-full bg-slate-200" />
                           )}
                           <div>
-                            <p className="font-medium text-slate-900">{review.authorName}</p>
+                            <p className="font-medium text-slate-900">
+                              {review.authorName}
+                            </p>
                             {review.relativeTimeDescription && (
-                              <p className="text-xs text-slate-500">{review.relativeTimeDescription}</p>
+                              <p className="text-xs text-slate-500">
+                                {review.relativeTimeDescription}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -256,7 +321,11 @@ export default function PlaceDetailDrawer() {
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`}
+                              className={`w-4 h-4 ${
+                                i < review.rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-slate-300"
+                              }`}
                             />
                           ))}
                         </div>
@@ -301,7 +370,7 @@ export default function PlaceDetailDrawer() {
             <Plus className="w-4 h-4" />
             Thêm vào chuyến đi
           </button>
-        </div>  
+        </div>
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ import {
   PlayIcon,
 } from "@heroicons/react/24/outline";
 import FoodCard from "../components/FoodCard.jsx";
+import { AnimatePresence, motion } from "framer-motion";
 
 const categoryIcons = {
   "cat-food": FireIcon,
@@ -291,339 +292,382 @@ export default function DestinationDetail() {
 
       {/* Content based on active main tab */}
       <section className="container mx-auto px-6 py-12">
-        {/* Giới thiệu Tab */}
-        {activeMainTab === "gioi-thieu" && (
-          <div className="max-w-4xl mx-auto space-y-12">
-            {destinationDetail?.infos
-              ?.slice()
-              .sort(
-                (a, b) =>
-                  infoOrder.indexOf(a.infoKey) - infoOrder.indexOf(b.infoKey)
-              )
-              .map((info) => (
-                <div key={info.id} className="space-y-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-1 h-10 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
-                    <h2 className="text-2xl font-bold text-gray-800">
-                      {info.infoKey}
-                    </h2>
-                  </div>
+        <AnimatePresence mode="wait">
+          {/* Giới thiệu Tab */}
+          {activeMainTab === "gioi-thieu" && (
+            <motion.div
+              key="gioi-thieu"
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="max-w-4xl mx-auto space-y-12">
+                {destinationDetail?.infos
+                  ?.slice()
+                  .sort(
+                    (a, b) =>
+                      infoOrder.indexOf(a.infoKey) -
+                      infoOrder.indexOf(b.infoKey)
+                  )
+                  .map((info) => (
+                    <div key={info.id} className="space-y-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-1 h-10 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
+                        <h2 className="text-2xl font-bold text-gray-800">
+                          {info.infoKey}
+                        </h2>
+                      </div>
 
-                  {info.imageUrl && info.imageUrl.trim() !== "" && (
-                    <img
-                      src={info.imageUrl}
-                      alt={info.infoKey}
-                      className="w-full h-auto object-cover"
-                    />
-                  )}
+                      {info.imageUrl && info.imageUrl.trim() !== "" && (
+                        <img
+                          src={info.imageUrl}
+                          alt={info.infoKey}
+                          className="w-full h-auto object-cover"
+                        />
+                      )}
 
-                  <p className="text-gray-700 leading-relaxed">
-                    {info.infoValue}
-                  </p>
-                </div>
-              ))}
-          </div>
-        )}
-
-        {/* Ẩm thực Tab */}
-        {activeMainTab === "am-thuc" && (
-          <div className="py-10">
-            {/* Tiêu đề */}
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-10 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                Ẩm thực {destinationDetail?.name || locationQuery}
-              </h2>
-            </div>
-
-            {/* Nội dung */}
-            {loadingFoods ? (
-              <p className="text-center text-gray-500">Đang tải...</p>
-            ) : foods.length === 0 ? (
-              <p className="text-center text-gray-500">
-                Hiện chưa có dữ liệu ẩm thực cho địa điểm này.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {foods.map((food) => (
-                  <FoodCard key={food.id} food={food} />
-                ))}
+                      <p className="text-gray-700 leading-relaxed">
+                        {info.infoValue}
+                      </p>
+                    </div>
+                  ))}
               </div>
-            )}
-          </div>
-        )}
+            </motion.div>
+          )}
 
-        {/* Địa điểm Tab */}
-        {activeMainTab === "dia-diem" && (
-          <>
-            {/* Category Filter - chỉ hiển thị khi đang ở tab địa điểm */}
-            <div className="mb-8">
-              <div
-                className="flex justify-center items-center gap-8 overflow-x-auto scrollbar-hide"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
-                <button
-                  onClick={() => handleCategorySelect("")}
-                  className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
+          {/* Ẩm thực Tab */}
+          {activeMainTab === "am-thuc" && (
+            <motion.div
+              key="am-thuc"
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="py-10">
+                {/* Tiêu đề */}
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-1 h-10 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Ẩm thực {destinationDetail?.name || locationQuery}
+                  </h2>
+                </div>
+
+                {/* Nội dung */}
+                {loadingFoods ? (
+                  <p className="text-center text-gray-500">Đang tải...</p>
+                ) : foods.length === 0 ? (
+                  <p className="text-center text-gray-500">
+                    Hiện chưa có dữ liệu ẩm thực cho địa điểm này.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {foods.map((food) => (
+                      <FoodCard key={food.id} food={food} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Địa điểm Tab */}
+          {activeMainTab === "dia-diem" && (
+            <motion.div
+              key="dia-diem"
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <>
+                {/* Category Filter - chỉ hiển thị khi đang ở tab địa điểm */}
+                <div className="mb-8">
+                  <div
+                    className="flex justify-center items-center gap-8 overflow-x-auto scrollbar-hide"
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                  >
+                    <button
+                      onClick={() => handleCategorySelect("")}
+                      className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
                     ${
                       !selectedCategory
                         ? "text-blue-600 font-semibold"
                         : "text-gray-600 hover:text-blue-500"
                     }
                   `}
-                >
-                  Nổi bật
-                  <span
-                    className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
+                    >
+                      Nổi bật
+                      <span
+                        className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
                       ${
                         !selectedCategory
                           ? "w-full opacity-100"
                           : "w-0 opacity-0"
                       }
                     `}
-                  />
-                </button>
+                      />
+                    </button>
 
-                {categories.map((cat) => {
-                  const isActive = String(selectedCategory) === String(cat.id);
+                    {categories.map((cat) => {
+                      const isActive =
+                        String(selectedCategory) === String(cat.id);
 
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => handleCategorySelect(cat.id)}
-                      className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => handleCategorySelect(cat.id)}
+                          className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
                         ${
                           isActive
                             ? "text-blue-600 font-semibold"
                             : "text-gray-600 hover:text-blue-500"
                         }
                       `}
-                    >
-                      {cat.name}
-                      <span
-                        className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
+                        >
+                          {cat.name}
+                          <span
+                            className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
                           ${isActive ? "w-full opacity-100" : "w-0 opacity-0"}
                         `}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            {/* Places Content */}
-            <div
-              className={`grid gap-8 transition-all duration-500 ease-in-out ${
-                isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
-              }`}
-            >
-              {/* Left: Places List */}
-              <div
-                className={`space-y-10 ${
-                  isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
-                }`}
-              >
-                {/* Khi có category được chọn */}
-                {selectedCategory && (
-                  <div>
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-gray-800">
-                          {selectedCategoryInfo?.name || "Danh mục"}
-                        </h2>
-                        <p className="text-gray-500 text-sm">
-                          Khám phá tại {locationQuery}
-                        </p>
-                      </div>
-                    </div>
-
-                    {loadingPlaces ? (
-                      <div className="flex items-center justify-center py-20">
-                        <div className="relative">
-                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                          <div className="absolute top-0 left-0 animate-ping rounded-full h-12 w-12 border-2 border-blue-400 opacity-20"></div>
-                        </div>
-                        <span className="ml-4 text-gray-600 font-medium">
-                          Đang tải địa điểm...
-                        </span>
-                      </div>
-                    ) : categoryPlaces.length > 0 ? (
-                      <>
-                        <div className="flex items-center justify-between mb-6">
-                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-2 rounded-full">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            {categoryPlaces.length} địa điểm
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {categoryPlaces.map((place, index) => (
-                            <div
-                              key={place.id}
-                              className="group transform hover:scale-[1.02] transition-all duration-300"
-                            >
-                              <PlaceCard
-                                place={place}
-                                index={index + 1}
-                                onHover={(hoveredPlace) =>
-                                  setHoveredId(hoveredPlace?.id || null)
-                                }
-                              />
+                {/* Places Content */}
+                <div
+                  className={`grid gap-8 transition-all duration-500 ease-in-out ${
+                    isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
+                  }`}
+                >
+                  {/* Left: Places List */}
+                  <div
+                    className={`space-y-10 ${
+                      isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
+                    }`}
+                  >
+                    <AnimatePresence mode="wait">
+                      {/* Khi có category được chọn */}
+                      {selectedCategory && (
+                        <motion.div
+                          key={selectedCategory}
+                          initial={{ x: 100, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          exit={{ x: -100, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div>
+                            <div className="flex items-center gap-4 mb-8">
+                              <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                              <div>
+                                <h2 className="text-2xl font-bold text-gray-800">
+                                  {selectedCategoryInfo?.name || "Danh mục"}
+                                </h2>
+                                <p className="text-gray-500 text-sm">
+                                  Khám phá tại {locationQuery}
+                                </p>
+                              </div>
                             </div>
-                          ))}
+
+                            {loadingPlaces ? (
+                              <div className="flex items-center justify-center py-20">
+                                <div className="relative">
+                                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                  <div className="absolute top-0 left-0 animate-ping rounded-full h-12 w-12 border-2 border-blue-400 opacity-20"></div>
+                                </div>
+                                <span className="ml-4 text-gray-600 font-medium">
+                                  Đang tải địa điểm...
+                                </span>
+                              </div>
+                            ) : categoryPlaces.length > 0 ? (
+                              <>
+                                <div className="flex items-center justify-between mb-6">
+                                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-2 rounded-full">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    {categoryPlaces.length} địa điểm
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  {categoryPlaces.map((place, index) => (
+                                    <div
+                                      key={place.id}
+                                      className="group transform hover:scale-[1.02] transition-all duration-300"
+                                    >
+                                      <PlaceCard
+                                        place={place}
+                                        index={index + 1}
+                                        onHover={(hoveredPlace) =>
+                                          setHoveredId(hoveredPlace?.id || null)
+                                        }
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-center py-20 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border border-gray-100">
+                                <div className="text-gray-300 mb-4">
+                                  <MapIcon className="w-16 h-16 mx-auto" />
+                                </div>
+                                <p className="text-gray-500 text-lg font-medium">
+                                  Chưa có địa điểm nào trong danh mục này
+                                </p>
+                                <p className="text-gray-400 text-sm mt-2">
+                                  Hãy thử chọn danh mục khác
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Khi chưa chọn category */}
+                    {!selectedCategory && (
+                      <div className="space-y-12">
+                        {/* Best Places */}
+                        <div>
+                          <div className="flex items-center gap-4 mb-8">
+                            <div className="w-1 h-10 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
+                            <div>
+                              <h2 className="text-2xl font-bold text-gray-800">
+                                Điểm đến nổi bật
+                              </h2>
+                              <p className="text-gray-500 text-sm">
+                                Những địa điểm không thể bỏ qua
+                              </p>
+                            </div>
+                          </div>
+
+                          {destinationDetail?.bestPlaces?.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {destinationDetail.bestPlaces.map(
+                                (place, index) => (
+                                  <div
+                                    key={place.id}
+                                    className="group transform hover:scale-[1.02] transition-all duration-300"
+                                  >
+                                    <PlaceCard
+                                      place={place}
+                                      index={index + 1}
+                                      onHover={(hoveredPlace) =>
+                                        setHoveredId(hoveredPlace?.id || null)
+                                      }
+                                    />
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-center py-12 bg-gray-50 rounded-xl">
+                              Không có địa điểm nổi bật nào.
+                            </p>
+                          )}
                         </div>
-                      </>
-                    ) : (
-                      <div className="text-center py-20 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border border-gray-100">
-                        <div className="text-gray-300 mb-4">
-                          <MapIcon className="w-16 h-16 mx-auto" />
+
+                        {/* Best Restaurants */}
+                        <div>
+                          <div className="flex items-center gap-4 mb-8">
+                            <div className="w-1 h-10 bg-gradient-to-b from-red-400 to-pink-500 rounded-full"></div>
+                            <div>
+                              <h2 className="text-2xl font-bold text-gray-800">
+                                Nhà hàng nổi bật
+                              </h2>
+                              <p className="text-gray-500 text-sm">
+                                Trải nghiệm ẩm thực địa phương
+                              </p>
+                            </div>
+                          </div>
+
+                          {destinationDetail?.bestRestaurants?.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {destinationDetail.bestRestaurants.map(
+                                (restaurant, index) => (
+                                  <div
+                                    key={restaurant.id}
+                                    className="group transform hover:scale-[1.02] transition-all duration-300"
+                                  >
+                                    <PlaceCard
+                                      place={restaurant}
+                                      index={index + 1}
+                                      onHover={(hoveredPlace) =>
+                                        setHoveredId(hoveredPlace?.id || null)
+                                      }
+                                    />
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-center py-12 bg-gray-50 rounded-xl">
+                              Không có nhà hàng nổi bật nào.
+                            </p>
+                          )}
                         </div>
-                        <p className="text-gray-500 text-lg font-medium">
-                          Chưa có địa điểm nào trong danh mục này
-                        </p>
-                        <p className="text-gray-400 text-sm mt-2">
-                          Hãy thử chọn danh mục khác
-                        </p>
                       </div>
                     )}
                   </div>
-                )}
 
-                {/* Khi chưa chọn category */}
-                {!selectedCategory && (
-                  <div className="space-y-12">
-                    {/* Best Places */}
-                    <div>
-                      <div className="flex items-center gap-4 mb-8">
-                        <div className="w-1 h-10 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
-                        <div>
-                          <h2 className="text-2xl font-bold text-gray-800">
-                            Điểm đến nổi bật
-                          </h2>
-                          <p className="text-gray-500 text-sm">
-                            Những địa điểm không thể bỏ qua
-                          </p>
-                        </div>
-                      </div>
-
-                      {destinationDetail?.bestPlaces?.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {destinationDetail.bestPlaces.map((place, index) => (
-                            <div
-                              key={place.id}
-                              className="group transform hover:scale-[1.02] transition-all duration-300"
-                            >
-                              <PlaceCard
-                                place={place}
-                                index={index + 1}
-                                onHover={(hoveredPlace) =>
-                                  setHoveredId(hoveredPlace?.id || null)
-                                }
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 text-center py-12 bg-gray-50 rounded-xl">
-                          Không có địa điểm nổi bật nào.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Best Restaurants */}
-                    <div>
-                      <div className="flex items-center gap-4 mb-8">
-                        <div className="w-1 h-10 bg-gradient-to-b from-red-400 to-pink-500 rounded-full"></div>
-                        <div>
-                          <h2 className="text-2xl font-bold text-gray-800">
-                            Nhà hàng nổi bật
-                          </h2>
-                          <p className="text-gray-500 text-sm">
-                            Trải nghiệm ẩm thực địa phương
-                          </p>
-                        </div>
-                      </div>
-
-                      {destinationDetail?.bestRestaurants?.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {destinationDetail.bestRestaurants.map(
-                            (restaurant, index) => (
-                              <div
-                                key={restaurant.id}
-                                className="group transform hover:scale-[1.02] transition-all duration-300"
-                              >
-                                <PlaceCard
-                                  place={restaurant}
-                                  index={index + 1}
-                                  onHover={(hoveredPlace) =>
-                                    setHoveredId(hoveredPlace?.id || null)
-                                  }
-                                />
-                              </div>
-                            )
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 text-center py-12 bg-gray-50 rounded-xl">
-                          Không có nhà hàng nổi bật nào.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right: Map with Toggle */}
-              {isMapVisible && (
-                <div className="lg:col-span-2 relative">
-                  <div className="sticky top-20" style={{ marginTop: "80px" }}>
-                    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden relative group">
-                      <button
-                        onClick={() => setIsMapVisible(false)}
-                        className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm text-gray-600 hover:text-red-500 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 group-hover:opacity-100"
-                        title="Ẩn bản đồ"
+                  {/* Right: Map with Toggle */}
+                  {isMapVisible && (
+                    <div className="lg:col-span-2 relative">
+                      <div
+                        className="sticky top-20"
+                        style={{ marginTop: "80px" }}
                       >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
+                        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden relative group">
+                          <button
+                            onClick={() => setIsMapVisible(false)}
+                            className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm text-gray-600 hover:text-red-500 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 group-hover:opacity-100"
+                            title="Ẩn bản đồ"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
 
-                      <div className="h-[620px] w-full">
-                        <LocationMap
-                          locations={getMapLocations()}
-                          hoveredId={hoveredId}
-                        />
+                          <div className="h-[620px] w-full">
+                            <LocationMap
+                              locations={getMapLocations()}
+                              hoveredId={hoveredId}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </>
-        )}
+              </>
+            </motion.div>
+          )}
 
-        {/* Show Map Toggle Button when hidden */}
-        {!isMapVisible && activeMainTab === "dia-diem" && (
-          <div className="fixed bottom-8 right-8 z-50">
-            <button
-              onClick={() => setIsMapVisible(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
-            >
-              <MapIcon className="w-5 h-5" />
-              Hiển thị bản đồ
-            </button>
-          </div>
-        )}
+          {/* Show Map Toggle Button when hidden */}
+          {!isMapVisible && activeMainTab === "dia-diem" && (
+            <div className="fixed bottom-8 right-8 z-50">
+              <button
+                onClick={() => setIsMapVisible(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+              >
+                <MapIcon className="w-5 h-5" />
+                Hiển thị bản đồ
+              </button>
+            </div>
+          )}
+        </AnimatePresence>
       </section>
 
       {/* Place Modal */}
