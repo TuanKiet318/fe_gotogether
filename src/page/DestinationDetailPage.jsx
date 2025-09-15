@@ -9,6 +9,7 @@ import {
   GetAllCategories,
   GetDestinationDetail,
   GetPlacesByCategory,
+  GetFoodsByDestination,
 } from "../service/api.admin.service.jsx";
 import {
   HomeIcon,
@@ -24,6 +25,7 @@ import {
   HeartIcon,
   PlayIcon,
 } from "@heroicons/react/24/outline";
+import FoodCard from "../components/FoodCard.jsx";
 
 const categoryIcons = {
   "cat-food": FireIcon,
@@ -50,7 +52,7 @@ export default function DestinationDetail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const locationQuery = searchParams.get("q") || "Quy Nhơn";
-
+  const { id } = useParams();
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -63,6 +65,9 @@ export default function DestinationDetail() {
   // State cho places theo category
   const [categoryPlaces, setCategoryPlaces] = useState([]);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [foods, setFoods] = useState([]);
+  const [loadingFoods, setLoadingFoods] = useState(false);
+
   const [selectedCategoryInfo, setSelectedCategoryInfo] = useState(null);
   const [isMapVisible, setIsMapVisible] = useState(true);
 
@@ -92,11 +97,41 @@ export default function DestinationDetail() {
     fetchCategories();
   }, []);
 
+  useEffect(() => {
+    const fetchFoods = async () => {
+      if (activeMainTab !== "am-thuc") return;
+      try {
+        setLoadingFoods(true);
+        if (!id) return;
+
+        const res = await GetFoodsByDestination(id);
+        console.log("Foods response:", res);
+
+        if (res?.data?.foods) {
+          setFoods(res.data.foods);
+        } else if (res?.foods) {
+          setFoods(res.foods);
+        } else {
+          setFoods([]);
+        }
+      } catch (err) {
+        console.error("Fetch foods error:", err);
+        setFoods([]);
+      } finally {
+        setLoadingFoods(false);
+      }
+    };
+
+    fetchFoods();
+  }, [activeMainTab, id]);
+
   // Load destination detail
   useEffect(() => {
     const fetchDestination = async () => {
       try {
-        const res = await GetDestinationDetail("dest-quynhon");
+        if (!id) return;
+        const res = await GetDestinationDetail(id);
+
         console.log("Destination detail response:", res);
         if (res && res.data) {
           setDestinationDetail(res.data);
@@ -121,7 +156,9 @@ export default function DestinationDetail() {
 
       setLoadingPlaces(true);
       try {
-        const res = await GetPlacesByCategory("dest-quynhon", selectedCategory);
+        if (!id || !selectedCategory) return;
+        const res = await GetPlacesByCategory(id, selectedCategory);
+
         console.log("Places by category response:", res);
 
         if (res && res.data) {
@@ -215,7 +252,7 @@ export default function DestinationDetail() {
 
       {/* Main Navigation */}
       <div className="container mx-auto px-4 py-6 border-b border-gray-200 bg-white sticky top-0 z-40 shadow-sm">
-        <div className="flex justify-center items-center gap-12 overflow-x-auto scrollbar-hide">
+        <div className="flex justify-center items-center gap-12 scrollbar-hide">
           {[
             {
               id: "gioi-thieu",
@@ -290,21 +327,29 @@ export default function DestinationDetail() {
 
         {/* Ẩm thực Tab */}
         {activeMainTab === "am-thuc" && (
-          <div className="text-center py-20">
-            <div className="text-gray-300 mb-6">
-              <FireIcon className="w-20 h-20 mx-auto" />
+          <div className="py-10">
+            {/* Tiêu đề */}
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-1 h-10 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Ẩm thực {destinationDetail?.name || locationQuery}
+              </h2>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Ẩm thực {destinationDetail?.name || locationQuery}
-            </h2>
-            <p className="text-gray-500 text-lg mb-8">
-              Nội dung về ẩm thực đang được cập nhật...
-            </p>
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-8 max-w-md mx-auto">
-              <p className="text-orange-600 font-medium">
-                Chức năng sẽ được bổ sung trong phiên bản tiếp theo
+
+            {/* Nội dung */}
+            {loadingFoods ? (
+              <p className="text-center text-gray-500">Đang tải...</p>
+            ) : foods.length === 0 ? (
+              <p className="text-center text-gray-500">
+                Hiện chưa có dữ liệu ẩm thực cho địa điểm này.
               </p>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {foods.map((food) => (
+                  <FoodCard key={food.id} food={food} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

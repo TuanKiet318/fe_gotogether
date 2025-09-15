@@ -29,7 +29,7 @@ const App = () => {
         />
         {/* <Route path="/register" element={<div>Trang Đăng Ký</div>} /> */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/destination/:place" element={<DestinationDetail />} />
+        <Route path="/destination/:id" element={<DestinationDetail />} />
         <Route path="/destination/place/:id" element={<PlaceDetail />} />
         <Route path="/category/:category" element={<SearchCategoryPage />} />
         {/* <Route path="*" element={<div>Trang Khác</div>} /> */}

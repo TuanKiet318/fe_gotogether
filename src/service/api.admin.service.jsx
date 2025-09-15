@@ -6,9 +6,14 @@ const GetAllDestinations = async () => {
   return await axios.get(API);
 };
 
+const searchDestinations = async (keyword, limit = 10) => {
+  const API = `/destinations/search?q=${keyword}&limit=${limit}`;
+  return await axios.get(API);
+};
+
 // Lấy chi tiết destination theo id
 const GetDestinationDetail = async (destinationId) => {
-  const API = `/destinations/dest-quynhon`;
+  const API = `/destinations/${destinationId}`;
   return await axios.get(API);
 };
 
