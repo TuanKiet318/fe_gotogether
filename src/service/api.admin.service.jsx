@@ -1,15 +1,27 @@
 import axios from "./axios.admin.customize";
 
+/* =========================
+ * DESTINATION / PLACE / CATEGORY
+ * ========================= */
+
 // Lấy danh sách destination
 const GetAllDestinations = async () => {
   const API = "/destinations";
   return await axios.get(API);
 };
 
-// Lấy chi tiết destination theo id
+// Lấy chi tiết destination theo id  (FIX: bỏ hardcode, dùng param)
 const GetDestinationDetail = async (destinationId) => {
-  const API = `/destinations/dest-quynhon`;
+  const API = `/destinations/${destinationId}`;
   return await axios.get(API);
+};
+
+// Tìm kiếm destination theo từ khóa (q=?)
+const SearchDestinations = async (keyword) => {
+  const API = "/destinations/search";
+  const params = {};
+  if (keyword) params.q = keyword;
+  return await axios.get(API, { params });
 };
 
 // Lấy categories theo destination
@@ -36,7 +48,7 @@ const GetPlaceDetail = async (placeId) => {
   return await axios.get(API);
 };
 
-// Lấy danh sách place theo destinationId
+// Lấy danh sách place theo destinationId (có phân trang + sort + filter category)
 const GetPlacesByDestination = async (
   destinationId,
   page = 0,
@@ -52,7 +64,7 @@ const GetPlacesByDestination = async (
   return await axios.get(API, { params });
 };
 
-// Lấy danh sách place theo destinationName
+// Lấy danh sách place theo destinationName (có phân trang + sort + filter category)
 const GetPlacesByDestinationName = async (
   destinationName,
   page = 0,
@@ -90,7 +102,7 @@ const SearchPlaces = async ({
     sortDirection,
   };
 
-  // loại bỏ param null hoặc ""
+  // loại bỏ param null/"" để URL sạch
   Object.keys(params).forEach(
     (key) => (params[key] === "" || params[key] == null) && delete params[key]
   );
@@ -105,9 +117,113 @@ const GetAllCategories = async () => {
   return await axios.get(API);
 };
 
+/* =========================
+ * ITINERARY (CREATE/LIST/DETAIL + CRUD ITEM)
+ * ========================= */
+
+// Tạo lịch trình (service backend tự lấy user từ SecurityContext)
+const CreateItinerary = async (payload /* CreateItineraryRequest */) => {
+  const API = "/itineraries";
+  return await axios.post(API, payload);
+};
+
+// Lấy danh sách lịch trình của tôi (ItinerarySummaryResponse[])
+const GetMyItineraries = async () => {
+  const API = "/itineraries";
+  return await axios.get(API);
+};
+
+// Lấy chi tiết 1 lịch trình (ItineraryDetailResponse)
+const GetItineraryDetail = async (itineraryId) => {
+  const API = `/itineraries/${itineraryId}`;
+  return await axios.get(API);
+};
+
+// Cập nhật thông tin lịch trình (title/startDate/endDate)
+const UpdateItinerary = async (itineraryId, data /* { title?, startDate?, endDate? } */) => {
+  const API = `/itineraries/${itineraryId}`;
+  return await axios.put(API, data);
+};
+
+// Xóa lịch trình
+const DeleteItinerary = async (itineraryId) => {
+  const API = `/itineraries/${itineraryId}`;
+  return await axios.delete(API);
+};
+
+// Thêm nhiều item vào lịch trình
+const AddItineraryItems = async (itineraryId, items /* CreateItineraryItemRequest[] */) => {
+  const API = `/itineraries/${itineraryId}/items`;
+  return await axios.post(API, items);
+};
+
+// Cập nhật 1 item trong lịch trình
+const UpdateItineraryItem = async (itineraryId, itemId, data /* UpdateItineraryItemRequest */) => {
+  const API = `/itineraries/${itineraryId}/items/${itemId}`;
+  return await axios.put(API, data);
+};
+
+// Di chuyển (reorder) 1 item sang vị trí khác (dayNumber/orderInDay)
+const MoveItineraryItem = async (itineraryId, itemId, dayNumber, orderInDay) => {
+  const API = `/itineraries/${itineraryId}/items/${itemId}/move`;
+  return await axios.patch(API, { dayNumber, orderInDay });
+};
+
+// Xóa 1 item trong lịch trình
+const DeleteItineraryItem = async (itineraryId, itemId) => {
+  const API = `/itineraries/${itineraryId}/items/${itemId}`;
+  return await axios.delete(API);
+};
+/* =========================
+ * FAVORITES (PLACE)
+ * ========================= */
+
+// Thêm yêu thích (idempotent)
+const AddFavoritePlace = async (placeId) => {
+  const API = `/favorites/places/${placeId}`;
+  return await axios.post(API);
+};
+
+// Bỏ yêu thích (idempotent)
+const RemoveFavoritePlace = async (placeId) => {
+  const API = `/favorites/places/${placeId}`;
+  return await axios.delete(API);
+};
+
+// Danh sách địa điểm tôi đã yêu thích (tóm tắt)
+const GetMyFavoritePlaces = async () => {
+  const API = `/favorites/places/mine`;
+  return await axios.get(API);
+};
+
+// Chỉ danh sách ID các place tôi đã yêu thích
+const GetMyFavoritePlaceIds = async () => {
+  const API = `/favorites/places/mine/ids`;
+  return await axios.get(API);
+};
+
+// Kiểm tra 1 place đã được tôi yêu thích chưa
+const CheckFavoritePlace = async (placeId) => {
+  const API = `/favorites/places/check`;
+  return await axios.get(API, { params: { placeId } });
+};
+
+// Đếm tổng lượt yêu thích của 1 place
+const CountFavoritePlace = async (placeId) => {
+  const API = `/favorites/places/count/${placeId}`;
+  return await axios.get(API);
+};
+
+
+/* =========================
+ * EXPORT
+ * ========================= */
+
 export {
+  // Destination/Place/Category
   GetAllDestinations,
   GetDestinationDetail,
+  SearchDestinations,
   GetCategoriesByDestination,
   GetPlacesByCategory,
   GetFoodsByDestination,
@@ -116,13 +232,22 @@ export {
   GetPlacesByDestinationName,
   SearchPlaces,
   GetAllCategories,
-};
-const SearchDestinations = async (keyword) => {
-  const API = "/destinations/search";
-  const params = {};
-  if (keyword) params.q = keyword;
 
-  return await axios.get(API, { params });
+  // Itinerary
+  CreateItinerary,
+  GetMyItineraries,
+  GetItineraryDetail,
+  UpdateItinerary,
+  DeleteItinerary,
+  AddItineraryItems,
+  UpdateItineraryItem,
+  MoveItineraryItem,
+  DeleteItineraryItem,
+  // Favorites (Place)
+  AddFavoritePlace,
+  RemoveFavoritePlace,
+  GetMyFavoritePlaces,
+  GetMyFavoritePlaceIds,
+  CheckFavoritePlace,
+  CountFavoritePlace,
 };
-
-export { SearchDestinations };

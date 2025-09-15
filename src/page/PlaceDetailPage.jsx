@@ -6,8 +6,6 @@ import Footer from "../components/Footer.jsx";
 import {
   Star,
   MapPin,
-  Globe,
-  Phone,
   Camera,
   ChevronLeft,
   ChevronRight,
@@ -15,9 +13,12 @@ import {
   Share2,
   Navigation,
   Award,
-  ExternalLink,
 } from "lucide-react";
-import { GetPlaceDetail } from "../service/api.admin.service.jsx";
+import {
+  GetPlaceDetail,
+  AddFavoritePlace,
+  RemoveFavoritePlace,
+} from "../service/api.admin.service.jsx";
 
 export default function PlaceDetail() {
   const { id } = useParams();
@@ -25,15 +26,19 @@ export default function PlaceDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
 
-  // Fetch place detail data từ API như code gốc
+  // Like states (giữ UI hiện tại, chỉ gắn API)
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0); // không hiển thị, nhưng dùng để cập nhật chính xác khi toggle
+  const [likeLoading, setLikeLoading] = useState(false);
+
+  // Fetch place detail data
   useEffect(() => {
     const fetchPlace = async () => {
       try {
         setLoading(true);
         const res = await GetPlaceDetail(id);
-        let data = res.data || res; // để chắc chắn lấy đúng body trả về
+        const data = res?.data ?? res;
 
         // Nếu chưa có reviews -> gắn data giả
         if (!data.reviews || data.reviews.length === 0) {
@@ -69,6 +74,10 @@ export default function PlaceDetail() {
         }
 
         setPlace(data);
+
+        // Khởi tạo liked & count từ backend
+        setIsLiked(!!data.favorited);
+        setLikeCount(data.favoriteCount ?? 0);
       } catch (err) {
         setError("Có lỗi xảy ra khi tải dữ liệu");
         console.error("Lỗi load place detail:", err);
@@ -77,10 +86,13 @@ export default function PlaceDetail() {
       }
     };
 
-    if (id) {
-      fetchPlace();
-    }
+    if (id) fetchPlace();
   }, [id]);
+
+  // Reset index khi danh sách ảnh thay đổi
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [place?.images?.length]);
 
   const nextImage = () => {
     if (place?.images?.length) {
@@ -99,9 +111,10 @@ export default function PlaceDetail() {
   };
 
   const renderStars = (rating) => {
+    const safe = Number.isFinite(rating) ? rating : 0;
     const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
+    const fullStars = Math.floor(safe);
+    const hasHalfStar = safe % 1 !== 0;
 
     for (let i = 0; i < fullStars; i++) {
       stars.push(
@@ -118,7 +131,7 @@ export default function PlaceDetail() {
       );
     }
 
-    const emptyStars = 5 - Math.ceil(rating);
+    const emptyStars = 5 - Math.ceil(safe);
     for (let i = 0; i < emptyStars; i++) {
       stars.push(<Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />);
     }
@@ -127,30 +140,74 @@ export default function PlaceDetail() {
   };
 
   const handleShare = async () => {
-    if (navigator.share && place) {
-      try {
+    if (!place) return;
+    try {
+      if (navigator.share) {
         await navigator.share({
           title: place.name,
           text: place.description,
           url: window.location.href,
         });
-      } catch (err) {
-        // Fallback to copying to clipboard
-        navigator.clipboard.writeText(window.location.href);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(window.location.href);
+        alert("Đã sao chép link vào clipboard!");
+      } else {
+        // Fallback cuối
+        const dummy = document.createElement("input");
+        dummy.value = window.location.href;
+        document.body.appendChild(dummy);
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
         alert("Đã sao chép link vào clipboard!");
       }
+    } catch (err) {
+      console.error(err);
+      alert("Không thể chia sẻ liên kết.");
     }
   };
 
   const openInMaps = () => {
-    if (place) {
-      const url =
-        place.lat && place.lng
-          ? `https://www.google.com/maps?q=${place.lat},${place.lng}`
-          : `https://www.google.com/maps?q=${encodeURIComponent(
-              place.address || "Quy Nhon"
-            )}`;
-      window.open(url, "_blank");
+    if (!place) return;
+    const url =
+      place.lat && place.lng
+        ? `https://www.google.com/maps?q=${place.lat},${place.lng}`
+        : `https://www.google.com/maps?q=${encodeURIComponent(
+          place.address || "Quy Nhon"
+        )}`;
+    window.open(url, "_blank");
+  };
+
+  // Toggle favorite (giữ UI hiện tại, thêm gọi API + optimistic update)
+  const toggleFavorite = async () => {
+    if (likeLoading || !place) return;
+    setLikeLoading(true);
+
+    const next = !isLiked;
+
+    // optimistic update
+    setIsLiked(next);
+    setLikeCount((c) => Math.max(0, c + (next ? 1 : -1)));
+
+    try {
+      if (next) {
+        await AddFavoritePlace(place.id);
+      } else {
+        await RemoveFavoritePlace(place.id);
+      }
+    } catch (err) {
+      // rollback khi lỗi
+      setIsLiked(!next);
+      setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
+
+      const status = err?.response?.status;
+      if (status === 401) {
+        alert("Bạn cần đăng nhập để dùng tính năng yêu thích.");
+      } else {
+        alert("Không thể cập nhật yêu thích. Vui lòng thử lại.");
+      }
+    } finally {
+      setLikeLoading(false);
     }
   };
 
@@ -259,9 +316,8 @@ export default function PlaceDetail() {
               <button
                 key={index}
                 onClick={() => setCurrentImageIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                  index === currentImageIndex ? "bg-white w-8" : "bg-white/50"
-                }`}
+                className={`w-2 h-2 rounded-full transition-all duration-200 ${index === currentImageIndex ? "bg-white w-8" : "bg-white/50"
+                  }`}
               />
             ))}
           </div>
@@ -310,14 +366,19 @@ export default function PlaceDetail() {
             {/* Action Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={() => setIsLiked(!isLiked)}
-                className={`p-3 rounded-full transition-all duration-200 ${
-                  isLiked
+                onClick={toggleFavorite}
+                disabled={likeLoading}
+                className={`p-3 rounded-full transition-all duration-200 ${isLiked
                     ? "bg-red-500 text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-red-50"
-                }`}
+                  } disabled:opacity-60 disabled:cursor-not-allowed`}
+                title={isLiked ? "Bỏ yêu thích" : "Yêu thích"}
+                aria-pressed={isLiked}
               >
-                <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
+                <Heart
+                  className="w-5 h-5"
+                  style={isLiked ? { fill: "currentColor" } : undefined}
+                />
               </button>
 
               <button
@@ -500,8 +561,8 @@ export default function PlaceDetail() {
                   place.lat && place.lng
                     ? `https://www.google.com/maps?q=${place.lat},${place.lng}&output=embed&z=15`
                     : `https://www.google.com/maps?q=${encodeURIComponent(
-                        place.address || "Quy Nhon"
-                      )}&output=embed`
+                      place.address || "Quy Nhon"
+                    )}&output=embed`
                 }
                 width="100%"
                 height="100%"
