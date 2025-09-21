@@ -209,10 +209,10 @@ export default function HomePage() {
             </motion.div>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* Popular Destinations */}
-      <section className="py-20 bg-white">
+      <section section className="py-20 bg-white" >
         <div className="container-custom text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
             Điểm đến phổ biến
@@ -235,10 +235,10 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
-      </section>
+      </section >
 
       {/* Testimonials */}
-      <section className="py-20 bg-slate-50">
+      <section section className="py-20 bg-slate-50" >
         <div className="container-custom text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
             Người dùng nói gì?
@@ -272,10 +272,10 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
-      </section>
+      </section >
 
       {/* CTA */}
-      <section className="py-20 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-center">
+      <section section className="py-20 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-center" >
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -297,9 +297,9 @@ export default function HomePage() {
             Bắt đầu miễn phí
           </motion.button>
         </motion.div>
-      </section>
+      </section >
 
       <Footer />
-    </div>
+    </div >
   );
 }

@@ -2,6 +2,8 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
+import { motion, AnimatePresence } from "framer-motion";
+import HeroSection from "../components/HeroSection";
 
 import {
   Star,
@@ -255,78 +257,12 @@ export default function PlaceDetail() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <Header />
-
       {/* Hero Section with Image Gallery */}
-      <div className="relative">
-        <div className="relative h-96 overflow-hidden">
-          {place.images && place.images.length > 0 ? (
-            <>
-              <img
-                src={place.images[currentImageIndex].imageUrl}
-                alt={place.name}
-                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                onError={(e) => {
-                  e.target.src =
-                    "https://via.placeholder.com/800x400/e5e7eb/6b7280?text=No+Image";
-                }}
-              />
-
-              {/* Image Navigation */}
-              {place.images.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-200"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-200"
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </button>
-                </>
-              )}
-
-              {/* Image Counter */}
-              <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                <Camera className="w-4 h-4 inline mr-1" />
-                {currentImageIndex + 1} / {place.images.length}
-              </div>
-            </>
-          ) : (
-            <div className="w-full h-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
-              <div className="text-white text-center">
-                <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p className="text-xl">Chưa có hình ảnh</p>
-              </div>
-            </div>
-          )}
-
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-        </div>
-
-        {/* Image Dots */}
-        {place.images && place.images.length > 1 && (
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
-            {place.images.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentImageIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-200 ${index === currentImageIndex ? "bg-white w-8" : "bg-white/50"
-                  }`}
-              />
-            ))}
-          </div>
-        )}
+      <div className="mb-8 overflow-hidden shadow-lg">
+        <HeroSection place={place} />
       </div>
-
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header Section */}
+      <div className="max-w-4xl mx-auto px-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 -mt-20 relative z-10 backdrop-blur-sm bg-white/95">
           <div className="flex justify-between items-start mb-6">
             <div className="flex-1">
@@ -399,14 +335,10 @@ export default function PlaceDetail() {
 
           {/* Description */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">
+            {/* Additional info */}
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Giới thiệu
             </h2>
-            <p className="text-gray-700 leading-relaxed text-lg">
-              {place.description}
-            </p>
-
-            {/* Additional info */}
             <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
               <p className="text-gray-700 leading-relaxed">
                 {place.category?.name === "Di tích văn hóa"
@@ -416,44 +348,39 @@ export default function PlaceDetail() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Award className="w-8 h-8 text-blue-600" />
-                <div>
-                  <p className="text-sm text-blue-600 font-medium">Đánh giá</p>
-                  <p className="text-xl font-bold text-blue-900">
-                    {place.rating}/5.0
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Highlights Section (fake data) */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Điểm nổi bật
+            </h2>
+            <ul className="list-disc list-inside text-gray-700 space-y-2">
+              {[
+                "View biển tuyệt đẹp, check-in sống ảo",
+                "Hải sản tươi ngon, giá hợp lý",
+                "Nhiều hoạt động ngoài trời: lặn biển, chèo SUP, trekking",
+                "Không khí trong lành, gần gũi thiên nhiên",
+              ].map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          </div>
 
-            <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl">
-              <div className="flex items-center gap-3">
-                <MapPin className="w-8 h-8 text-green-600" />
-                <div>
-                  <p className="text-sm text-green-600 font-medium">Khu vực</p>
-                  <p className="text-xl font-bold text-green-900">
-                    {place.destination?.name || "Bình Định"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Camera className="w-8 h-8 text-purple-600" />
-                <div>
-                  <p className="text-sm text-purple-600 font-medium">
-                    Hình ảnh
-                  </p>
-                  <p className="text-xl font-bold text-purple-900">
-                    {place.images?.length || 0}
-                  </p>
-                </div>
-              </div>
+          {/* Travel Tips Section (fake data) */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Kinh nghiệm du lịch
+            </h2>
+            <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-xl space-y-2">
+              {[
+                "Nên đi vào sáng sớm hoặc chiều muộn để tránh nắng gắt",
+                "Mang theo kem chống nắng, kính râm và mũ",
+                "Chuẩn bị tiền mặt vì một số quán nhỏ không nhận thẻ",
+                "Cuối tuần thường đông, nên đặt phòng/homestay trước",
+              ].map((tip, idx) => (
+                <p key={idx} className="text-sm text-gray-700">
+                  💡 {tip}
+                </p>
+              ))}
             </div>
           </div>
 

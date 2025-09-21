@@ -10,6 +10,7 @@ import DestinationDetail from "./page/DestinationDetailPage";
 import PlaceDetail from "./page/PlaceDetailPage";
 import SearchCategoryPage from "./page/SearchCategoryPage";
 import CreateItineraryPage from "./page/CreateItineraryPage";
+import ItineraryDetailPage from "./page/ItineraryDetailPage";
 // import SupplierDashboard from "./page/SupplierDashboard";
 import { AuthProvider } from "./context/AuthProvider";
 
@@ -30,10 +31,11 @@ const App = () => {
         />
         {/* <Route path="/register" element={<div>Trang Đăng Ký</div>} /> */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/destination/:place" element={<DestinationDetail />} />
+        <Route path="/destination/:id" element={<DestinationDetail />} />
         <Route path="/destination/place/:id" element={<PlaceDetail />} />
         <Route path="/category/:category" element={<SearchCategoryPage />} />
         <Route path="/itineraries/new" element={<CreateItineraryPage />} />
+        <Route path="/itineraries/:id" element={<ItineraryDetailPage />} />
         {/* <Route path="*" element={<div>Trang Khác</div>} /> */}
 
         {/* Route quản lý nhà cung cấp
