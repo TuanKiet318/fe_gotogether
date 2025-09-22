@@ -224,8 +224,6 @@ export default function DestinationDetail() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
-
       {/* Hero Section */}
       <section
         className="relative h-96 bg-cover bg-center bg-no-repeat text-white"
@@ -674,7 +672,6 @@ export default function DestinationDetail() {
       {selectedPlace && (
         <PlaceModal place={selectedPlace} onClose={closeModal} />
       )}
-      <Footer />
     </div>
   );
 }

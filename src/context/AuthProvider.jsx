@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.clear();
       setUser(null);
       setDeviceId(null);
-      navigate("/login");
+      navigate("/");
     }
   };
 

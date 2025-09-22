@@ -24,6 +24,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Maximize2,
+  ExternalLink,
+  CalendarPlus,
 } from "lucide-react";
 
 import {
@@ -308,11 +310,10 @@ export default function PlaceDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50 via-slate-50 to-white">
-      <Header />
 
-      {/* Hero Section */}
-      <div className="relative mb-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Hero Section with Image Gallery */}
+      <div className="mb-8 overflow-hidden shadow-lg">
         <HeroSection place={place} />
       </div>
 
@@ -341,8 +342,19 @@ export default function PlaceDetail() {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3">
+            <button
+              onClick={() => addPlace(place)}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg font-medium 
+             bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-md
+             hover:from-sky-600 hover:to-blue-600 transition-all duration-300 
+             mr-3"
+            >
+              <CalendarPlus className="w-5 h-5" />
+              Thêm vào lịch trình
+            </button>
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+
               <button
                 onClick={toggleFavorite}
                 disabled={likeLoading}
@@ -743,6 +755,7 @@ export default function PlaceDetail() {
 
         <div className="h-12" />
       </div>
+
       {/* Lightbox Modal */}
       {isLightboxOpen && (
         <div
@@ -791,7 +804,7 @@ export default function PlaceDetail() {
           </div>
         </div>
       )}
-      <Footer />
+
     </div>
   );
 }
