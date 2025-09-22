@@ -256,3 +256,14 @@ export {
   CheckFavoritePlace,
   CountFavoritePlace,
 };
+// Lấy thông tin invite theo token
+const GetInviteByToken = async (token) => {
+  return await axios.get(`/itineraries/invites/${token}`);
+};
+
+// Accept/Decline invite
+const HandleInvite = async (token, status) => {
+  return await axios.post(`/itineraries/invites/accept?token=${token}`, { status });
+};
+
+export { GetInviteByToken, HandleInvite };

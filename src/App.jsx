@@ -11,7 +11,7 @@ import PlaceDetail from "./page/PlaceDetailPage";
 import SearchCategoryPage from "./page/SearchCategoryPage";
 import CreateItineraryPage from "./page/CreateItineraryPage";
 import ItineraryDetailPage from "./page/ItineraryDetailPage";
-// import SupplierDashboard from "./page/SupplierDashboard";
+import AcceptInvitePage from "./page/AcceptInvitePage";
 import { AuthProvider } from "./context/AuthProvider";
 
 const App = () => {
@@ -36,6 +36,9 @@ const App = () => {
         <Route path="/category/:category" element={<SearchCategoryPage />} />
         <Route path="/itineraries/new" element={<CreateItineraryPage />} />
         <Route path="/itineraries/:id" element={<ItineraryDetailPage />} />
+
+        {/* Trang Accept Invite */}
+        <Route path="/invite" element={<AcceptInvitePage />} />
         {/* <Route path="*" element={<div>Trang Khác</div>} /> */}
 
         {/* Route quản lý nhà cung cấp
