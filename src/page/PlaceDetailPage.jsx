@@ -18,6 +18,7 @@ import {
   Navigation,
   Award,
   ExternalLink,
+  CalendarPlus,
 } from "lucide-react";
 import { GetPlaceDetail } from "../service/api.admin.service.jsx";
 
@@ -199,7 +200,6 @@ export default function PlaceDetail() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
       {/* Hero Section with Image Gallery */}
       <div className="mb-8 overflow-hidden shadow-lg">
         <HeroSection place={place} />
@@ -241,7 +241,16 @@ export default function PlaceDetail() {
                 </div>
               </div>
             </div>
-
+            <button
+              onClick={() => addPlace(place)}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg font-medium 
+             bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-md
+             hover:from-sky-600 hover:to-blue-600 transition-all duration-300 
+             mr-3"
+            >
+              <CalendarPlus className="w-5 h-5" />
+              Thêm vào lịch trình
+            </button>
             {/* Action Buttons */}
             <div className="flex gap-3">
               <button
@@ -460,7 +469,6 @@ export default function PlaceDetail() {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

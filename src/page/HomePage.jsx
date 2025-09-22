@@ -5,7 +5,7 @@ import Header from "../components/Header.jsx";
 import DestinationCard from "../components/DestinationCard.jsx";
 import { popularDestinations } from "../data/destinations.js";
 import Footer from "../components/Footer.jsx";
-
+import { Link } from "react-router-dom";
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState("search");
 
@@ -53,8 +53,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen background-pattern">
-      <Header setActiveSection={setActiveSection} />
-
       {/* Hero Section */}
       <section className="relative py-20 lg:py-28 bg-gradient-to-r from-sky-500 to-indigo-600 text-white">
         <motion.div
@@ -71,14 +69,16 @@ export default function HomePage() {
             Chỉ với vài bước đơn giản, bạn sẽ có ngay một lịch trình hoàn hảo
             cho kỳ nghỉ sắp tới.
           </p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="btn-primary text-lg px-8 py-4 inline-flex items-center gap-3 group"
-          >
-            Bắt đầu ngay
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </motion.button>
+          <Link to="/trip-planner">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn-primary text-lg px-8 py-4 inline-flex items-center gap-3 group"
+            >
+              Bắt đầu ngay
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+          </Link>
         </motion.div>
       </section>
 
@@ -234,9 +234,6 @@ export default function HomePage() {
           </motion.button>
         </motion.div>
       </section>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }
