@@ -69,7 +69,7 @@ export default function HomePage() {
             Chỉ với vài bước đơn giản, bạn sẽ có ngay một lịch trình hoàn hảo
             cho kỳ nghỉ sắp tới.
           </p>
-          <Link to="/trip-planner">
+          <Link to="/trip-list">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

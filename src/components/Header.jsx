@@ -50,7 +50,7 @@ export default function Header({ setActiveSection }) {
                 Khám Phá
               </Link>
               <Link
-                to="/trip-planner"
+                to="/trip-list"
                 className="relative text-gray-800 font-semibold transition hover:after:w-full"
               >
                 Lịch trình
