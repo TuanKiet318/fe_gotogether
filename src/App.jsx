@@ -5,6 +5,9 @@ import HomePage from "./page/HomePage";
 import DestinationDetail from "./page/DestinationDetailPage";
 import PlaceDetail from "./page/PlaceDetailPage";
 import SearchCategoryPage from "./page/SearchCategoryPage";
+import CreateItineraryPage from "./page/CreateItineraryPage";
+import ItineraryDetailPage from "./page/ItineraryDetailPage";
+import AcceptInvitePage from "./page/AcceptInvitePage";
 import TripPlanner from "./page/TripPlannerPage";
 import TripList from "./page/TripListPage";
 import Itinerary from "./page/Itinerary";
@@ -16,6 +19,11 @@ const App = () => {
   return (
     <AuthProvider>
       <Routes>
+        <Route
+          path="/dashboard"
+          element={<div>Trang Bảng Điều Khiển Người Dùng</div>}
+        />
+        
         {/* Routes dùng layout */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
@@ -25,6 +33,8 @@ const App = () => {
           <Route path="/trip-planner" element={<TripPlanner />} />
           <Route path="/trip-list" element={<TripList />} />
           <Route path="/trips/:id" element={<TripDetail />} />
+          <Route path="/itineraries/new" element={<CreateItineraryPage />} />
+          <Route path="/itineraries/:id" element={<ItineraryDetailPage />} />
         </Route>
       </Routes>
 

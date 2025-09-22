@@ -68,12 +68,12 @@ export default function PlaceCard({ place, index, onHover }) {
           alt={place.name}
           className="w-full h-full object-cover rounded-lg transition-transform duration-500 group-hover:scale-105"
         />
-        <button
+        {/* <button
           className="absolute top-2 right-2 bg-white text-gray-700 px-2 py-1 rounded-md shadow flex items-center gap-1 text-xs hover:bg-gray-100 transition"
           onClick={(e) => e.stopPropagation()}
         >
           <Bookmark className="w-3 h-3" /> Lưu
-        </button>
+        </button> */}
       </div>
     </div>
   );

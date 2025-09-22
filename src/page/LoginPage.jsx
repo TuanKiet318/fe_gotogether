@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { Mail, Lock, Eye, EyeOff, Compass } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../service/api";
 import { AuthContext } from "../context/AuthContext";
@@ -9,6 +9,7 @@ import { AuthContext } from "../context/AuthContext";
 export default function LoginPage() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -39,7 +40,8 @@ export default function LoginPage() {
         isLoading: false,
         autoClose: 1500,
       });
-      navigate("/");
+      const redirectUrl = searchParams.get("redirect") || "/";
+      navigate(redirectUrl, { replace: true });
     } catch (err) {
       const message =
         err?.response?.data?.message ||
@@ -107,11 +109,10 @@ export default function LoginPage() {
                       aria-describedby={
                         errors.email ? "email-error" : undefined
                       }
-                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-3 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${
-                        errors.email
-                          ? "border-rose-300"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
+                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-3 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${errors.email
+                        ? "border-rose-300"
+                        : "border-slate-200 hover:border-slate-300"
+                        }`}
                       {...register("email", {
                         required: "Email là bắt buộc",
                         pattern: {
@@ -158,11 +159,10 @@ export default function LoginPage() {
                       aria-describedby={
                         errors.password ? "password-error" : undefined
                       }
-                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-10 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${
-                        errors.password
-                          ? "border-rose-300"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
+                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-10 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${errors.password
+                        ? "border-rose-300"
+                        : "border-slate-200 hover:border-slate-300"
+                        }`}
                       {...register("password", {
                         required: "Mật khẩu là bắt buộc",
                         minLength: { value: 6, message: "Tối thiểu 6 ký tự" },
