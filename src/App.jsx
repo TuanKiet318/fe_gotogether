@@ -14,16 +14,19 @@ import Itinerary from "./page/Itinerary";
 import { AuthProvider } from "./context/AuthProvider";
 import MainLayout from "./layouts/MainLayout";
 import TripDetail from "./page/TripDetailPage";
+import { Toaster } from "sonner";
+import PrivateRoute from "./routes/PrivateRoute";
 
 const App = () => {
   return (
     <AuthProvider>
+      <Toaster position="top-right" richColors style={{ marginTop: "60px" }} />
       <Routes>
         <Route
           path="/dashboard"
           element={<div>Trang Bảng Điều Khiển Người Dùng</div>}
         />
-        
+
         {/* Routes dùng layout */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
@@ -31,7 +34,14 @@ const App = () => {
           <Route path="/destination/place/:id" element={<PlaceDetail />} />
           <Route path="/category/:category" element={<SearchCategoryPage />} />
           <Route path="/trip-planner" element={<TripPlanner />} />
-          <Route path="/trip-list" element={<TripList />} />
+          <Route
+            path="/trip-list"
+            element={
+              <PrivateRoute>
+                <TripList />
+              </PrivateRoute>
+            }
+          />
           <Route path="/trips/:id" element={<TripDetail />} />
           <Route path="/itineraries/new" element={<CreateItineraryPage />} />
           <Route path="/itineraries/:id" element={<ItineraryDetailPage />} />

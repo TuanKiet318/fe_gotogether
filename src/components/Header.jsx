@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext.jsx";
 import SearchBox from "./SearchBox";
+import { toast } from "sonner";
 
 export default function Header({ setActiveSection }) {
   const [showModal, setShowModal] = useState(false);
@@ -49,12 +50,14 @@ export default function Header({ setActiveSection }) {
               >
                 Khám Phá
               </Link>
-              <Link
-                to="/trip-list"
-                className="relative text-gray-800 font-semibold transition hover:after:w-full"
-              >
-                Lịch trình
-              </Link>
+              {isAuthenticated() && (
+                <Link
+                  to="/trip-list"
+                  className="relative text-gray-800 font-semibold transition hover:after:w-full"
+                >
+                  Lịch trình
+                </Link>
+              )}
             </div>
 
             {/* Desktop search */}
@@ -70,7 +73,16 @@ export default function Header({ setActiveSection }) {
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
                   >
-                    <UserCircle className="w-6 h-6 text-gray-600" />
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt="avatar"
+                        className="w-8 h-8 rounded-full object-cover border"
+                      />
+                    ) : (
+                      <UserCircle className="w-6 h-6 text-gray-600" />
+                    )}
+
                     <ChevronDown className="w-4 h-4 text-gray-600" />
                   </button>
 
@@ -108,6 +120,10 @@ export default function Header({ setActiveSection }) {
                           logout();
                           setIsMenuOpen(false);
                           navigate("/");
+
+                          toast.success("Đăng xuất thành công!", {
+                            duration: 1500,
+                          });
                         }}
                         className="flex items-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 transition"
                       >

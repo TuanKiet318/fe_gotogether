@@ -5,6 +5,7 @@ import { createItinerary } from "../service/tripService";
 import { AuthContext } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function TripPlanner() {
   const [tripName, setTripName] = useState("");
@@ -18,17 +19,17 @@ export default function TripPlanner() {
 
   const validateForm = () => {
     if (!tripName.trim()) {
-      alert("Vui lòng nhập tên kế hoạch chuyến đi");
+      toast.error("Vui lòng nhập tên kế hoạch chuyến đi");
       return false;
     }
 
     if (!startDate || !endDate) {
-      alert("Vui lòng chọn ngày bắt đầu và kết thúc");
+      toast.warning("Vui lòng chọn ngày bắt đầu và kết thúc");
       return false;
     }
 
     if (new Date(startDate) > new Date(endDate)) {
-      alert("Ngày bắt đầu phải trước ngày kết thúc");
+      toast.error("Ngày bắt đầu phải trước ngày kết thúc");
       return false;
     }
 
@@ -50,7 +51,14 @@ export default function TripPlanner() {
 
       const result = await createItinerary(tripData);
 
-      alert("Tạo lịch trình thành công!");
+      toast.success("Tạo lịch trình thành công!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
 
       // Reset form
       setTripName("");

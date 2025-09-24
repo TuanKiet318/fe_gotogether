@@ -14,7 +14,7 @@ import Header from "../components/Header.jsx";
 import DestinationCard from "../components/DestinationCard.jsx";
 import { popularDestinations } from "../data/destinations.js";
 import Footer from "../components/Footer.jsx";
-import { Link } from "react-router-dom";
+
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState("search");
 
@@ -99,7 +99,7 @@ export default function HomePage() {
           <p className="text-lg md:text-xl text-slate-100 mb-8">
             Chỉ vài bước đơn giản, bạn sẽ có lịch trình hoàn hảo cho kỳ nghỉ.
           </p>
-          <Link to="/trip-list">
+          <Link to="/trip-planner">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -209,10 +209,10 @@ export default function HomePage() {
             </motion.div>
           </div>
         </div>
-      </section >
+      </section>
 
       {/* Popular Destinations */}
-      <section section className="py-20 bg-white" >
+      <section section className="py-20 bg-white">
         <div className="container-custom text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
             Điểm đến phổ biến
@@ -235,10 +235,10 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
-      </section >
+      </section>
 
       {/* Testimonials */}
-      <section section className="py-20 bg-slate-50" >
+      <section section className="py-20 bg-slate-50">
         <div className="container-custom text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
             Người dùng nói gì?
@@ -272,10 +272,13 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
-      </section >
+      </section>
 
       {/* CTA */}
-      <section section className="py-20 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-center" >
+      <section
+        section
+        className="py-20 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-center"
+      >
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -297,10 +300,7 @@ export default function HomePage() {
             Bắt đầu miễn phí
           </motion.button>
         </motion.div>
-
-
       </section>
     </div>
-
   );
 }

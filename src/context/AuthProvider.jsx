@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { APILogout } from "../service/api.auth.service";
 import { AuthContext } from "./AuthContext";
+import { APIGetMe } from "../service/api.user.service";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -17,12 +18,13 @@ export const AuthProvider = ({ children }) => {
       try {
         const decoded = jwtDecode(token);
         if (decoded.exp * 1000 > Date.now()) {
-          setUser({
-            id: decoded.id,
-            username: decoded.sub,
-            roles: decoded.authorities,
-          });
           setDeviceId(storedDeviceId);
+          // ✅ gọi API để lấy thông tin user đầy đủ
+          APIGetMe()
+            .then((res) => {
+              setUser(res.data.data); // UserResponse có avatar, name, email...
+            })
+            .catch(() => logout());
         } else {
           logout();
         }
@@ -36,14 +38,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
     localStorage.setItem("deviceId", deviceId);
 
-    const decoded = jwtDecode(token);
-    setUser({
-      id: decoded.id,
-      username: decoded.sub,
-      roles: decoded.authorities,
-    });
     setDeviceId(deviceId);
-    navigate("/");
+
+    APIGetMe()
+      .then((res) => {
+        console.log("Me API:", res.data);
+        setUser(res.data.data);
+      })
+      .catch(() => logout());
   };
 
   const logout = async () => {
@@ -55,7 +57,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.clear();
       setUser(null);
       setDeviceId(null);
-      navigate("/");
+      navigate("/"); // optional
     }
   };
 

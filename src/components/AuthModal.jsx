@@ -31,12 +31,6 @@ export default function AuthModal({ isOpen, onClose }) {
     }, 250);
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  };
-
   if (!showModal) return null;
 
   return (
@@ -44,7 +38,6 @@ export default function AuthModal({ isOpen, onClose }) {
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-250 ease-out ${
         isAnimating ? "bg-black/50 backdrop-blur-sm" : "bg-black/0"
       }`}
-      onClick={handleBackdropClick}
     >
       <div
         className={`relative w-full max-w-md bg-white rounded-2xl shadow-2xl transition-all duration-250 ease-out transform ${

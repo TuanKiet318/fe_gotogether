@@ -109,10 +109,11 @@ export default function LoginPage() {
                       aria-describedby={
                         errors.email ? "email-error" : undefined
                       }
-                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-3 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${errors.email
-                        ? "border-rose-300"
-                        : "border-slate-200 hover:border-slate-300"
-                        }`}
+                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-3 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${
+                        errors.email
+                          ? "border-rose-300"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
                       {...register("email", {
                         required: "Email là bắt buộc",
                         pattern: {
@@ -159,10 +160,11 @@ export default function LoginPage() {
                       aria-describedby={
                         errors.password ? "password-error" : undefined
                       }
-                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-10 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${errors.password
-                        ? "border-rose-300"
-                        : "border-slate-200 hover:border-slate-300"
-                        }`}
+                      className={`w-full rounded-xl border bg-white/80 pl-10 pr-10 py-3 text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:ring-4 focus:ring-indigo-200 focus:border-indigo-300 ${
+                        errors.password
+                          ? "border-rose-300"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
                       {...register("password", {
                         required: "Mật khẩu là bắt buộc",
                         minLength: { value: 6, message: "Tối thiểu 6 ký tự" },

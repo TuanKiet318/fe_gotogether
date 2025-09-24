@@ -86,15 +86,6 @@ export default function TripPlannerDrawer({ isOpen, onClose }) {
         {selectedId && (
           <>
             <div>
-              <label className="text-sm font-medium">Tên lịch trình</label>
-              <input
-                className="w-full border rounded p-2"
-                value={itinerary?.title || ""}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div>
               <label className="text-sm font-medium">Ngày bắt đầu</label>
               <input
                 type="date"

@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner"; // ✅ dùng sonner
 import { useNavigate } from "react-router-dom";
 import API from "../service/api";
 import { AuthContext } from "../context/AuthContext";
@@ -18,7 +18,6 @@ export default function LoginForm({ switchToRegister, onClose }) {
   } = useForm({ mode: "onTouched" });
 
   const onSubmit = handleSubmit(async (payload) => {
-    const toastId = toast.loading("Đang đăng nhập...");
     try {
       let deviceId = localStorage.getItem("deviceId");
       if (!deviceId) {
@@ -26,36 +25,31 @@ export default function LoginForm({ switchToRegister, onClose }) {
         localStorage.setItem("deviceId", deviceId);
       }
 
-      const res = await API.post("/auth/login", payload, {
-        headers: { "X-Device-Id": deviceId },
-        withCredentials: true,
-      });
-
-      const accessToken = res?.data?.data?.accessToken;
-      if (!accessToken) throw new Error("Không nhận được access token.");
-
-      login(accessToken, deviceId);
-
-      toast.update(toastId, {
-        render: "Đăng nhập thành công!",
-        type: "success",
-        isLoading: false,
-        autoClose: 1500,
-      });
-
-      onClose(); // đóng modal
-      navigate("/"); // chuyển trang
+      // ✅ toast.promise sẽ tự động hiển thị loading / success / error
+      await toast.promise(
+        API.post("/auth/login", payload, {
+          headers: { "X-Device-Id": deviceId },
+          withCredentials: true,
+        }),
+        {
+          loading: "Đang đăng nhập...",
+          success: (res) => {
+            const accessToken = res?.data?.data?.accessToken;
+            if (!accessToken) throw new Error("Không nhận được access token.");
+            login(accessToken, deviceId);
+            onClose(); // đóng modal sau khi login thành công
+            return "Đăng nhập thành công!";
+          },
+          error: (err) =>
+            err?.response?.data?.message ||
+            (err?.message === "Network Error"
+              ? "Không thể kết nối đến server."
+              : err?.message || "Đăng nhập thất bại."),
+        }
+      );
     } catch (err) {
-      toast.update(toastId, {
-        render:
-          err?.response?.data?.message ||
-          (err?.message === "Network Error"
-            ? "Không thể kết nối đến server."
-            : err?.message || "Đăng nhập thất bại."),
-        type: "error",
-        isLoading: false,
-        autoClose: 2000,
-      });
+      // ❌ lỗi ngoài (không nằm trong API call)
+      toast.error("Đã xảy ra lỗi không mong muốn.");
     }
   });
 
