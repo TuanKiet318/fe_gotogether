@@ -151,7 +151,7 @@ export default function SearchBox() {
                       {suggestion.name}
                     </div>
                     <div className="text-sm text-slate-600 truncate">
-                      {suggestion.description}
+                      {suggestion.country}
                     </div>
                   </div>
                 </div>

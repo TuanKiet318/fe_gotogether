@@ -222,6 +222,12 @@ export default function DestinationDetail() {
     "Mẹo du lịch",
   ];
 
+  const tabBackgrounds = {
+    "gioi-thieu": "/imgs/bg-intro.jpg",
+    "am-thuc": "/imgs/bg-food.jpg",
+    "dia-diem": "/imgs/bg-place.jpg",
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -250,41 +256,44 @@ export default function DestinationDetail() {
       </section>
 
       {/* Main Navigation */}
-      <div className="container mx-auto px-4 py-6 border-b border-gray-200 bg-white sticky top-0 z-40 shadow-sm">
-        <div className="flex justify-center items-center gap-12 scrollbar-hide">
-          {[
-            {
-              id: "gioi-thieu",
-              label: "Giới thiệu",
-              icon: InformationCircleIcon,
-            },
-            { id: "am-thuc", label: "Ẩm thực", icon: FireIcon },
-            { id: "dia-diem", label: "Địa điểm", icon: MapIcon },
-          ].map((tab) => {
-            const IconComponent = tab.icon;
-            const isActive = activeMainTab === tab.id;
+      <div className="bg-white/90 backdrop-blur-md sticky top-0 z-40 shadow-lg">
+        <div className="container mx-auto px-4">
+          {/* Tabs wrapper */}
+          <div className="w-fit mx-auto flex items-center gap-12 border-b border-gray-200 pt-5 pb-3 mt-1 ">
+            {[
+              { id: "gioi-thieu", label: "Giới thiệu" },
+              { id: "am-thuc", label: "Ẩm thực" },
+              { id: "dia-diem", label: "Địa điểm" },
+            ].map((tab) => {
+              const isActive = activeMainTab === tab.id;
 
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleMainTabSelect(tab.id)}
-                className={`relative flex items-center gap-3 whitespace-nowrap pb-4 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer group
-                  ${
-                    isActive
-                      ? "text-blue-600 font-semibold"
-                      : "text-gray-600 hover:text-blue-500"
-                  }
-                `}
-              >
-                {tab.label}
-                <span
-                  className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
-                    ${isActive ? "w-full opacity-100" : "w-0 opacity-0"}
-                  `}
-                />
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleMainTabSelect(tab.id)}
+                  className={`relative pb-3 text-lg font-semibold transition-all duration-300
+              ${
+                isActive
+                  ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
+                  : "text-gray-600 hover:text-blue-500"
+              }
+            `}
+                >
+                  {tab.label}
+                  {/* underline effect */}
+                  <span
+                    className={`absolute left-1/2 -translate-x-1/2 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md transition-all duration-500
+                ${
+                  isActive
+                    ? "w-full opacity-100"
+                    : "w-0 opacity-0 group-hover:w-1/2"
+                }
+              `}
+                  />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

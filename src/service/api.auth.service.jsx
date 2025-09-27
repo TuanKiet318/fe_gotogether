@@ -13,13 +13,8 @@ export const VerifyToken = async () => {
 };
 
 export const APIVerifyOtp = (userId, otp) =>
-  API.post("/auth/verify-otp", null, {
-    params: { userId, otp },
-  });
+  API.post("/auth/verify-otp", { userId, otp });
 
 export const apiRegister = (payload) => API.post("/auth/register", payload);
 
-export const apiSendOtp = (userId, email) =>
-  API.post("/auth/send-otp", null, {
-    params: { userId, email },
-  });
+export const apiSendOtp = (email) => API.post("/auth/send-otp", { email });

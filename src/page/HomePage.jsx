@@ -85,33 +85,71 @@ export default function HomePage() {
   return (
     <div className="min-h-screen background-pattern">
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-28 bg-gradient-to-r from-sky-500 to-indigo-600 text-white">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="max-w-3xl mx-auto"
-        >
-          <h1 className="text-5xl font-bold mb-6 leading-tight">
-            Lên kế hoạch du lịch <br />
-            <span className="text-yellow-300">dễ dàng & thông minh</span>
-          </h1>
-          <p className="text-lg md:text-xl text-slate-100 mb-8">
-            Chỉ vài bước đơn giản, bạn sẽ có lịch trình hoàn hảo cho kỳ nghỉ.
-          </p>
-          <Link to="/trip-planner">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn-primary text-lg px-8 py-4 inline-flex items-center gap-3 group"
-            >
-              Bắt đầu ngay
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </motion.button>
-          </Link>
-        </motion.div>
-      </section>
+      <section className="relative bg-gradient-to-r from-indigo-700 via-sky-600 to-sky-500 py-24 lg:py-32 text-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 items-center gap-16">
+          {/* Left Content */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="relative z-10"
+          >
+            <h1 className="text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+              Khám phá thế giới <br />
+              <span className="text-yellow-300">dễ dàng & thông minh</span>
+            </h1>
+            <p className="text-lg md:text-xl text-slate-100 mb-10 max-w-lg">
+              Lên kế hoạch hành trình nhanh chóng, gợi ý thông minh, tối ưu trải
+              nghiệm du lịch.
+            </p>
+            <Link to="/trip-planner">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold text-lg px-8 py-4 rounded-full inline-flex items-center gap-3 shadow-xl"
+              >
+                Bắt đầu ngay
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
+            </Link>
+          </motion.div>
 
+          {/* Right Illustration */}
+          <motion.div
+            initial={{ opacity: 0, x: 60 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1 }}
+            className="relative flex justify-center items-center"
+          >
+            {/* Circle gradient background */}
+            <div className="absolute w-[28rem] h-[28rem] bg-gradient-to-tr from-yellow-200/70 to-pink-200/60 rounded-full -z-10 blur-2xl"></div>
+
+            {/* Main travel image */}
+            <img
+              src="/imgs/travelvietnam.jpg"
+              alt="Travel"
+              className="w-80 h-80 object-cover rounded-full shadow-2xl border-8 border-white"
+            />
+
+            {/* Floating small images/icons */}
+            <img
+              src="/icons/lotus.png"
+              alt="Plane"
+              className="absolute top-10 -left-6 w-16 h-16 rounded-full shadow-lg bg-white p-1"
+            />
+            <img
+              src="/icons/vietnam-flag.png"
+              alt="Beach"
+              className="absolute bottom-12 -right-8 w-20 h-20 rounded-full shadow-lg bg-white p-2"
+            />
+            <img
+              src="/icons/woman.png"
+              alt="Map"
+              className="absolute -bottom-6 left-14 w-14 h-14 rounded-full shadow-md bg-white p-1"
+            />
+          </motion.div>
+        </div>
+      </section>
       {/* Features */}
       <section className="py-20 bg-white">
         <div className="container-custom grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
@@ -136,81 +174,6 @@ export default function HomePage() {
           })}
         </div>
       </section>
-
-      {/* Itineraries List */}
-      <section className="py-20 bg-slate-50">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              Lịch trình gợi ý
-            </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
-              Xem các lịch trình mẫu để lấy cảm hứng cho chuyến đi của bạn.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {itineraries.map((itinerary, idx) => (
-              <motion.div
-                key={itinerary.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                whileHover={{ scale: 1.05 }}
-                className="bg-white rounded-2xl shadow p-6 flex flex-col justify-between hover:shadow-lg"
-              >
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">
-                    {itinerary.title}
-                  </h3>
-                  <p className="text-slate-600 text-sm mb-2">
-                    📅 {itinerary.startDate} → {itinerary.endDate}
-                  </p>
-                  <p className="text-slate-600 text-sm">
-                    📌 {itinerary.items} hoạt động
-                  </p>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="mt-6 btn-primary w-full"
-                >
-                  Xem chi tiết
-                </motion.button>
-              </motion.div>
-            ))}
-
-            {/* Card tạo lịch trình mới */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: itineraries.length * 0.1 }}
-              whileHover={{ scale: 1.05 }}
-              className="bg-white rounded-2xl shadow p-6 flex flex-col items-center justify-center text-center hover:shadow-lg"
-            >
-              <Plus className="w-10 h-10 text-orange-500 mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Tạo lịch trình mới
-              </h3>
-              <p className="text-slate-600 text-sm mb-4">
-                Lên kế hoạch cho chuyến đi của riêng bạn.
-              </p>
-              <Link to="/itineraries/new" className="btn-primary w-full">
-                Bắt đầu
-              </Link>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* Popular Destinations */}
       <section section className="py-20 bg-white">
         <div className="container-custom text-center mb-12">

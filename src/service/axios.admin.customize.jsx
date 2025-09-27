@@ -91,7 +91,7 @@ instance.interceptors.response.use(
 // ✅ Redirect nếu refresh token hết hạn
 function redirectToLogin() {
   localStorage.removeItem("token");
-  window.location.href = "/login";
+  window.location.href = "/";
 }
 
 export default instance;

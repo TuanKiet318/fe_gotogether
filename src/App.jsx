@@ -16,6 +16,7 @@ import MainLayout from "./layouts/MainLayout";
 import TripDetail from "./page/TripDetailPage";
 import { Toaster } from "sonner";
 import PrivateRoute from "./routes/PrivateRoute";
+import FoodDetail from "./page/FoodDetailPage";
 
 const App = () => {
   return (
@@ -34,6 +35,7 @@ const App = () => {
           <Route path="/destination/place/:id" element={<PlaceDetail />} />
           <Route path="/category/:category" element={<SearchCategoryPage />} />
           <Route path="/trip-planner" element={<TripPlanner />} />
+          <Route path="/foods/:id" element={<FoodDetail />} />
           <Route
             path="/trip-list"
             element={

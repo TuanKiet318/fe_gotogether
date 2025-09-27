@@ -2,16 +2,19 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
+import OtpForm from "./OtpForm";
 
 export default function AuthModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("login");
   const [isAnimating, setIsAnimating] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  // ✅ user tạm sau khi đăng ký, để chuyển qua OTP
+  const [pendingUser, setPendingUser] = useState(null);
+
   useEffect(() => {
     if (isOpen) {
       setShowModal(true);
-      // Use requestAnimationFrame for smoother animation
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setIsAnimating(true);
@@ -27,6 +30,7 @@ export default function AuthModal({ isOpen, onClose }) {
     setIsAnimating(false);
     setTimeout(() => {
       setShowModal(false);
+      setPendingUser(null); // reset flow
       onClose();
     }, 250);
   };
@@ -56,53 +60,49 @@ export default function AuthModal({ isOpen, onClose }) {
 
         {/* Content */}
         <div className="p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
-              {activeTab === "login"
-                ? "Chào mừng trở lại!"
-                : "Tạo tài khoản mới"}
-            </h2>
-            <p className="text-center text-gray-600 text-sm">
-              {activeTab === "login"
-                ? "Đăng nhập để tiếp tục hành trình của bạn"
-                : "Tham gia cộng đồng du lịch của chúng tôi"}
-            </p>
-          </div>
+          {!pendingUser ? (
+            <>
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
+                  {activeTab === "login"
+                    ? "Chào mừng trở lại!"
+                    : "Tạo tài khoản mới"}
+                </h2>
+                <p className="text-center text-gray-600 text-sm">
+                  {activeTab === "login"
+                    ? "Đăng nhập để tiếp tục hành trình của bạn"
+                    : "Tham gia cộng đồng du lịch của chúng tôi"}
+                </p>
+              </div>
 
-          {/* Form Container with slide animation */}
-          <div className="relative overflow-hidden">
-            <div
-              className={`transition-all duration-200 ease-in-out ${
-                activeTab === "login"
-                  ? "transform translate-x-0 opacity-100"
-                  : "transform -translate-x-full opacity-0 absolute inset-0"
-              }`}
-            >
-              <LoginForm
-                switchToRegister={() => setActiveTab("register")}
-                onClose={handleClose}
-              />
-            </div>
+              {/* Form Container */}
+              <div className="relative overflow-hidden">
+                {activeTab === "login" && (
+                  <LoginForm
+                    switchToRegister={() => setActiveTab("register")}
+                    onClose={handleClose}
+                  />
+                )}
 
-            <div
-              className={`transition-all duration-200 ease-in-out ${
-                activeTab === "register"
-                  ? "transform translate-x-0 opacity-100"
-                  : "transform translate-x-full opacity-0 absolute inset-0"
-              }`}
-            >
-              <RegisterForm switchToLogin={() => setActiveTab("login")} />
-            </div>
-          </div>
+                {activeTab === "register" && (
+                  <RegisterForm
+                    switchToLogin={() => setActiveTab("login")}
+                    onRegisterSuccess={(u) => setPendingUser(u)} // ✅ khi đăng ký thành công
+                  />
+                )}
+              </div>
+            </>
+          ) : (
+            <OtpForm
+              user={pendingUser}
+              onSuccess={() => {
+                setPendingUser(null);
+                setActiveTab("login"); // sau OTP thì chuyển sang login
+              }}
+            />
+          )}
         </div>
       </div>
-
-      {/* Custom CSS for smoother animations */}
-      <style jsx>{`
-        .backdrop-blur-sm {
-          backdrop-filter: blur(4px);
-        }
-      `}</style>
     </div>
   );
 }

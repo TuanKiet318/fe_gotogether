@@ -145,7 +145,10 @@ const GetItineraryDetail = async (itineraryId) => {
 };
 
 // Cập nhật thông tin lịch trình (title/startDate/endDate)
-const UpdateItinerary = async (itineraryId, data /* { title?, startDate?, endDate? } */) => {
+const UpdateItinerary = async (
+  itineraryId,
+  data /* { title?, startDate?, endDate? } */
+) => {
   const API = `/itineraries/${itineraryId}`;
   return await axios.put(API, data);
 };
@@ -157,19 +160,31 @@ const DeleteItinerary = async (itineraryId) => {
 };
 
 // Thêm nhiều item vào lịch trình
-const AddItineraryItems = async (itineraryId, items /* CreateItineraryItemRequest[] */) => {
+const AddItineraryItems = async (
+  itineraryId,
+  items /* CreateItineraryItemRequest[] */
+) => {
   const API = `/itineraries/${itineraryId}/items`;
   return await axios.post(API, items);
 };
 
 // Cập nhật 1 item trong lịch trình
-const UpdateItineraryItem = async (itineraryId, itemId, data /* UpdateItineraryItemRequest */) => {
+const UpdateItineraryItem = async (
+  itineraryId,
+  itemId,
+  data /* UpdateItineraryItemRequest */
+) => {
   const API = `/itineraries/${itineraryId}/items/${itemId}`;
   return await axios.put(API, data);
 };
 
 // Di chuyển (reorder) 1 item sang vị trí khác (dayNumber/orderInDay)
-const MoveItineraryItem = async (itineraryId, itemId, dayNumber, orderInDay) => {
+const MoveItineraryItem = async (
+  itineraryId,
+  itemId,
+  dayNumber,
+  orderInDay
+) => {
   const API = `/itineraries/${itineraryId}/items/${itemId}/move`;
   return await axios.patch(API, { dayNumber, orderInDay });
 };
@@ -219,6 +234,15 @@ const CountFavoritePlace = async (placeId) => {
   return await axios.get(API);
 };
 
+const GetFoodDetail = async (foodId) => {
+  const API = `/foods/${foodId}`;
+  return await axios.get(API);
+};
+
+const GetRestaurantsByFood = async (foodId) => {
+  const API = `/foods/${foodId}/restaurants`;
+  return await axios.get(API);
+};
 
 /* =========================
  * EXPORT
@@ -255,6 +279,8 @@ export {
   GetMyFavoritePlaceIds,
   CheckFavoritePlace,
   CountFavoritePlace,
+  GetFoodDetail,
+  GetRestaurantsByFood,
 };
 // Lấy thông tin invite theo token
 const GetInviteByToken = async (token) => {
@@ -263,7 +289,9 @@ const GetInviteByToken = async (token) => {
 
 // Accept/Decline invite
 const HandleInvite = async (token, status) => {
-  return await axios.post(`/itineraries/invites/accept?token=${token}`, { status });
+  return await axios.post(`/itineraries/invites/accept?token=${token}`, {
+    status,
+  });
 };
 
 export { GetInviteByToken, HandleInvite };

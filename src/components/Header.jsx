@@ -23,96 +23,87 @@ export default function Header({ setActiveSection }) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
         <div className="container-custom">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14">
             {/* Logo */}
-            <div className="flex-shrink-0 flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg flex items-center justify-center">
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-9 h-9 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
                 <MapPin className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-slate-900">
+              <span className="text-xl font-extrabold bg-gradient-to-r from-sky-600 to-indigo-700 bg-clip-text text-transparent group-hover:opacity-90 transition">
                 GoTogether
               </span>
-            </div>
+            </Link>
 
             {/* Navigation */}
-            <div className="hidden md:flex items-center gap-8 ml-8">
-              <Link
-                to="/"
-                className="relative text-gray-800 font-semibold transition hover:after:w-full"
-              >
-                Trang Chủ
-              </Link>
-              <Link
-                to="/"
-                className="relative text-gray-800 font-semibold transition hover:after:w-full"
-              >
-                Khám Phá
-              </Link>
+            <nav className="hidden md:flex items-center gap-8 ml-8">
+              {["Trang Chủ", "Khám Phá"].map((item, i) => (
+                <Link
+                  key={i}
+                  to="/"
+                  className="relative font-semibold text-slate-700 hover:text-sky-600 transition"
+                >
+                  {item}
+                  <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-gradient-to-r from-sky-500 to-indigo-600 transition-all group-hover:w-full"></span>
+                </Link>
+              ))}
               {isAuthenticated() && (
                 <Link
                   to="/trip-list"
-                  className="relative text-gray-800 font-semibold transition hover:after:w-full"
+                  className="relative font-semibold text-slate-700 hover:text-sky-600 transition"
                 >
                   Lịch trình
                 </Link>
               )}
-            </div>
+            </nav>
 
-            {/* Desktop search */}
-            <div className="hidden md:flex w-[500px] ml-auto">
-              <SearchBox />
+            {/* Search */}
+            <div className="hidden md:flex w-[400px] ml-auto">
+              <div className="flex-1">
+                <SearchBox className="rounded-full border border-slate-200 shadow-sm focus-within:border-sky-500 transition" />
+              </div>
             </div>
 
             {/* User Menu */}
-            <div className="flex gap-4 items-center relative">
+            <div className="flex items-center gap-4 ml-6">
               {isAuthenticated() ? (
                 <div className="relative">
                   <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+                    className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-slate-100 transition"
                   >
                     {user?.avatar ? (
                       <img
                         src={user.avatar}
                         alt="avatar"
-                        className="w-8 h-8 rounded-full object-cover border"
+                        className="w-8 h-8 rounded-full object-cover border shadow-sm"
                       />
                     ) : (
-                      <UserCircle className="w-6 h-6 text-gray-600" />
+                      <UserCircle className="w-7 h-7 text-slate-600" />
                     )}
-
-                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                    <ChevronDown className="w-4 h-4 text-slate-600" />
                   </button>
 
                   {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                      <div className="px-4 py-2 text-sm text-gray-700 border-b">
+                    <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                      <div className="px-4 py-2 text-sm text-slate-600 border-b">
                         Xin chào,{" "}
-                        <span className="font-semibold">
+                        <span className="font-semibold text-slate-800">
                           {user?.username || user?.name}
                         </span>
                       </div>
                       <button
-                        onClick={() => {
-                          navigate("/profile");
-                          setIsMenuOpen(false);
-                        }}
-                        className="flex items-center gap-2 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 transition"
+                        onClick={() => navigate("/profile")}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-slate-700 hover:bg-slate-100 transition"
                       >
-                        <UserCircle className="w-4 h-4" />
-                        <span>Thông tin tài khoản</span>
+                        <UserCircle className="w-4 h-4" /> Thông tin tài khoản
                       </button>
                       <button
-                        onClick={() => {
-                          navigate("/booking");
-                          setIsMenuOpen(false);
-                        }}
-                        className="flex items-center gap-2 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 transition"
+                        onClick={() => navigate("/booking")}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-slate-700 hover:bg-slate-100 transition"
                       >
-                        <MapPin className="w-4 h-4" />
-                        <span>Đặt chỗ & Chuyến đi</span>
+                        <MapPin className="w-4 h-4" /> Đặt chỗ & Chuyến đi
                       </button>
                       <div className="border-t my-1"></div>
                       <button
@@ -120,38 +111,33 @@ export default function Header({ setActiveSection }) {
                           logout();
                           setIsMenuOpen(false);
                           navigate("/");
-
                           toast.success("Đăng xuất thành công!", {
                             duration: 1500,
                           });
                         }}
                         className="flex items-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 transition"
                       >
-                        <LogOut className="w-4 h-4" />
-                        <span>Đăng xuất</span>
+                        <LogOut className="w-4 h-4" /> Đăng xuất
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
-                  >
-                    <User className="w-6 h-6 text-gray-600" />
-                    <span className="text-gray-700">Tài khoản</span>
-                    <ChevronDown className="w-4 h-4 text-gray-600" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-medium shadow-md hover:opacity-90 transition"
+                >
+                  <User className="w-5 h-5" />
+                  <span>Đăng nhập</span>
+                </button>
               )}
             </div>
 
-            {/* Mobile menu button */}
-            <div className="md:hidden">
+            {/* Mobile menu */}
+            <div className="md:hidden ml-2">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
               >
                 {isMenuOpen ? (
                   <X className="w-6 h-6" />
@@ -162,9 +148,9 @@ export default function Header({ setActiveSection }) {
             </div>
           </div>
 
-          {/* Mobile search bar */}
+          {/* Mobile Search */}
           <div className="md:hidden pb-4">
-            <SearchBox />
+            <SearchBox className="rounded-full border border-slate-200 shadow-sm focus-within:border-sky-500" />
           </div>
         </div>
       </header>
