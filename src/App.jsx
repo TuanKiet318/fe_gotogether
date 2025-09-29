@@ -17,6 +17,7 @@ import TripDetail from "./page/TripDetailPage";
 import { Toaster } from "sonner";
 import PrivateRoute from "./routes/PrivateRoute";
 import FoodDetail from "./page/FoodDetailPage";
+import AcceptInvite from "./page/AcceptInvitePage";
 
 const App = () => {
   return (
@@ -44,6 +45,7 @@ const App = () => {
               </PrivateRoute>
             }
           />
+          <Route path="/invite" element={<AcceptInvite />} />
           <Route path="/trips/:id" element={<TripDetail />} />
           <Route path="/itineraries/new" element={<CreateItineraryPage />} />
           <Route path="/itineraries/:id" element={<ItineraryDetailPage />} />

@@ -1,69 +1,97 @@
-// src/services/tripService.js
+// src/services/tripItemService.js
 import instance from "./axios.admin.customize";
 
 /**
- * Tạo mới một chuyến đi
+ * Lấy danh sách item của itinerary
+ * @param {string} itineraryId
+ * @param {number} dayNumber - optional, lọc theo ngày
  */
-export const createItinerary = async (tripData) => {
+export const listItems = async (itineraryId, dayNumber) => {
   try {
-    return await instance.post("/itineraries", {
-      title: tripData.title,
-      startDate: tripData.startDate,
-      endDate: tripData.endDate,
-      items: tripData.items || [],
-    });
+    const params = dayNumber !== undefined ? { dayNumber } : {};
+    const res = await instance.get(`/itineraries/${itineraryId}/items`, { params });
+    return res.data;
   } catch (error) {
-    console.error("Error in createItinerary:", error);
+    console.error("Error in listItems:", error);
+    throw error;
+  }
+};
+/** * Lấy chi tiết một chuyến đi */ export const getItineraryById = async (id) => { try { return await instance.get(`/itineraries/${id}`); } catch (error) { console.error("Error in getItineraryById:", error); throw error; } };
+/** * Lấy danh sách tất cả chuyến đi */ export const getItineraries = async () => { try { return await instance.get("/itineraries"); } catch (error) { console.error("Error in getItineraries:", error); throw error; } };
+
+/**
+ * Tạo item mới
+ * itemData: { placeId, dayNumber?, orderInDay?, startTime?, endTime?, description?, estimatedCost?, transportMode? }
+ */
+export const createItem = async (itineraryId, itemData) => {
+  try {
+    const res = await instance.post(`/itineraries/${itineraryId}/items`, itemData);
+    return res.data;
+  } catch (error) {
+    console.error("Error in createItem:", error);
     throw error;
   }
 };
 
 /**
- * Lấy danh sách tất cả chuyến đi
+ * Cập nhật item
+ * itemData: { dayNumber?, orderInDay?, startTime?, endTime?, description?, estimatedCost?, transportMode? }
  */
-export const getItineraries = async () => {
+export const updateItem = async (itineraryId, itemId, itemData, token) => {
   try {
-    return await instance.get("/itineraries");
+    const res = await instance.patch(
+      `/itineraries/${itineraryId}/items/${itemId}`,
+      itemData,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return res.data;
   } catch (error) {
-    console.error("Error in getItineraries:", error);
+    console.error("Error in updateItem:", error);
+    throw error;
+  }
+};
+
+
+
+/**
+ * Xoá item
+ */
+export const deleteItem = async (itineraryId, itemId) => {
+  try {
+    await instance.delete(`/itineraries/${itineraryId}/items/${itemId}`);
+  } catch (error) {
+    console.error("Error in deleteItem:", error);
     throw error;
   }
 };
 
 /**
- * Lấy chi tiết một chuyến đi
+ * Reorder item trong 1 ngày
+ * req = { dayNumber: number, itemIdsInOrder: string[] }
  */
-export const getItineraryById = async (id) => {
+export const reorderInDay = async (itineraryId, req) => {
   try {
-    return await instance.get(`/itineraries/${id}`);
+    await instance.post(`/itineraries/${itineraryId}/items/reorder`, req);
   } catch (error) {
-    console.error("Error in getItineraryById:", error);
+    console.error("Error in reorderInDay:", error);
     throw error;
   }
 };
 
 /**
- * Cập nhật thông tin chuyến đi
+ * Import nhiều địa điểm vào itinerary
+ * req = { defaultDay?, appendMode?, preventDuplicatesInDay?, items: [{placeId, dayNumber?, startTime?, ...}] }
  */
-export const updateItinerary = async (id, updateData) => {
+export const importPlaces = async (itineraryId, req) => {
   try {
-    return await instance.put(`/itineraries/${id}`, updateData);
+    const res = await instance.post(`/itineraries/${itineraryId}/items/import`, req);
+    return res.data;
   } catch (error) {
-    console.error("Error in updateItinerary:", error);
+    console.error("Error in importPlaces:", error);
     throw error;
   }
 };
-
-/**
- * Xóa một chuyến đi
- */
-export const deleteItinerary = async (id) => {
-  try {
-    return await instance.delete(`/itineraries/${id}`);
-  } catch (error) {
-    console.error("Error in deleteItinerary:", error);
-    throw error;
-  }
-};
-
-export const getAllItineraries = getItineraries;
+/** * Tạo mới một chuyến đi */ export const createItinerary = async (tripData) => { try { return await instance.post("/itineraries", { title: tripData.title, startDate: tripData.startDate, endDate: tripData.endDate, items: tripData.items || [], invites: tripData.invites || [], }); } catch (error) { console.error("Error in createItinerary:", error); throw error; } };
+export const getAllItineraries = getItineraries; // ====== CREATE: thêm 1 địa điểm (item) vào lịch trình ====== @PostMapping @ResponseStatus(HttpStatus.CREATED) public ItineraryItemDto createItem(@PathVariable String itineraryId, @Valid @RequestBody CreateItemRequest req) { String userId = currentUserId(); return itineraryService.createItem(userId, itineraryId, req); }

@@ -59,7 +59,7 @@ export default function AcceptInvitePage() {
             );
 
             if (status === "ACCEPTED" && invite?.itineraryId) {
-                setTimeout(() => navigate(`/itineraries/${invite.itineraryId}`), 2000);
+                setTimeout(() => navigate(`/trips/${invite.itineraryId}`), 2000);
             }
         } catch (err) {
             const code = err.response?.status;
