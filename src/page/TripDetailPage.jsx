@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
-  Calendar, Clock, DollarSign, Navigation, MapPin,
-  ArrowLeft, Plus, Edit2, Trash2, Save, X
+  Calendar, Clock, DollarSign, Navigation,
+  ArrowLeft, Edit2, Trash2, Save, X
 } from "lucide-react";
-import { getItineraryById, updateItem, createItem /*, createItem, updateItem, deleteItem */ } from "../service/tripService";
+import { toast } from "sonner";
+import {
+  getItineraryById,
+  updateItem,
+  createItem,
+  deleteItem
+} from "../service/tripService";
 import { GetMyFavoritePlaces } from "../service/api.admin.service";
 
-
 export default function TripDetailPage() {
-  const { id } = useParams(); // /trip/:id
+  const { id } = useParams();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
@@ -22,23 +27,32 @@ export default function TripDetailPage() {
     endTime: "",
     estimatedCost: "",
     transportMode: "",
-    dayNumber: 1
+    dayNumber: 1,
   });
 
+  const [favorites, setFavorites] = useState([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
 
   const fmtDate = (d) =>
-    new Date(d).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    new Date(d).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
 
   const trimSec = (t) => (t ? String(t).slice(0, 5) : "");
   const vnd = (n) =>
     n === null || n === undefined || n === ""
       ? ""
-      : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(+n);
+      : new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+      }).format(+n);
 
-  // Helper nhóm items theo ngày
   const groupItemsByDay = (items) => {
     const grouped = {};
-    items.forEach(item => {
+    items.forEach((item) => {
       const day = item.dayNumber || 1;
       if (!grouped[day]) grouped[day] = [];
       grouped[day].push(item);
@@ -46,6 +60,7 @@ export default function TripDetailPage() {
     return grouped;
   };
 
+  // Load trip detail
   useEffect(() => {
     let mounted = true;
     async function fetchData() {
@@ -53,7 +68,6 @@ export default function TripDetailPage() {
         setLoading(true);
         setErrMsg("");
         const data = await getItineraryById(id);
-        // Kỳ vọng BE trả: { id, title, startDate:"YYYY-MM-DD", endDate:"YYYY-MM-DD", items:[...] }
         const items = Array.isArray(data.items)
           ? data.items.map((it, idx) => ({
             id: it.id ?? idx,
@@ -62,7 +76,7 @@ export default function TripDetailPage() {
             endTime: trimSec(it.endTime),
             estimatedCost: it.estimatedCost ?? "",
             transportMode: it.transportMode ?? "",
-            dayNumber: it.dayNumber ?? 1
+            dayNumber: it.dayNumber ?? 1,
           }))
           : [];
 
@@ -72,7 +86,7 @@ export default function TripDetailPage() {
             title: data.title,
             startDate: fmtDate(data.startDate),
             endDate: fmtDate(data.endDate),
-            itemsByDay: groupItemsByDay(items)
+            itemsByDay: groupItemsByDay(items),
           });
         }
       } catch (e) {
@@ -83,9 +97,12 @@ export default function TripDetailPage() {
       }
     }
     if (id) fetchData();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [id]);
-  // load favorites
+
+  // Load favorites
   useEffect(() => {
     async function fetchFavorites() {
       try {
@@ -100,6 +117,7 @@ export default function TripDetailPage() {
     }
     fetchFavorites();
   }, []);
+
   const resetForm = () => {
     setFormData({
       description: "",
@@ -107,19 +125,40 @@ export default function TripDetailPage() {
       endTime: "",
       estimatedCost: "",
       transportMode: "",
-      dayNumber: 1
+      dayNumber: 1,
     });
   };
 
+  const refreshTrip = async () => {
+    const updatedTrip = await getItineraryById(trip.id);
+    const items = Array.isArray(updatedTrip.items)
+      ? updatedTrip.items.map((it, idx) => ({
+        id: it.id ?? idx,
+        description: it.description ?? "",
+        startTime: trimSec(it.startTime),
+        endTime: trimSec(it.endTime),
+        estimatedCost: it.estimatedCost ?? "",
+        transportMode: it.transportMode ?? "",
+        dayNumber: it.dayNumber ?? 1,
+      }))
+      : [];
+
+    setTrip({
+      id: updatedTrip.id,
+      title: updatedTrip.title,
+      startDate: fmtDate(updatedTrip.startDate),
+      endDate: fmtDate(updatedTrip.endDate),
+      itemsByDay: groupItemsByDay(items),
+    });
+  };
 
   const handleAddItem = async () => {
     if (!formData.description || !formData.startTime || !formData.endTime) {
-      alert("Vui lòng điền đầy đủ thông tin bắt buộc!");
+      toast.warning("Vui lòng điền đầy đủ thông tin bắt buộc!");
       return;
     }
 
     try {
-      // Gửi request tạo item
       await createItem(trip.id, {
         ...formData,
         estimatedCost: formData.estimatedCost
@@ -127,19 +166,15 @@ export default function TripDetailPage() {
           : undefined,
       });
 
-      // ✅ Sau khi thêm thành công → gọi lại API itinerary
-      const res = await axios.get(`/api/itineraries/${trip.id}`);
-      setTrip(res.data); // refresh lại toàn bộ chuyến đi
-
+      await refreshTrip();
       resetForm();
       setIsAddingItem(false);
+      toast.success("Thêm hoạt động thành công!");
     } catch (err) {
       console.error("Lỗi khi thêm item:", err);
-      alert("Thêm thất bại!");
+      toast.error("Thêm hoạt động thất bại!");
     }
   };
-
-
 
   const handleEditItem = (item) => {
     setEditingItemId(item.id);
@@ -149,74 +184,72 @@ export default function TripDetailPage() {
       endTime: item.endTime,
       estimatedCost: item.estimatedCost || "",
       transportMode: item.transportMode || "",
-      dayNumber: item.dayNumber || 1
+      dayNumber: item.dayNumber || 1,
     });
   };
 
   const handleUpdateItem = async () => {
     if (!formData.description || !formData.startTime || !formData.endTime) {
-      alert("Vui lòng điền đầy đủ thông tin bắt buộc!");
+      toast.warning("Vui lòng điền đầy đủ thông tin bắt buộc!");
       return;
     }
 
     try {
-      // Gọi API để lưu thay đổi trên backend
       await updateItem(trip.id, editingItemId, {
         dayNumber: formData.dayNumber,
         startTime: formData.startTime,
         endTime: formData.endTime,
         description: formData.description,
-        estimatedCost: formData.estimatedCost ? +formData.estimatedCost : undefined,
-        transportMode: formData.transportMode || undefined
+        estimatedCost: formData.estimatedCost
+          ? +formData.estimatedCost
+          : undefined,
+        transportMode: formData.transportMode || undefined,
       });
 
-      // Cập nhật state frontend
-      setTrip(prev => {
-        const grouped = { ...prev.itemsByDay };
-        // Xóa item cũ
-        Object.keys(grouped).forEach(day => {
-          grouped[day] = grouped[day].filter(i => i.id !== editingItemId);
-        });
-        // Thêm item mới vào ngày hiện tại
-        const day = formData.dayNumber;
-        if (!grouped[day]) grouped[day] = [];
-        grouped[day].push({ ...formData, id: editingItemId });
-        return { ...prev, itemsByDay: grouped };
-      });
-
+      await refreshTrip();
       resetForm();
       setEditingItemId(null);
+      toast.success("Cập nhật hoạt động thành công!");
     } catch (error) {
       console.error(error);
-      alert("Cập nhật hoạt động thất bại!");
+      toast.error("Cập nhật hoạt động thất bại!");
     }
   };
 
-  // favorites
-  const [favorites, setFavorites] = useState([]);
-  const [loadingFavorites, setLoadingFavorites] = useState(true);
-
-  // Khi chọn từ favorites
-  const handleAddFromFavorite = (fav) => {
-    setIsAddingItem(true);
-    setFormData({
-      ...formData,
-      placeId: fav.id,
-      description: fav.name,
-      transportMode: "",
-      estimatedCost: "",
-    });
-  };
-
-  const handleDeleteItem = (itemId) => {
-    if (!confirm("Bạn có chắc muốn xóa hoạt động này?")) return;
-    setTrip(prev => {
-      const grouped = { ...prev.itemsByDay };
-      Object.keys(grouped).forEach(day => {
-        grouped[day] = grouped[day].filter(i => i.id !== itemId);
-      });
-      return { ...prev, itemsByDay: grouped };
-    });
+  const handleDeleteItem = async (itemId) => {
+    toast(
+      (t) => (
+        <div>
+          <p>Bạn có chắc muốn xoá mục này?</p>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={async () => {
+                try {
+                  await deleteItem(trip.id, itemId);
+                  await refreshTrip();
+                  toast.dismiss(t);
+                  toast.success("Xóa hoạt động thành công!");
+                } catch (err) {
+                  console.error("Lỗi khi xoá item:", err);
+                  toast.dismiss(t);
+                  toast.error("Xóa hoạt động thất bại!");
+                }
+              }}
+              className="px-3 py-1 bg-red-600 text-white rounded"
+            >
+              Xóa
+            </button>
+            <button
+              onClick={() => toast.dismiss(t)}
+              className="px-3 py-1 bg-gray-200 text-gray-700 rounded"
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 5000 }
+    );
   };
 
   const handleCancelEdit = () => {
@@ -230,7 +263,9 @@ export default function TripDetailPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Đang tải chi tiết lịch trình...</p>
+          <p className="text-gray-600 text-lg">
+            Đang tải chi tiết lịch trình...
+          </p>
         </div>
       </div>
     );
@@ -264,11 +299,13 @@ export default function TripDetailPage() {
           <h1 className="text-4xl font-bold mb-4">{trip.title}</h1>
           <div className="flex items-center gap-2 text-blue-100">
             <Calendar className="w-5 h-5" />
-            <span className="text-lg">{trip.startDate} → {trip.endDate}</span>
+            <span className="text-lg">
+              {trip.startDate} → {trip.endDate}
+            </span>
           </div>
         </div>
 
-        {/* Add/Edit Form */}
+        {/* Form thêm/sửa */}
         {(isAddingItem || editingItemId) && (
           <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-200 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -383,7 +420,9 @@ export default function TripDetailPage() {
 
         {/* Favorite Places */}
         <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-yellow-200 mb-8">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Địa điểm yêu thích</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">
+            Địa điểm yêu thích
+          </h3>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
             {favorites.map((fav) => (
               <div
@@ -391,12 +430,23 @@ export default function TripDetailPage() {
                 className="p-4 bg-yellow-50 rounded-xl shadow hover:shadow-md transition-all border border-yellow-100"
               >
                 <h4 className="font-semibold text-gray-800 mb-2">{fav.name}</h4>
-                <p className="text-sm text-gray-600 mb-1">Phương tiện: {fav.transport}</p>
+                <p className="text-sm text-gray-600 mb-1">
+                  Phương tiện: {fav.transport}
+                </p>
                 <p className="text-sm text-gray-600 mb-3">
                   Chi phí gợi ý: {vnd(fav.defaultCost)}
                 </p>
                 <button
-                  onClick={() => handleAddFromFavorite(fav)}
+                  onClick={() =>
+                    setIsAddingItem(true) ||
+                    setFormData({
+                      ...formData,
+                      placeId: fav.id,
+                      description: fav.name,
+                      transportMode: "",
+                      estimatedCost: "",
+                    })
+                  }
                   className="w-full px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:shadow-lg transition-all"
                 >
                   + Thêm vào lịch trình
@@ -407,23 +457,14 @@ export default function TripDetailPage() {
         </div>
 
         {/* Activities by Day */}
-        {Object.keys(trip.itemsByDay).sort((a, b) => a - b).map(day => (
-          <div key={day} className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Ngày {day}</h2>
-            <div className="space-y-4">
-              {trip.itemsByDay[day].map((item, index) => (
-                <div key={item.id}>
-                  {editingItemId === item.id ? (
-                    // Form chỉnh sửa
-                    <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Chỉnh sửa hoạt động</h3>
-                      <div className="space-y-4">
-                        {/* Form edit giống form thêm, bỏ lặp code tương tự */}
-                        {/* Bạn có thể copy lại form thêm ở trên và thay handleAddItem -> handleUpdateItem */}
-                      </div>
-                    </div>
-                  ) : (
-                    // Hiển thị item
+        {Object.keys(trip.itemsByDay)
+          .sort((a, b) => a - b)
+          .map((day) => (
+            <div key={day} className="mb-8">
+              <h2 className="text-2xl font-bold mb-4">Ngày {day}</h2>
+              <div className="space-y-4">
+                {trip.itemsByDay[day].map((item, index) => (
+                  <div key={item.id}>
                     <div className="group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-purple-200">
                       <div className="absolute -left-3 top-6 w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
                         {index + 1}
@@ -454,8 +495,12 @@ export default function TripDetailPage() {
                               <Clock className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500 font-medium">Thời gian</p>
-                              <p className="text-sm font-semibold text-gray-800">{item.startTime} - {item.endTime}</p>
+                              <p className="text-xs text-gray-500 font-medium">
+                                Thời gian
+                              </p>
+                              <p className="text-sm font-semibold text-gray-800">
+                                {item.startTime} - {item.endTime}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3 bg-green-50 rounded-xl p-3">
@@ -463,8 +508,14 @@ export default function TripDetailPage() {
                               <DollarSign className="w-5 h-5 text-green-600" />
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500 font-medium">Chi phí ước tính</p>
-                              <p className="text-sm font-semibold text-gray-800">{item.estimatedCost ? vnd(item.estimatedCost) : "Chưa xác định"}</p>
+                              <p className="text-xs text-gray-500 font-medium">
+                                Chi phí ước tính
+                              </p>
+                              <p className="text-sm font-semibold text-gray-800">
+                                {item.estimatedCost
+                                  ? vnd(item.estimatedCost)
+                                  : "Chưa xác định"}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3 bg-purple-50 rounded-xl p-3 md:col-span-2">
@@ -472,20 +523,22 @@ export default function TripDetailPage() {
                               <Navigation className="w-5 h-5 text-purple-600" />
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500 font-medium">Phương tiện di chuyển</p>
-                              <p className="text-sm font-semibold text-gray-800">{item.transportMode || "Chưa xác định"}</p>
+                              <p className="text-xs text-gray-500 font-medium">
+                                Phương tiện di chuyển
+                              </p>
+                              <p className="text-sm font-semibold text-gray-800">
+                                {item.transportMode || "Chưa xác định"}
+                              </p>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-
+          ))}
       </div>
     </div>
   );

@@ -10,7 +10,9 @@ import {
   GetDestinationDetail,
   GetPlacesByCategory,
   GetFoodsByDestination,
+  GetItinerariesByDestination,
 } from "../service/api.admin.service.jsx";
+import ItineraryCard from "../components/ItineraryCard.jsx";
 import {
   HomeIcon,
   FireIcon,
@@ -49,9 +51,11 @@ const infoIcons = {
 };
 
 export default function DestinationDetail() {
+  const [itineraries, setItineraries] = useState([]);
+  const [loadingItineraries, setLoadingItineraries] = useState(false);
   const { category } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const locationQuery = searchParams.get("q") || "Quy Nhơn";
   const { id } = useParams();
   const [selectedPlace, setSelectedPlace] = useState(null);
@@ -61,7 +65,8 @@ export default function DestinationDetail() {
   const [destinationDetail, setDestinationDetail] = useState(null);
 
   // State cho main navigation
-  const [activeMainTab, setActiveMainTab] = useState("gioi-thieu");
+  const defaultTab = searchParams.get("tab") || "gioi-thieu";
+  const [activeMainTab, setActiveMainTab] = useState(defaultTab);
 
   // State cho places theo category
   const [categoryPlaces, setCategoryPlaces] = useState([]);
@@ -74,6 +79,30 @@ export default function DestinationDetail() {
 
   const openModal = (place) => setSelectedPlace(place);
   const closeModal = () => setSelectedPlace(null);
+
+  useEffect(() => {
+    const fetchItineraries = async () => {
+      if (activeMainTab !== "lich-trinh") return;
+      if (!id) return;
+
+      try {
+        setLoadingItineraries(true);
+        const res = await GetItinerariesByDestination(id, 0, 5); // lấy 5 lịch trình đầu
+        if (res?.content) {
+          setItineraries(res.content);
+        } else {
+          setItineraries([]);
+        }
+      } catch (err) {
+        console.error("Fetch itineraries error:", err);
+        setItineraries([]);
+      } finally {
+        setLoadingItineraries(false);
+      }
+    };
+
+    fetchItineraries();
+  }, [activeMainTab, id]);
 
   // Sync selectedCategory khi URL thay đổi
   useEffect(() => {
@@ -181,9 +210,14 @@ export default function DestinationDetail() {
     fetchPlacesByCategory();
   }, [selectedCategory, activeMainTab]);
 
+  useEffect(() => {
+    const currentTab = searchParams.get("tab") || "gioi-thieu";
+    setActiveMainTab(currentTab);
+  }, [searchParams]);
   // Hàm xử lý chọn main tab
   const handleMainTabSelect = (tabId) => {
     setActiveMainTab(tabId);
+    setSearchParams({ tab: tabId });
     if (tabId === "dia-diem") {
       setSelectedCategory("");
     }
@@ -253,17 +287,20 @@ export default function DestinationDetail() {
             </p>
           </div>
         </div>
-      </section>
 
-      {/* Main Navigation */}
-      <div className="bg-white/90 backdrop-blur-md sticky top-0 z-40 shadow-lg">
-        <div className="container mx-auto px-4">
-          {/* Tabs wrapper */}
-          <div className="w-fit mx-auto flex items-center gap-12 border-b border-gray-200 pt-5 pb-3 mt-1 ">
+        {/* Main Navigation - overlay bottom hero */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-50">
+          <div
+            className="flex items-center gap-6 px-8 py-4 
+               bg-white/80 backdrop-blur-xl shadow-2xl 
+               rounded-full border border-gray-200 
+               relative overflow-hidden"
+          >
             {[
               { id: "gioi-thieu", label: "Giới thiệu" },
               { id: "am-thuc", label: "Ẩm thực" },
               { id: "dia-diem", label: "Địa điểm" },
+              { id: "lich-trinh", label: "Lịch trình" },
             ].map((tab) => {
               const isActive = activeMainTab === tab.id;
 
@@ -271,31 +308,35 @@ export default function DestinationDetail() {
                 <button
                   key={tab.id}
                   onClick={() => handleMainTabSelect(tab.id)}
-                  className={`relative pb-3 text-lg font-semibold transition-all duration-300
-              ${
-                isActive
-                  ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
-                  : "text-gray-600 hover:text-blue-500"
-              }
-            `}
+                  className={`relative px-4 py-2 text-lg font-semibold transition-all duration-500
+            ${isActive
+                      ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
+                      : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
+                    }`}
                 >
                   {tab.label}
-                  {/* underline effect */}
+                  {/* underline glow */}
                   <span
-                    className={`absolute left-1/2 -translate-x-1/2 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md transition-all duration-500
-                ${
-                  isActive
-                    ? "w-full opacity-100"
-                    : "w-0 opacity-0 group-hover:w-1/2"
-                }
-              `}
+                    className={`absolute left-1/2 -translate-x-1/2 -bottom-1 h-[3px] rounded-full 
+                        bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md 
+                        transition-all duration-500
+              ${isActive ? "w-3/4 opacity-100" : "w-0 opacity-0"}`}
                   />
                 </button>
               );
             })}
+            {/* Nút tạo lịch trình */}
+            <button
+              onClick={() => navigate("/trip-planner")}
+              className="ml-4 px-5 py-2 text-white font-semibold rounded-full 
+             bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md 
+             hover:from-indigo-600 hover:to-purple-600 transition-all"
+            >
+              + Lịch trình mới
+            </button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Content based on active main tab */}
       <section className="container mx-auto px-6 py-12">
@@ -398,21 +439,19 @@ export default function DestinationDetail() {
                     <button
                       onClick={() => handleCategorySelect("")}
                       className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                    ${
-                      !selectedCategory
-                        ? "text-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-blue-500"
-                    }
+                    ${!selectedCategory
+                          ? "text-blue-600 font-semibold"
+                          : "text-gray-600 hover:text-blue-500"
+                        }
                   `}
                     >
                       Nổi bật
                       <span
                         className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
-                      ${
-                        !selectedCategory
-                          ? "w-full opacity-100"
-                          : "w-0 opacity-0"
-                      }
+                      ${!selectedCategory
+                            ? "w-full opacity-100"
+                            : "w-0 opacity-0"
+                          }
                     `}
                       />
                     </button>
@@ -426,11 +465,10 @@ export default function DestinationDetail() {
                           key={cat.id}
                           onClick={() => handleCategorySelect(cat.id)}
                           className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                        ${
-                          isActive
-                            ? "text-blue-600 font-semibold"
-                            : "text-gray-600 hover:text-blue-500"
-                        }
+                        ${isActive
+                              ? "text-blue-600 font-semibold"
+                              : "text-gray-600 hover:text-blue-500"
+                            }
                       `}
                         >
                           {cat.name}
@@ -447,15 +485,13 @@ export default function DestinationDetail() {
 
                 {/* Places Content */}
                 <div
-                  className={`grid gap-8 transition-all duration-500 ease-in-out ${
-                    isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
-                  }`}
+                  className={`grid gap-8 transition-all duration-500 ease-in-out ${isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
+                    }`}
                 >
                   {/* Left: Places List */}
                   <div
-                    className={`space-y-10 ${
-                      isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
-                    }`}
+                    className={`space-y-10 ${isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
+                      }`}
                   >
                     <AnimatePresence mode="wait">
                       {/* Khi có category được chọn */}
@@ -646,7 +682,6 @@ export default function DestinationDetail() {
                               />
                             </svg>
                           </button>
-
                           <div className="h-[620px] w-full">
                             <LocationMap
                               locations={getMapLocations()}
@@ -659,6 +694,41 @@ export default function DestinationDetail() {
                   )}
                 </div>
               </>
+            </motion.div>
+          )}
+
+          {activeMainTab === "lich-trinh" && (
+            <motion.div
+              key="lich-trinh"
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="max-w-4xl mx-auto space-y-8">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Lịch trình tại {destinationDetail?.name}
+                  </h2>
+                </div>
+
+                {loadingItineraries ? (
+                  <p className="text-center text-gray-500">
+                    Đang tải lịch trình...
+                  </p>
+                ) : itineraries.length === 0 ? (
+                  <p className="text-center text-gray-500">
+                    Chưa có lịch trình nào cho điểm đến này.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {itineraries.map((itinerary) => (
+                      <ItineraryCard key={itinerary.id} itinerary={itinerary} />
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
 

@@ -89,7 +89,6 @@ export default function AcceptInvitePage() {
 
     return (
         <>
-            <Header></Header>
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-sky-100 to-indigo-100 px-4">
                 <motion.div
                     initial={{ opacity: 0, y: 40 }}
@@ -138,7 +137,6 @@ export default function AcceptInvitePage() {
                     )}
                 </motion.div>
             </div>
-            <Footer></Footer>
         </>
     );
 }

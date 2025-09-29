@@ -342,7 +342,7 @@ export default function PlaceDetail() {
               </div>
             </div>
 
-            <button
+            {/* <button
               onClick={() => addPlace(place)}
               className="flex items-center gap-2 px-5 py-2 rounded-lg font-medium 
              bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-md
@@ -351,7 +351,7 @@ export default function PlaceDetail() {
             >
               <CalendarPlus className="w-5 h-5" />
               Thêm vào lịch trình
-            </button>
+            </button> */}
             {/* Action Buttons */}
             <div className="flex gap-3">
 

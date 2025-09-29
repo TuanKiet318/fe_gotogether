@@ -1,27 +1,26 @@
 import { Routes, Route } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "sonner";
 import HomePage from "./page/HomePage";
 import DestinationDetail from "./page/DestinationDetailPage";
 import PlaceDetail from "./page/PlaceDetailPage";
 import SearchCategoryPage from "./page/SearchCategoryPage";
 import CreateItineraryPage from "./page/CreateItineraryPage";
 import ItineraryDetailPage from "./page/ItineraryDetailPage";
-import AcceptInvitePage from "./page/AcceptInvitePage";
 import TripPlanner from "./page/TripPlannerPage";
 import TripList from "./page/TripListPage";
 import Itinerary from "./page/Itinerary";
 import { AuthProvider } from "./context/AuthProvider";
 import MainLayout from "./layouts/MainLayout";
 import TripDetail from "./page/TripDetailPage";
-import { Toaster } from "sonner";
 import PrivateRoute from "./routes/PrivateRoute";
 import FoodDetail from "./page/FoodDetailPage";
 import AcceptInvite from "./page/AcceptInvitePage";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 
 const App = () => {
   return (
     <AuthProvider>
+      <ScrollToTop />
       <Toaster position="top-right" richColors style={{ marginTop: "60px" }} />
       <Routes>
         <Route
@@ -51,8 +50,6 @@ const App = () => {
           <Route path="/itineraries/:id" element={<ItineraryDetailPage />} />
         </Route>
       </Routes>
-
-      <ToastContainer position="top-right" autoClose={3000} />
     </AuthProvider>
   );
 };

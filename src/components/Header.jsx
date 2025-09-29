@@ -23,7 +23,7 @@ export default function Header({ setActiveSection }) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300 relative z-[999]">
         <div className="container-custom">
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
