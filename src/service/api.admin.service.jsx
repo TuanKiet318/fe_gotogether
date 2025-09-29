@@ -244,6 +244,16 @@ const GetRestaurantsByFood = async (foodId) => {
   return await axios.get(API);
 };
 
+const GetFeaturedItinerariesByDestination = (destinationId) => {
+  const API = `/itineraries/by-destination/${destinationId}/featured`;
+  return axios.get(API);
+};
+
+const GetItinerariesByDestination = (destinationId, page = 0, size = 10) => {
+  const API = `/itineraries/by-destination/${destinationId}`;
+  return axios.get(API, { params: { page, size } });
+};
+
 /* =========================
  * EXPORT
  * ========================= */
@@ -281,6 +291,8 @@ export {
   CountFavoritePlace,
   GetFoodDetail,
   GetRestaurantsByFood,
+  GetFeaturedItinerariesByDestination,
+  GetItinerariesByDestination,
 };
 // Lấy thông tin invite theo token
 const GetInviteByToken = async (token) => {

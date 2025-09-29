@@ -17,10 +17,12 @@ import TripDetail from "./page/TripDetailPage";
 import { Toaster } from "sonner";
 import PrivateRoute from "./routes/PrivateRoute";
 import FoodDetail from "./page/FoodDetailPage";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 
 const App = () => {
   return (
     <AuthProvider>
+      <ScrollToTop />
       <Toaster position="top-right" richColors style={{ marginTop: "60px" }} />
       <Routes>
         <Route
