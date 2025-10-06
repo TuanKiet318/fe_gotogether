@@ -23,5 +23,5 @@ export const apiForgotPassword = (email) =>
 
 // Lấy thông tin người dùng hiện tại
 export const apiGetMyProfile = () => {
-  return API.get("/users"); // endpoint Spring Boot của bạn
+  return API.get("/users/me"); // endpoint Spring Boot của bạn
 };

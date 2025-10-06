@@ -47,10 +47,10 @@ export default function MyProfile() {
                     <p className="text-gray-500 mt-1">{user.email}</p>
                     <span
                         className={`inline-block mt-2 px-3 py-1 text-sm font-semibold rounded-full ${user.role === "ROLE_ADMIN"
-                                ? "bg-red-100 text-red-700"
-                                : user.role === "ROLE_SUPPLIER"
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : "bg-green-100 text-green-700"
+                            ? "bg-red-100 text-red-700"
+                            : user.role === "ROLE_SUPPLIER"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-green-100 text-green-700"
                             }`}
                     >
                         {user.role ? user.role.replace("ROLE_", "") : "User"}
@@ -112,7 +112,7 @@ export default function MyProfile() {
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-white rounded-xl shadow hover:shadow-lg transition col-span-1 sm:col-span-2">
+                {/* <div className="flex items-center space-x-3 p-4 bg-white rounded-xl shadow hover:shadow-lg transition col-span-1 sm:col-span-2">
                     <Clock className="w-6 h-6 text-gray-500" />
                     <div>
                         <p className="text-gray-500 text-sm">Previous Login</p>
@@ -122,7 +122,7 @@ export default function MyProfile() {
                                 : "-"}
                         </p>
                     </div>
-                </div>
+                </div> */}
             </div>
 
             {/* Footer Action */}
