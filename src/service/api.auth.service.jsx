@@ -18,3 +18,10 @@ export const APIVerifyOtp = (userId, otp) =>
 export const apiRegister = (payload) => API.post("/auth/register", payload);
 
 export const apiSendOtp = (email) => API.post("/auth/send-otp", { email });
+export const apiForgotPassword = (email) =>
+  API.post("/users/forgot-password", { email });
+
+// Lấy thông tin người dùng hiện tại
+export const apiGetMyProfile = () => {
+  return API.get("/users"); // endpoint Spring Boot của bạn
+};

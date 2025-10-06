@@ -110,6 +110,10 @@ export default function PlaceDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+
+  const isRestaurant = place?.category?.id === "cat-restaurant";
+
+
   // Like states
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -256,6 +260,101 @@ export default function PlaceDetail() {
       setLikeLoading(false);
     }
   };
+  const getPlaceInfoByCategory = (categoryId) => {
+    switch (categoryId) {
+      case "cat-restaurant":
+        return {
+          openingHours: {
+            mon: "10:00 – 22:00",
+            tue: "10:00 – 22:00",
+            wed: "10:00 – 22:00",
+            thu: "10:00 – 22:00",
+            fri: "10:00 – 23:00",
+            sat: "10:00 – 23:00",
+            sun: "10:00 – 22:00",
+          },
+          ticket: null,
+        };
+
+      case "cat-beach":
+        return {
+          openingHours: {
+            mon: "Cả ngày",
+            tue: "Cả ngày",
+            wed: "Cả ngày",
+            thu: "Cả ngày",
+            fri: "Cả ngày",
+            sat: "Cả ngày",
+            sun: "Cả ngày",
+          },
+          ticket: null,
+        };
+
+      case "cat-nature":
+        return {
+          openingHours: {
+            mon: "06:00 – 18:00",
+            tue: "06:00 – 18:00",
+            wed: "06:00 – 18:00",
+            thu: "06:00 – 18:00",
+            fri: "06:00 – 18:00",
+            sat: "06:00 – 18:00",
+            sun: "06:00 – 18:00",
+          },
+          ticket: {
+            adult: 30000,
+            child: 15000,
+            student: 20000,
+            note: "Phụ thu hướng dẫn viên nếu đi theo nhóm.",
+          },
+        };
+
+      case "cat-cultural":
+      case "cat-temple":
+        return {
+          openingHours: {
+            mon: "07:30 – 17:30",
+            tue: "07:30 – 17:30",
+            wed: "07:30 – 17:30",
+            thu: "07:30 – 17:30",
+            fri: "07:30 – 17:30",
+            sat: "07:30 – 18:00",
+            sun: "07:30 – 18:00",
+          },
+          ticket: {
+            adult: 40000,
+            child: 20000,
+            student: 25000,
+            note: "Miễn phí thứ Hai đầu tháng.",
+          },
+        };
+
+      case "cat-market":
+        return {
+          openingHours: {
+            mon: "05:30 – 20:00",
+            tue: "05:30 – 20:00",
+            wed: "05:30 – 20:00",
+            thu: "05:30 – 20:00",
+            fri: "05:30 – 21:00",
+            sat: "05:30 – 21:00",
+            sun: "05:30 – 21:00",
+          },
+          ticket: null,
+        };
+
+      default:
+        return {
+          openingHours: null,
+          ticket: null,
+        };
+    }
+  };
+  const placeWithDefaults = {
+    ...place,
+    ...getPlaceInfoByCategory(place?.category?.id),
+  };
+
 
   // Precompute chips
   const infoChips = useMemo(() => {
@@ -396,11 +495,12 @@ export default function PlaceDetail() {
             <SectionTitle icon={Info}>Giới thiệu</SectionTitle>
             <div className="p-5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
               <p className="text-slate-700 leading-relaxed">
-                {place.category?.name === "Di tích văn hóa"
-                  ? "Đây là một di tích văn hóa quan trọng, nơi lưu giữ những giá trị lịch sử và văn hóa quý báu của dân tộc. Địa điểm này không chỉ có ý nghĩa giáo dục mà còn là nơi tham quan hấp dẫn cho du khách."
+                {isRestaurant
+                  ? "Nhà hàng phục vụ các món đặc sản địa phương với không gian thoải mái và view đẹp. Phù hợp gia đình, nhóm bạn và du khách."
                   : "Một điểm đến tuyệt vời để khám phá và trải nghiệm. Nơi đây mang đến cho du khách những khoảnh khắc đáng nhớ và cơ hội tìm hiểu về văn hóa, lịch sử địa phương."}
               </p>
             </div>
+
           </div>
           {/* Inline Gallery under Intro */}
           {galleryImages.length > 0 && (
@@ -441,14 +541,24 @@ export default function PlaceDetail() {
         {/* Highlights & Tips */}
         <div className="grid md:grid-cols-2 gap-6 mt-8">
           <SectionCard className="p-6">
-            <SectionTitle icon={Award}>Điểm nổi bật</SectionTitle>
+            <SectionTitle icon={Award}>
+              {isRestaurant ? "Điểm nổi bật của nhà hàng" : "Điểm nổi bật"}
+            </SectionTitle>
             <ul className="grid gap-3 text-slate-700">
-              {[
-                "View biển tuyệt đẹp, check-in sống ảo",
-                "Hải sản tươi ngon, giá hợp lý",
-                "Nhiều hoạt động ngoài trời: lặn biển, chèo SUP, trekking",
-                "Không khí trong lành, gần gũi thiên nhiên",
-              ].map((item, idx) => (
+              {(isRestaurant
+                ? [
+                  "Hải sản tươi sống theo ngày",
+                  "View biển chuẩn chill",
+                  "Phục vụ nhanh, nhân viên thân thiện",
+                  "Có phòng riêng và không gian gia đình",
+                ]
+                : [
+                  "View đẹp, check-in sống ảo",
+                  "Nhiều hoạt động trải nghiệm",
+                  "Không khí trong lành",
+                  "Gần các điểm du lịch khác",
+                ]
+              ).map((item, idx) => (
                 <li key={idx} className="flex items-start gap-2">
                   <span className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" />
                   <span>{item}</span>
@@ -458,109 +568,116 @@ export default function PlaceDetail() {
           </SectionCard>
 
           <SectionCard className="p-6">
-            <SectionTitle icon={Clock}>Kinh nghiệm du lịch</SectionTitle>
+            <SectionTitle icon={Clock}>
+              {isRestaurant ? "Lưu ý khi đi ăn" : "Kinh nghiệm du lịch"}
+            </SectionTitle>
             <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl space-y-2">
-              {[
-                "Nên đi vào sáng sớm hoặc chiều muộn để tránh nắng gắt",
-                "Mang theo kem chống nắng, kính râm và mũ",
-                "Chuẩn bị tiền mặt vì một số quán nhỏ không nhận thẻ",
-                "Cuối tuần thường đông, nên đặt phòng/homestay trước",
-              ].map((tip, idx) => (
+              {(isRestaurant
+                ? [
+                  "Nên đặt bàn trước vào cuối tuần",
+                  "Giờ cao điểm: 18:00 - 20:00",
+                  "Một số món cần gọi trước (lẩu, hải sản sống)",
+                  "Có nhận thanh toán thẻ và chuyển khoản",
+                ]
+                : [
+                  "Nên đi vào sáng sớm hoặc chiều muộn để tránh nắng",
+                  "Mang theo kem chống nắng, kính râm và mũ",
+                  "Chuẩn bị tiền mặt vì một số chỗ không nhận thẻ",
+                  "Cuối tuần thường đông, nên đặt trước",
+                ]
+              ).map((tip, idx) => (
                 <p key={idx} className="text-sm text-slate-700">💡 {tip}</p>
               ))}
             </div>
           </SectionCard>
+
         </div>
         {/* Operating Hours & Ticket Pricing */}
-        <SectionCard className="p-6 mt-8">
-          <SectionTitle
-            icon={Clock}
-            right={
-              <div className="flex gap-2 items-center text-sm text-slate-500">
-                <Ticket className="w-4 h-4" />
-                <span>Thông tin thiết yếu</span>
-              </div>
-            }
-          >
-            Giờ mở cửa & Giá vé
-          </SectionTitle>
+        {placeWithDefaults.openingHours && (
+          <SectionCard className="p-6 mt-8">
+            <SectionTitle
+              icon={Clock}
+              right={
+                <div className="flex gap-2 items-center text-sm text-slate-500">
+                  <Ticket className="w-4 h-4" />
+                  <span>Thông tin thiết yếu</span>
+                </div>
+              }
+            >
+              Giờ mở cửa
+            </SectionTitle>
 
-          {(() => {
-            const openingHours = place?.openingHours ?? {
-              mon: "08:00 – 17:00",
-              tue: "08:00 – 17:00",
-              wed: "08:00 – 17:00",
-              thu: "08:00 – 17:00",
-              fri: "08:00 – 17:00",
-              sat: "08:00 – 18:00",
-              sun: "08:00 – 18:00",
-            };
-            const ticket = place?.ticket ?? {
-              adult: 40000,
-              child: 20000,
-              student: 25000,
-              note: "Miễn phí tham quan thứ Hai đầu tiên mỗi tháng.",
-            };
-            const rows = [
-              { d: "Thứ 2", v: openingHours.mon },
-              { d: "Thứ 3", v: openingHours.tue },
-              { d: "Thứ 4", v: openingHours.wed },
-              { d: "Thứ 5", v: openingHours.thu },
-              { d: "Thứ 6", v: openingHours.fri },
-              { d: "Thứ 7", v: openingHours.sat },
-              { d: "Chủ nhật", v: openingHours.sun },
-            ];
-            return (
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-600 mb-3">
-                    Giờ mở cửa
-                  </h3>
-                  <div className="grid grid-cols-2 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden">
-                    {rows.map((r, i) => (
-                      <div
-                        key={r.d}
-                        className={`px-4 py-3 ${i % 2 === 0 ? "bg-white" : ""
-                          } border-b border-slate-100 col-span-2 grid grid-cols-2`}
-                      >
-                        <span className="text-slate-600">{r.d}</span>
-                        <span className="text-right font-medium text-slate-900">
-                          {r.v}
-                        </span>
+            {(() => {
+              const openingHours = placeWithDefaults.openingHours;
+              const ticket = placeWithDefaults.ticket;
+              const rows = [
+                { d: "Thứ 2", v: openingHours.mon },
+                { d: "Thứ 3", v: openingHours.tue },
+                { d: "Thứ 4", v: openingHours.wed },
+                { d: "Thứ 5", v: openingHours.thu },
+                { d: "Thứ 6", v: openingHours.fri },
+                { d: "Thứ 7", v: openingHours.sat },
+                { d: "Chủ nhật", v: openingHours.sun },
+              ];
+
+              return (
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-600 mb-3">
+                      Giờ mở cửa
+                    </h3>
+                    <div className="grid grid-cols-2 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden">
+                      {rows.map((r, i) => (
+                        <div
+                          key={r.d}
+                          className={`px-4 py-3 ${i % 2 === 0 ? "bg-white" : ""
+                            } border-b border-slate-100 col-span-2 grid grid-cols-2`}
+                        >
+                          <span className="text-slate-600">{r.d}</span>
+                          <span className="text-right font-medium text-slate-900">
+                            {r.v}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {ticket && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-600 mb-3">
+                        Giá vé tham khảo
+                      </h3>
+                      <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100 rounded-xl p-5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span>Người lớn</span>
+                          <span className="font-semibold">
+                            {ticket.adult.toLocaleString("vi-VN")} đ
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span>Trẻ em</span>
+                          <span className="font-semibold">
+                            {ticket.child.toLocaleString("vi-VN")} đ
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span>Sinh viên</span>
+                          <span className="font-semibold">
+                            {ticket.student.toLocaleString("vi-VN")} đ
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-700 mt-3">
+                          ℹ️ {ticket.note}
+                        </p>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-600 mb-3">
-                    Giá vé tham khảo
-                  </h3>
-                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100 rounded-xl p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span>Người lớn</span>
-                      <span className="font-semibold">
-                        {ticket.adult.toLocaleString("vi-VN")} đ
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span>Trẻ em</span>
-                      <span className="font-semibold">
-                        {ticket.child.toLocaleString("vi-VN")} đ
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span>Sinh viên</span>
-                      <span className="font-semibold">
-                        {ticket.student.toLocaleString("vi-VN")} đ
-                      </span>
-                    </div>
-                    <p className="text-xs text-amber-700 mt-3">ℹ️ {ticket.note}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </SectionCard>
+              );
+            })()}
+          </SectionCard>
+        )}
+
         {/* Food Nearby */}
         <SectionCard className="p-6 mt-8">
           <SectionTitle icon={UtensilsCrossed}>Ăn gì gần đây?</SectionTitle>

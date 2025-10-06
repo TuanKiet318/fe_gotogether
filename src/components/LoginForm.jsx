@@ -1,15 +1,17 @@
 import { useState, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner"; // ✅ dùng sonner
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import API from "../service/api";
 import { AuthContext } from "../context/AuthContext";
+import ForgotPasswordForm from "./ForgotPasswordForm";
 
 export default function LoginForm({ switchToRegister, onClose }) {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const {
     register,
@@ -25,7 +27,6 @@ export default function LoginForm({ switchToRegister, onClose }) {
         localStorage.setItem("deviceId", deviceId);
       }
 
-      // ✅ toast.promise sẽ tự động hiển thị loading / success / error
       await toast.promise(
         API.post("/auth/login", payload, {
           headers: { "X-Device-Id": deviceId },
@@ -37,7 +38,7 @@ export default function LoginForm({ switchToRegister, onClose }) {
             const accessToken = res?.data?.data?.accessToken;
             if (!accessToken) throw new Error("Không nhận được access token.");
             login(accessToken, deviceId);
-            onClose(); // đóng modal sau khi login thành công
+            onClose();
             return "Đăng nhập thành công!";
           },
           error: (err) =>
@@ -48,57 +49,48 @@ export default function LoginForm({ switchToRegister, onClose }) {
         }
       );
     } catch (err) {
-      // ❌ lỗi ngoài (không nằm trong API call)
       toast.error("Đã xảy ra lỗi không mong muốn.");
     }
   });
 
+  if (showForgotPassword) {
+    return <ForgotPasswordForm onClose={() => setShowForgotPassword(false)} />;
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {/* Email */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Email
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="email"
             placeholder="name@example.com"
-            className={`w-full rounded-xl border pl-10 pr-3 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-              errors.email ? "border-rose-400" : "border-gray-200"
-            }`}
+            className={`w-full rounded-xl border pl-10 pr-3 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${errors.email ? "border-rose-400" : "border-gray-200"
+              }`}
             {...register("email", {
               required: "Email là bắt buộc",
-              pattern: {
-                value: /^\S+@\S+$/i,
-                message: "Email không hợp lệ",
-              },
+              pattern: { value: /^\S+@\S+$/i, message: "Email không hợp lệ" },
             })}
           />
         </div>
-        {errors.email && (
-          <p className="text-rose-500 text-sm mt-1">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="text-rose-500 text-sm mt-1">{errors.email.message}</p>}
       </div>
 
+      {/* Password */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Mật khẩu
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className={`w-full rounded-xl border pl-10 pr-10 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-              errors.password ? "border-rose-400" : "border-gray-200"
-            }`}
+            className={`w-full rounded-xl border pl-10 pr-10 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${errors.password ? "border-rose-400" : "border-gray-200"
+              }`}
             {...register("password", {
               required: "Mật khẩu là bắt buộc",
-              minLength: {
-                value: 6,
-                message: "Mật khẩu phải có ít nhất 6 ký tự",
-              },
+              minLength: { value: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
             })}
           />
           <button
@@ -109,13 +101,10 @@ export default function LoginForm({ switchToRegister, onClose }) {
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
         </div>
-        {errors.password && (
-          <p className="text-rose-500 text-sm mt-1">
-            {errors.password.message}
-          </p>
-        )}
+        {errors.password && <p className="text-rose-500 text-sm mt-1">{errors.password.message}</p>}
       </div>
 
+      {/* Submit */}
       <button
         type="submit"
         disabled={isSubmitting}
@@ -124,15 +113,18 @@ export default function LoginForm({ switchToRegister, onClose }) {
         {isSubmitting ? "Đang xử lý..." : "Đăng nhập"}
       </button>
 
+      {/* Forgot Password */}
       <div className="text-center">
         <button
           type="button"
           className="text-sm text-indigo-600 hover:underline"
+          onClick={() => setShowForgotPassword(true)}
         >
           Quên mật khẩu?
         </button>
       </div>
 
+      {/* Switch to Register */}
       <p className="text-center text-sm text-gray-600">
         Chưa có tài khoản?{" "}
         <button

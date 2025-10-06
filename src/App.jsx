@@ -15,6 +15,7 @@ import TripDetail from "./page/TripDetailPage";
 import PrivateRoute from "./routes/PrivateRoute";
 import FoodDetail from "./page/FoodDetailPage";
 import AcceptInvite from "./page/AcceptInvitePage";
+import MyProfile from "./page/MyProfile"; // ✅ import MyProfile page
 import ScrollToTop from "./components/ScrollToTop.jsx";
 
 const App = () => {
@@ -36,6 +37,7 @@ const App = () => {
           <Route path="/category/:category" element={<SearchCategoryPage />} />
           <Route path="/trip-planner" element={<TripPlanner />} />
           <Route path="/foods/:id" element={<FoodDetail />} />
+
           <Route
             path="/trip-list"
             element={
@@ -44,6 +46,17 @@ const App = () => {
               </PrivateRoute>
             }
           />
+
+          {/* ✅ Route MyProfile */}
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <MyProfile />
+              </PrivateRoute>
+            }
+          />
+
           <Route path="/invite" element={<AcceptInvite />} />
           <Route path="/trips/:id" element={<TripDetail />} />
           <Route path="/itineraries/new" element={<CreateItineraryPage />} />

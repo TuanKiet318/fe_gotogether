@@ -12,7 +12,6 @@ export default function FoodDetail() {
   const [loading, setLoading] = useState(true);
   const [loadingRestaurants, setLoadingRestaurants] = useState(true);
 
-  // Lấy chi tiết món ăn
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -27,7 +26,6 @@ export default function FoodDetail() {
     fetchData();
   }, [id]);
 
-  // Lấy danh sách quán ăn có món này
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
@@ -43,51 +41,54 @@ export default function FoodDetail() {
   }, [id]);
 
   if (loading) {
-    return <p className="text-center text-gray-500">Đang tải...</p>;
+    return <p className="text-center text-gray-500 py-10">Đang tải...</p>;
   }
 
   if (!food) {
-    return <p className="text-center text-gray-500">Không tìm thấy món ăn.</p>;
+    return <p className="text-center text-gray-500 py-10">Không tìm thấy món ăn.</p>;
   }
 
   return (
     <div className="w-full">
-      {/* Ảnh chính full width, sát top */}
-      {food.imageUrl && (
-        <img
-          src={food.imageUrl}
-          alt={food.name}
-          className="w-full h-[450px] object-cover"
-        />
-      )}
+      {/* Hero Image */}
+      <div className="relative w-full h-[420px]">
+        {food.imageUrl ? (
+          <img
+            src={food.imageUrl}
+            alt={food.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-300"></div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 text-center text-white">
+          <h1 className="text-4xl font-bold mb-2">{food.name}</h1>
+          <p className="text-sm opacity-90">Đặc sản Quy Nhơn</p>
+        </div>
+      </div>
 
-      <div className="py-8 px-4 max-w-5xl mx-auto">
-        {/* Tiêu đề */}
-        <h1 className="text-4xl font-extrabold text-gray-800 mb-4">
-          {food.name}
-        </h1>
-        <div className="w-24 h-1 bg-gradient-to-r from-orange-400 to-red-500 rounded-full mb-10"></div>
-
-        {/* Nội dung chi tiết */}
-        <div className="prose max-w-none mb-12">
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        {/* Nội dung mô tả */}
+        <div className="mb-12">
           {food.content?.map((block, index) => {
-            if (block.type === "paragraph") {
+            if (block.type === "paragraph" && block.text) {
               return (
                 <p
                   key={index}
-                  className="text-justify leading-relaxed text-gray-700 mb-6"
+                  className="text-justify leading-relaxed text-gray-800 mb-6 text-[17px]"
                 >
                   {block.text}
                 </p>
               );
             }
-            if (block.type === "image") {
+            if (block.type === "image" && block.src) {
               return (
-                <div key={index} className="my-8">
+                <div key={index} className="my-8 flex flex-col items-center">
                   <img
                     src={block.src}
                     alt={block.alt || ""}
-                    className="w-full shadow-md object-cover"
+                    className="w-full rounded-xl shadow-md object-cover"
                   />
                   {block.alt && (
                     <p className="text-sm text-gray-500 text-center mt-2 italic">
@@ -101,7 +102,7 @@ export default function FoodDetail() {
           })}
         </div>
 
-        {/* Danh sách quán ăn có món này */}
+        {/* Danh sách nhà hàng gợi ý */}
         <div>
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
             Quán ăn đề xuất
@@ -115,35 +116,33 @@ export default function FoodDetail() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {restaurants.map((place) => (
-                <div
+                <Link
                   key={place.id}
-                  className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden"
+                  to={`/destination/place/${place.id}`}
+                  className="group block bg-white rounded-xl shadow-md hover:shadow-xl transition overflow-hidden"
                 >
-                  <Link
-                    key={place.id}
-                    to={`/destination/place/${place.id}`}
-                    className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden block"
-                  >
-                    {place.mainImage && (
-                      <img
-                        src={place.mainImage}
-                        alt={place.name}
-                        className="w-full h-40 object-cover"
-                      />
-                    )}
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">
-                        {place.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                        {place.address}
-                      </p>
-                      <p className="text-yellow-500 text-sm mt-2">
-                        ⭐ {place.rating || "Chưa có đánh giá"}
-                      </p>
+                  {place.mainImage ? (
+                    <img
+                      src={place.mainImage}
+                      alt={place.name}
+                      className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-44 bg-gray-200"></div>
+                  )}
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">
+                      {place.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                      {place.address}
+                    </p>
+                    <div className="text-yellow-500 text-sm mt-2 flex items-center gap-1">
+                      <span>⭐</span>{" "}
+                      <span>{place.rating || "Chưa có đánh giá"}</span>
                     </div>
-                  </Link>
-                </div>
+                  </div>
+                </Link>
               ))}
             </div>
           )}
