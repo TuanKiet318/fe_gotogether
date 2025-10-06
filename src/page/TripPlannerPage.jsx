@@ -4,7 +4,8 @@ import { Calendar, Plus, Users, Trash2 } from "lucide-react";
 import { createItinerary } from "../service/tripService";
 import { AuthContext } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
-import InviteCollaboratorModal from "../components/InviteCollaboratorModal"; // <-- NEW
+import InviteCollaboratorModal from "../components/InviteCollaboratorModal";
+import SearchBox from "../components/SearchBox";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -12,14 +13,18 @@ export default function TripPlanner() {
   const [tripName, setTripName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [destinationId, setDestinationId] = useState("");
+  const [destinationName, setDestinationName] = useState("");
+
   const [showModal, setShowModal] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false); // <-- NEW
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
-  const [collaborators, setCollaborators] = useState([]); // <-- NEW
+  const [collaborators, setCollaborators] = useState([]);
+
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
 
+  // Validate form
   const validateForm = () => {
     if (!tripName.trim()) {
       toast.error("Vui lòng nhập tên kế hoạch chuyến đi");
@@ -33,55 +38,65 @@ export default function TripPlanner() {
       toast.error("Ngày bắt đầu phải trước ngày kết thúc");
       return false;
     }
+    if (!destinationId) {
+      toast.error("Vui lòng chọn điểm đến hợp lệ");
+      return false;
+    }
     return true;
   };
 
-  // NEW: thêm cộng tác viên
+  // Thêm cộng tác viên
   const handleAddCollaborator = ({ email, role }) => {
     const e = (email || "").trim().toLowerCase();
     if (!e) return toast.warning("Email không hợp lệ");
-    const exists = collaborators.some(c => c.email.toLowerCase() === e);
+    const exists = collaborators.some((c) => c.email.toLowerCase() === e);
     if (exists) return toast.warning("Email đã có trong danh sách.");
-    setCollaborators(prev => [...prev, { email: e, role }]);
+    setCollaborators((prev) => [...prev, { email: e, role }]);
     toast.success("Đã thêm người đồng hành");
   };
-  // NEW: xóa cộng tác viên
+
   const handleRemoveCollaborator = (email) => {
     setCollaborators((prev) => prev.filter((c) => c.email !== email));
     toast.success("Đã xóa người đồng hành");
   };
 
+  // Tạo lịch trình
+  // Tạo lịch trình
   const handleCreateTrip = async () => {
     if (!validateForm()) return;
     setIsCreatingTrip(true);
+
     try {
       const tripData = {
         title: tripName,
         startDate,
         endDate,
-        items: null,
+        destinationId,
+        items: [],
         ...(collaborators.length > 0 && {
-          invites: collaborators.map(c => ({
+          invites: collaborators.map((c) => ({
             inviteEmail: c.email,
             role: (c.role || "EDITOR").toUpperCase(),
           })),
         }),
       };
 
-      const result = await createItinerary(tripData); // kỳ vọng { id: "..." }
+      // ✅ Gọi API tạo lịch trình
+      const res = await createItinerary(tripData);
 
-      toast.success("Tạo lịch trình thành công!", { position: "top-right", autoClose: 3000 });
+      // API trả về { id: "xxxx" }
+      const itineraryId = res?.id;
+      if (!itineraryId) {
+        throw new Error("Không nhận được ID lịch trình từ server");
+      }
 
-      // Reset form
-      setTripName("");
-      setStartDate("");
-      setEndDate("");
-      setCollaborators([]);
+      toast.success("🎉 Tạo lịch trình thành công!");
 
-      navigate("/trip-list");
+      // ✅ Chuyển hướng sang trang chỉnh sửa
+      navigate(`/itinerary-editor/${itineraryId}`);
     } catch (error) {
       console.error("Error creating trip:", error);
-      alert("Có lỗi xảy ra khi tạo lịch trình. Vui lòng thử lại.");
+      toast.error("❌ Có lỗi xảy ra khi tạo lịch trình. Vui lòng thử lại.");
     } finally {
       setIsCreatingTrip(false);
     }
@@ -156,7 +171,27 @@ export default function TripPlanner() {
             </div>
           </div>
 
-          {/* Collaborators - NEW */}
+          {/* Destination Search */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Điểm đến (bắt buộc)
+            </label>
+            <SearchBox
+              navigateOnSelect={false}
+              onSelect={(dest) => {
+                setDestinationId(dest.id);
+                setDestinationName(dest.name);
+              }}
+              placeholder="Nhập tên điểm đến..."
+            />
+            {destinationName && (
+              <p className="mt-2 text-sm text-gray-600">
+                Đã chọn: <span className="font-medium">{destinationName}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Collaborators */}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row gap-4">
               <button
@@ -208,7 +243,7 @@ export default function TripPlanner() {
             )}
           </div>
 
-          {/* Primary CTA */}
+          {/* CTA */}
           <div className="pt-2">
             <button
               onClick={handleStartPlanning}
@@ -225,16 +260,6 @@ export default function TripPlanner() {
               )}
             </button>
           </div>
-
-          {/* Secondary */}
-          <div className="text-center pt-4">
-            <button
-              className="text-gray-500 hover:text-blue-600 transition-colors duration-200 font-medium"
-              disabled={isCreatingTrip}
-            >
-              Hoặc viết một hướng dẫn mới
-            </button>
-          </div>
         </div>
       </div>
 
@@ -245,7 +270,7 @@ export default function TripPlanner() {
         onAuthSuccess={handleAuthSuccess}
       />
 
-      {/* Invite Collaborator Modal - NEW */}
+      {/* Invite Collaborator Modal */}
       <InviteCollaboratorModal
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}

@@ -11,22 +11,22 @@ const GetAllDestinations = async () => {
 };
 
 const searchDestinations = async (keyword, limit = 10) => {
-  const API = `/destinations/search?q=${keyword}&limit=${limit}`;
-  return await axios.get(API);
+  if (!keyword || keyword.length < 2) return [];
+  try {
+    const res = await API.get(
+      `/destinations/search?q=${encodeURIComponent(keyword)}&limit=${limit}`
+    );
+    return res.data?.data || [];
+  } catch (err) {
+    console.error("searchDestinations failed:", err);
+    return [];
+  }
 };
 
 // Lấy chi tiết destination theo id
 const GetDestinationDetail = async (destinationId) => {
   const API = `/destinations/${destinationId}`;
   return await axios.get(API);
-};
-
-// Tìm kiếm destination theo từ khóa (q=?)
-const SearchDestinations = async (keyword) => {
-  const API = "/destinations/search";
-  const params = {};
-  if (keyword) params.q = keyword;
-  return await axios.get(API, { params });
 };
 
 // Lấy categories theo destination
@@ -59,13 +59,10 @@ const GetPlacesByDestination = async (
   page = 0,
   size = 10,
   sortBy = "name",
-  sortDirection = "asc",
-  categoryId = null
+  sortDirection = "asc"
 ) => {
   const params = { page, size, sortBy, sortDirection };
-  if (categoryId) params.categoryId = categoryId;
-
-  const API = `/places/by-destination/${destinationId}`;
+  const API = `/by-destination/${destinationId}/places`;
   return await axios.get(API, { params });
 };
 
@@ -122,6 +119,10 @@ const GetAllCategories = async () => {
   return await axios.get(API);
 };
 
+const SearchPlacesInDestination = async (destinationId, keyword) => {
+  const API = `/destinations/${destinationId}/places/search`;
+  return await axios.get(API, { params: { q: keyword } });
+};
 /* =========================
  * ITINERARY (CREATE/LIST/DETAIL + CRUD ITEM)
  * ========================= */
@@ -143,6 +144,7 @@ const GetItineraryDetail = async (itineraryId) => {
   const API = `/itineraries/${itineraryId}`;
   return await axios.get(API);
 };
+
 
 // Cập nhật thông tin lịch trình (title/startDate/endDate)
 const UpdateItinerary = async (
@@ -262,7 +264,7 @@ export {
   // Destination/Place/Category
   GetAllDestinations,
   GetDestinationDetail,
-  SearchDestinations,
+  searchDestinations,
   GetCategoriesByDestination,
   GetPlacesByCategory,
   GetFoodsByDestination,
@@ -293,6 +295,7 @@ export {
   GetRestaurantsByFood,
   GetFeaturedItinerariesByDestination,
   GetItinerariesByDestination,
+  SearchPlacesInDestination,
 };
 // Lấy thông tin invite theo token
 const GetInviteByToken = async (token) => {

@@ -4,17 +4,23 @@ import { autocompleteSearch } from "../lib/places.js";
 import { useNavigate } from "react-router-dom";
 import useSearchStore from "../store/searchStore.js";
 
-export default function SearchBox() {
+export default function SearchBox({
+  onSelect, // callback khi chọn
+  navigateOnSelect = true, // bật/tắt navigate (default: true)
+  placeholder = "Bạn muốn đi đâu?",
+  className = "",
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
   const searchRef = useRef(null);
-  const suggestionsRef = useRef(null);
   const debounceRef = useRef(null);
   const navigate = useNavigate();
   const { setQuery } = useSearchStore();
 
+  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -26,6 +32,7 @@ export default function SearchBox() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Gõ input
   const handleSearchInput = (value) => {
     setSearchQuery(value);
 
@@ -50,13 +57,39 @@ export default function SearchBox() {
     }, 300);
   };
 
+  // Xử lý Enter / Arrow
   const handleKeyDown = async (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
+
       if (activeSuggestionIndex >= 0 && suggestions.length > 0) {
+        // Người dùng chọn bằng mũi tên
         selectSuggestion(suggestions[activeSuggestionIndex]);
-      } else {
-        await handleSearch();
+      } else if (searchQuery.trim() !== "") {
+        let matched = null;
+
+        // Nếu đã có suggestions sẵn → lấy cái đầu tiên
+        if (suggestions.length > 0) {
+          matched = suggestions[0];
+        } else {
+          // Nếu chưa có → gọi lại API
+          try {
+            const results = await autocompleteSearch(searchQuery.trim());
+            if (results.length > 0) {
+              matched = results[0];
+            }
+          } catch (error) {
+            console.error("Search failed:", error);
+          }
+        }
+
+        if (matched) {
+          selectSuggestion(matched); // matched luôn có id hợp lệ
+        } else {
+          // fallback: không có gì thì KHÔNG navigate
+          console.warn("Không tìm thấy địa điểm phù hợp");
+          setShowSuggestions(false);
+        }
       }
     } else if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -74,47 +107,26 @@ export default function SearchBox() {
     }
   };
 
-  // 🔥 Sửa: Search theo id (từ API)
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-
-    // Nếu user đã chọn suggestion rồi (có active index)
-    if (activeSuggestionIndex >= 0 && suggestions.length > 0) {
-      selectSuggestion(suggestions[activeSuggestionIndex]);
-      return;
-    }
-
-    try {
-      // Gọi API backend để tìm
-      const response = await fetch(
-        `http://localhost:8080/api/destinations/search?q=${encodeURIComponent(
-          searchQuery.trim()
-        )}&limit=1`
-      );
-      const result = await response.json();
-
-      if (result.data && result.data.length > 0) {
-        const destination = result.data[0];
-        navigate(`/destination/${destination.id}`);
-      } else {
-        alert("Không tìm thấy địa điểm phù hợp!");
-      }
-    } catch (err) {
-      console.error("Search failed:", err);
-    }
-  };
-
+  // Khi chọn 1 suggestion
   const selectSuggestion = (suggestion) => {
     setSearchQuery(suggestion.name);
     setShowSuggestions(false);
     setActiveSuggestionIndex(-1);
     setQuery(suggestion.name);
-    navigate(`/destination/${suggestion.id}`);
+
+    // callback ra ngoài
+    if (onSelect) {
+      onSelect(suggestion);
+    }
+
+    // chỉ navigate khi được bật
+    if (navigateOnSelect) {
+      navigate(`/destination/${suggestion.id}`);
+    }
   };
 
   return (
-    <div className="w-full relative" ref={searchRef}>
-      {/* Ô input */}
+    <div className={`w-full relative ${className}`} ref={searchRef}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
         <input
@@ -122,19 +134,16 @@ export default function SearchBox() {
           value={searchQuery}
           onChange={(e) => handleSearchInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Bạn muốn đi đâu?"
+          placeholder={placeholder}
           className="w-full border border-gray-300 rounded-lg py-2 pl-10 pr-4
            focus:outline-none focus:ring-2 focus:ring-sky-500
            text-sm md:text-base"
         />
       </div>
 
-      {/* Dropdown gợi ý */}
+      {/* Dropdown */}
       {showSuggestions && (
-        <div
-          ref={suggestionsRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto z-50"
-        >
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto z-50">
           {suggestions.length > 0 ? (
             suggestions.map((suggestion, index) => (
               <button

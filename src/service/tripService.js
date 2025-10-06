@@ -1,4 +1,4 @@
-// src/services/tripItemService.js
+// src/service/tripItemService.js
 import instance from "./axios.admin.customize";
 
 /**
@@ -9,15 +9,46 @@ import instance from "./axios.admin.customize";
 export const listItems = async (itineraryId, dayNumber) => {
   try {
     const params = dayNumber !== undefined ? { dayNumber } : {};
-    const res = await instance.get(`/itineraries/${itineraryId}/items`, { params });
+    const res = await instance.get(`/itineraries/${itineraryId}/items`, {
+      params,
+    });
     return res.data;
   } catch (error) {
     console.error("Error in listItems:", error);
     throw error;
   }
 };
-/** * Lấy chi tiết một chuyến đi */ export const getItineraryById = async (id) => { try { return await instance.get(`/itineraries/${id}`); } catch (error) { console.error("Error in getItineraryById:", error); throw error; } };
-/** * Lấy danh sách tất cả chuyến đi */ export const getItineraries = async () => { try { return await instance.get("/itineraries"); } catch (error) { console.error("Error in getItineraries:", error); throw error; } };
+/** * Lấy chi tiết một chuyến đi */
+export const getItineraryById = async (id) => {
+  try {
+    const res = await instance.get(`/itineraries/${id}`);
+    console.log("getItineraryById - full response:", res);
+
+    // body có thể nằm ở res.data (axios) hoặc res trực tiếp
+    const body = res?.data ?? res;
+    // itinerary có thể nằm ở body.data (wrapper) hoặc body (direct)
+    const itinerary = body?.data ?? body;
+
+    if (!itinerary) {
+      console.warn("getItineraryById - no itinerary found in response:", res);
+      return null;
+    }
+    return itinerary;
+  } catch (error) {
+    console.error("Error in getItineraryById:", error);
+    throw error;
+  }
+};
+
+/** * Lấy danh sách tất cả chuyến đi */
+export const getItineraries = async () => {
+  try {
+    return await instance.get("/itineraries");
+  } catch (error) {
+    console.error("Error in getItineraries:", error);
+    throw error;
+  }
+};
 
 /**
  * Tạo item mới
@@ -25,7 +56,10 @@ export const listItems = async (itineraryId, dayNumber) => {
  */
 export const createItem = async (itineraryId, itemData) => {
   try {
-    const res = await instance.post(`/itineraries/${itineraryId}/items`, itemData);
+    const res = await instance.post(
+      `/itineraries/${itineraryId}/items`,
+      itemData
+    );
     return res.data;
   } catch (error) {
     console.error("Error in createItem:", error);
@@ -52,8 +86,6 @@ export const updateItem = async (itineraryId, itemId, itemData, token) => {
     throw error;
   }
 };
-
-
 
 /**
  * Xoá item
@@ -86,12 +118,33 @@ export const reorderInDay = async (itineraryId, req) => {
  */
 export const importPlaces = async (itineraryId, req) => {
   try {
-    const res = await instance.post(`/itineraries/${itineraryId}/items/import`, req);
+    const res = await instance.post(
+      `/itineraries/${itineraryId}/items/import`,
+      req
+    );
     return res.data;
   } catch (error) {
     console.error("Error in importPlaces:", error);
     throw error;
   }
 };
-/** * Tạo mới một chuyến đi */ export const createItinerary = async (tripData) => { try { return await instance.post("/itineraries", { title: tripData.title, startDate: tripData.startDate, endDate: tripData.endDate, items: tripData.items || [], invites: tripData.invites || [], }); } catch (error) { console.error("Error in createItinerary:", error); throw error; } };
+/** * Tạo mới một chuyến đi */
+export const createItinerary = async (tripData) => {
+  try {
+    const payload = {
+      title: tripData.title,
+      startDate: tripData.startDate,
+      endDate: tripData.endDate,
+      destinationId: tripData.destinationId,
+      items: tripData.items || [],
+      invites: tripData.invites || [],
+    };
+    console.log("Payload gửi:", payload);
+    return await instance.post("/itineraries", payload);
+  } catch (error) {
+    console.error("Error in createItinerary:", error.response?.data || error);
+    throw error;
+  }
+};
+
 export const getAllItineraries = getItineraries; // ====== CREATE: thêm 1 địa điểm (item) vào lịch trình ====== @PostMapping @ResponseStatus(HttpStatus.CREATED) public ItineraryItemDto createItem(@PathVariable String itineraryId, @Valid @RequestBody CreateItemRequest req) { String userId = currentUserId(); return itineraryService.createItem(userId, itineraryId, req); }

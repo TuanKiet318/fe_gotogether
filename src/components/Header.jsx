@@ -23,7 +23,7 @@ export default function Header({ setActiveSection }) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300 relative z-[999]">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300 relative z-[61]">
         <div className="container-custom">
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
@@ -61,7 +61,7 @@ export default function Header({ setActiveSection }) {
             {/* Search */}
             <div className="hidden md:flex w-[400px] ml-auto">
               <div className="flex-1">
-                <SearchBox className="rounded-full border border-slate-200 shadow-sm focus-within:border-sky-500 transition" />
+                <SearchBox navigateOnSelect={true} />
               </div>
             </div>
 
