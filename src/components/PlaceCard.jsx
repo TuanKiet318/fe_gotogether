@@ -1,4 +1,4 @@
-import { Star, Quote, Bookmark } from "lucide-react";
+import { Star, Quote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function PlaceCard({ place, index, onHover }) {
@@ -13,22 +13,22 @@ export default function PlaceCard({ place, index, onHover }) {
       onMouseEnter={() => onHover?.(place)}
       onMouseLeave={() => onHover?.(null)}
       onClick={handleClick}
-      className="h-[220px] flex justify-between items-start p-5 border border-gray-100 rounded-2xl shadow hover:shadow-lg transition-shadow duration-300 bg-white mb-5 cursor-pointer group"
+      className="flex flex-col md:flex-row justify-between items-start p-5 border border-gray-100 rounded-2xl shadow hover:shadow-lg transition duration-300 bg-white cursor-pointer group h-full"
     >
       {/* Left content */}
-      <div className="flex-1 pr-5">
+      <div className="flex-1 md:pr-5 w-full">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
           <span className="bg-blue-600 text-white text-sm font-bold rounded-full px-3 py-1">
             {index}
           </span>
-          <h3 className="font-bold text-lg text-gray-800 group-hover:text-blue-600 transition-colors">
+          <h3 className="font-bold text-lg text-gray-800 group-hover:text-blue-600 transition-colors break-words">
             {place.name}
           </h3>
         </div>
 
         {/* Rating */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+        <div className="flex items-center gap-2 text-sm text-gray-600 mb-3 flex-wrap">
           <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
           <span className="font-medium">{place.rating}</span>
           <span className="text-gray-400">({place.reviews}) · Google</span>
@@ -42,7 +42,7 @@ export default function PlaceCard({ place, index, onHover }) {
         )}
 
         {/* Description */}
-        <p className="text-gray-700 text-sm mb-3 line-clamp-4">
+        <p className="text-gray-700 text-sm mb-3 line-clamp-4 break-words">
           {place.description}
         </p>
 
@@ -61,19 +61,13 @@ export default function PlaceCard({ place, index, onHover }) {
         )}
       </div>
 
-      {/* Right image + Save button */}
-      <div className="relative w-40 h-28 flex-shrink-0 rounded-lg overflow-hidden">
+      {/* Right image */}
+      <div className="relative w-full md:w-40 h-40 md:h-28 flex-shrink-0 rounded-lg overflow-hidden mt-4 md:mt-0">
         <img
           src={place.mainImage}
           alt={place.name}
           className="w-full h-full object-cover rounded-lg transition-transform duration-500 group-hover:scale-105"
         />
-        {/* <button
-          className="absolute top-2 right-2 bg-white text-gray-700 px-2 py-1 rounded-md shadow flex items-center gap-1 text-xs hover:bg-gray-100 transition"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Bookmark className="w-3 h-3" /> Lưu
-        </button> */}
       </div>
     </div>
   );

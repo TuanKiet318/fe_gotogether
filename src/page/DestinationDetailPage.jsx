@@ -13,6 +13,7 @@ import {
   GetItinerariesByDestination,
 } from "../service/api.admin.service.jsx";
 import ItineraryCard from "../components/ItineraryCard.jsx";
+import ItineraryDetailPage from "./ItineraryDetailPage";
 import {
   HomeIcon,
   FireIcon,
@@ -27,6 +28,7 @@ import {
   HeartIcon,
   PlayIcon,
 } from "@heroicons/react/24/outline";
+import { ArrowLeft } from "lucide-react";
 import FoodCard from "../components/FoodCard.jsx";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -63,7 +65,7 @@ export default function DestinationDetail() {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(category || "");
   const [destinationDetail, setDestinationDetail] = useState(null);
-
+  const [selectedItinerary, setSelectedItinerary] = useState(null);
   // State cho main navigation
   const defaultTab = searchParams.get("tab") || "gioi-thieu";
   const [activeMainTab, setActiveMainTab] = useState(defaultTab);
@@ -309,10 +311,11 @@ export default function DestinationDetail() {
                   key={tab.id}
                   onClick={() => handleMainTabSelect(tab.id)}
                   className={`relative px-4 py-2 text-lg font-semibold transition-all duration-500
-            ${isActive
-                      ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
-                      : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
-                    }`}
+            ${
+              isActive
+                ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
+                : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
+            }`}
                 >
                   {tab.label}
                   {/* underline glow */}
@@ -439,19 +442,21 @@ export default function DestinationDetail() {
                     <button
                       onClick={() => handleCategorySelect("")}
                       className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                    ${!selectedCategory
-                          ? "text-blue-600 font-semibold"
-                          : "text-gray-600 hover:text-blue-500"
-                        }
+                    ${
+                      !selectedCategory
+                        ? "text-blue-600 font-semibold"
+                        : "text-gray-600 hover:text-blue-500"
+                    }
                   `}
                     >
                       Nổi bật
                       <span
                         className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
-                      ${!selectedCategory
-                            ? "w-full opacity-100"
-                            : "w-0 opacity-0"
-                          }
+                      ${
+                        !selectedCategory
+                          ? "w-full opacity-100"
+                          : "w-0 opacity-0"
+                      }
                     `}
                       />
                     </button>
@@ -465,10 +470,11 @@ export default function DestinationDetail() {
                           key={cat.id}
                           onClick={() => handleCategorySelect(cat.id)}
                           className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                        ${isActive
-                              ? "text-blue-600 font-semibold"
-                              : "text-gray-600 hover:text-blue-500"
-                            }
+                        ${
+                          isActive
+                            ? "text-blue-600 font-semibold"
+                            : "text-gray-600 hover:text-blue-500"
+                        }
                       `}
                         >
                           {cat.name}
@@ -485,13 +491,15 @@ export default function DestinationDetail() {
 
                 {/* Places Content */}
                 <div
-                  className={`grid gap-8 transition-all duration-500 ease-in-out ${isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
-                    }`}
+                  className={`grid gap-8 transition-all duration-500 ease-in-out ${
+                    isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
+                  }`}
                 >
                   {/* Left: Places List */}
                   <div
-                    className={`space-y-10 ${isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
-                      }`}
+                    className={`space-y-10 ${
+                      isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
+                    }`}
                   >
                     <AnimatePresence mode="wait">
                       {/* Khi có category được chọn */}
@@ -705,30 +713,49 @@ export default function DestinationDetail() {
               exit={{ x: -100, opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="max-w-4xl mx-auto space-y-8">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    Lịch trình tại {destinationDetail?.name}
-                  </h2>
+              {selectedItinerary ? (
+                // Hiển thị chi tiết
+                <div className="relative">
+                  <button
+                    onClick={() => setSelectedItinerary(null)}
+                    className="mb-6 flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft size={20} />
+                    <span className="font-medium">Quay lại danh sách</span>
+                  </button>
+                  <ItineraryDetailPage itineraryId={selectedItinerary} />
                 </div>
-
-                {loadingItineraries ? (
-                  <p className="text-center text-gray-500">
-                    Đang tải lịch trình...
-                  </p>
-                ) : itineraries.length === 0 ? (
-                  <p className="text-center text-gray-500">
-                    Chưa có lịch trình nào cho điểm đến này.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {itineraries.map((itinerary) => (
-                      <ItineraryCard key={itinerary.id} itinerary={itinerary} />
-                    ))}
+              ) : (
+                // Hiển thị danh sách
+                <div className="max-w-4xl mx-auto space-y-8">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Lịch trình tại {destinationDetail?.name}
+                    </h2>
                   </div>
-                )}
-              </div>
+
+                  {loadingItineraries ? (
+                    <p className="text-center text-gray-500">
+                      Đang tải lịch trình...
+                    </p>
+                  ) : itineraries.length === 0 ? (
+                    <p className="text-center text-gray-500">
+                      Chưa có lịch trình nào cho điểm đến này.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {itineraries.map((itinerary) => (
+                        <ItineraryCard
+                          key={itinerary.id}
+                          itinerary={itinerary}
+                          onViewDetail={(id) => setSelectedItinerary(id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 

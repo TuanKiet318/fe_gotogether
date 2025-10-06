@@ -49,7 +49,7 @@ export default function TripPlannerDrawer({ isOpen, onClose }) {
   return (
     <div
       className={`fixed top-0 right-0 h-full w-[380px] bg-gradient-to-b from-white to-gray-50 shadow-2xl border-l 
-      transform transition-transform duration-300 ease-in-out z-50
+      transform transition-transform duration-300 ease-in-out z-62
       ${isOpen ? "translate-x-0" : "translate-x-full"}`}
     >
       {/* Header */}
@@ -94,9 +94,7 @@ export default function TripPlannerDrawer({ isOpen, onClose }) {
                 <input
                   type="date"
                   value={itinerary?.startDate || ""}
-                  onChange={(e) =>
-                    setDates(e.target.value, itinerary.endDate)
-                  }
+                  onChange={(e) => setDates(e.target.value, itinerary.endDate)}
                   className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
@@ -147,9 +145,7 @@ export default function TripPlannerDrawer({ isOpen, onClose }) {
                           {place.name}
                         </span>
                         <button
-                          onClick={() =>
-                            removePlaceFromDay(day.date, place.id)
-                          }
+                          onClick={() => removePlaceFromDay(day.date, place.id)}
                           className="p-1 hover:bg-red-100 rounded transition"
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />

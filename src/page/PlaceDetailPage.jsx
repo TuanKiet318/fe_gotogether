@@ -43,7 +43,6 @@ const SectionCard = ({ children, className = "" }) => (
   </div>
 );
 
-
 const SectionTitle = ({ icon: Icon, children, right }) => (
   <div className="flex items-center justify-between gap-3 mb-6">
     <div className="flex items-center gap-2">
@@ -65,12 +64,14 @@ const Badge = ({ children, color = "blue" }) => {
     color === "green"
       ? "bg-green-100 text-green-700"
       : color === "purple"
-        ? "bg-purple-100 text-purple-700"
-        : color === "amber"
-          ? "bg-amber-100 text-amber-700"
-          : "bg-blue-100 text-blue-700";
+      ? "bg-purple-100 text-purple-700"
+      : color === "amber"
+      ? "bg-amber-100 text-amber-700"
+      : "bg-blue-100 text-blue-700";
   return (
-    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${colorClass}`}>
+    <span
+      className={`px-2.5 py-1 text-xs font-medium rounded-full ${colorClass}`}
+    >
       {children}
     </span>
   );
@@ -93,9 +94,14 @@ const StarRating = ({ value = 0, size = 16 }) => {
   return (
     <div className="inline-flex items-center" aria-label={`Rating: ${safe}/5`}>
       {[...Array(full)].map((_, i) => (
-        <Star key={`f-${i}`} className={`w-4 h-4 fill-yellow-400 text-yellow-400`} />
+        <Star
+          key={`f-${i}`}
+          className={`w-4 h-4 fill-yellow-400 text-yellow-400`}
+        />
       ))}
-      {half && <Star className={`w-4 h-4 fill-yellow-400/60 text-yellow-400`} />}
+      {half && (
+        <Star className={`w-4 h-4 fill-yellow-400/60 text-yellow-400`} />
+      )}
       {[...Array(empty)].map((_, i) => (
         <Star key={`e-${i}`} className={`w-4 h-4 text-slate-300`} />
       ))}
@@ -125,12 +131,14 @@ export default function PlaceDetail() {
   const galleryImages = useMemo(() => {
     const arr = Array.isArray(place?.images) ? place.images : [];
     const urls = arr
-      .map(it => (typeof it === "string" ? it : it?.imageUrl))
+      .map((it) => (typeof it === "string" ? it : it?.imageUrl))
       .filter(Boolean);
 
     return urls.length > 0
       ? Array.from(new Set(urls))
-      : (place?.mainImage ? [place.mainImage] : []);
+      : place?.mainImage
+      ? [place.mainImage]
+      : [];
   }, [place]);
   // Fetch place detail
   useEffect(() => {
@@ -155,8 +163,7 @@ export default function PlaceDetail() {
             {
               id: 2,
               reviewer: "Nguyễn Thị Lan",
-              avatar:
-                "https://api.dicebear.com/7.x/avataaars/svg?seed=Nguyen",
+              avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Nguyen",
               rating: 4,
               date: "2024-02-10",
               comment:
@@ -194,7 +201,9 @@ export default function PlaceDetail() {
       if (e.key === "ArrowRight")
         setLightboxIndex((i) => (i + 1) % galleryImages.length);
       if (e.key === "ArrowLeft")
-        setLightboxIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length);
+        setLightboxIndex(
+          (i) => (i - 1 + galleryImages.length) % galleryImages.length
+        );
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -205,8 +214,8 @@ export default function PlaceDetail() {
       place.lat && place.lng
         ? `https://www.google.com/maps?q=${place.lat},${place.lng}`
         : `https://www.google.com/maps?q=${encodeURIComponent(
-          place.address || "Quy Nhon"
-        )}`;
+            place.address || "Quy Nhon"
+          )}`;
     window.open(url, "_blank");
   };
 
@@ -254,7 +263,8 @@ export default function PlaceDetail() {
       setIsLiked(!next);
       setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
       const status = err?.response?.status;
-      if (status === 401) alert("Bạn cần đăng nhập để dùng tính năng yêu thích.");
+      if (status === 401)
+        alert("Bạn cần đăng nhập để dùng tính năng yêu thích.");
       else alert("Không thể cập nhật yêu thích. Vui lòng thử lại.");
     } finally {
       setLikeLoading(false);
@@ -359,9 +369,12 @@ export default function PlaceDetail() {
   // Precompute chips
   const infoChips = useMemo(() => {
     const chips = [];
-    if (place?.category?.name) chips.push({ label: place.category.name, color: "blue" });
-    if (place?.destination?.name) chips.push({ label: place.destination.name, color: "green" });
-    if (place?.foundedYear) chips.push({ label: `Thành lập ${place.foundedYear}`, color: "amber" });
+    if (place?.category?.name)
+      chips.push({ label: place.category.name, color: "blue" });
+    if (place?.destination?.name)
+      chips.push({ label: place.destination.name, color: "green" });
+    if (place?.foundedYear)
+      chips.push({ label: `Thành lập ${place.foundedYear}`, color: "amber" });
     return chips;
   }, [place]);
 
@@ -395,7 +408,9 @@ export default function PlaceDetail() {
           <SectionCard className="p-10">
             <div className="text-red-500 text-6xl mb-4">😞</div>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Oops!</h2>
-            <p className="text-slate-600">{error || "Không tìm thấy thông tin địa điểm"}</p>
+            <p className="text-slate-600">
+              {error || "Không tìm thấy thông tin địa điểm"}
+            </p>
             <button
               onClick={() => window.location.reload()}
               className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700"
@@ -409,7 +424,6 @@ export default function PlaceDetail() {
   }
 
   return (
-
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Hero Section with Image Gallery */}
       <div className="mb-8 overflow-hidden shadow-lg">
@@ -424,7 +438,9 @@ export default function PlaceDetail() {
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {infoChips.map((c, idx) => (
-                  <Badge key={idx} color={c.color}>{c.label}</Badge>
+                  <Badge key={idx} color={c.color}>
+                    {c.label}
+                  </Badge>
                 ))}
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
@@ -434,7 +450,12 @@ export default function PlaceDetail() {
                 <StarRating value={place.rating} />
                 <div className="flex items-center text-slate-600">
                   <MapPin className="w-4 h-4 mr-1" />
-                  <span className="truncate max-w-[60ch]" title={place.address || "123 Đường Nguyễn Huệ, TP. Quy Nhơn"}>
+                  <span
+                    className="truncate max-w-[60ch]"
+                    title={
+                      place.address || "123 Đường Nguyễn Huệ, TP. Quy Nhơn"
+                    }
+                  >
                     {place.address || "123 Đường Nguyễn Huệ, TP. Quy Nhơn"}
                   </span>
                 </div>
@@ -453,21 +474,24 @@ export default function PlaceDetail() {
             </button> */}
             {/* Action Buttons */}
             <div className="flex gap-3">
-
               <button
                 onClick={toggleFavorite}
                 disabled={likeLoading}
-                className={`relative inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${isLiked
-                  ? "bg-rose-500 text-white hover:bg-rose-600"
-                  : "bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600"
-                  } disabled:opacity-60`}
+                className={`relative inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                  isLiked
+                    ? "bg-rose-500 text-white hover:bg-rose-600"
+                    : "bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600"
+                } disabled:opacity-60`}
                 aria-pressed={isLiked}
                 title={isLiked ? "Bỏ yêu thích" : "Yêu thích"}
               >
                 {likeLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Heart className="w-4 h-4" style={isLiked ? { fill: "currentColor" } : undefined} />
+                  <Heart
+                    className="w-4 h-4"
+                    style={isLiked ? { fill: "currentColor" } : undefined}
+                  />
                 )}
                 <span>{isLiked ? "Đã thích" : "Yêu thích"}</span>
                 <span className="ml-1 text-xs opacity-80">{likeCount}</span>
@@ -509,13 +533,18 @@ export default function PlaceDetail() {
                 <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                   <Camera className="w-4 h-4" /> Hình ảnh nổi bật
                 </h3>
-                <span className="text-xs text-slate-500">Nhấp vào ảnh để phóng to</span>
+                <span className="text-xs text-slate-500">
+                  Nhấp vào ảnh để phóng to
+                </span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                 {galleryImages.slice(0, 6).map((src, idx) => (
                   <button
                     key={idx}
-                    onClick={() => { setLightboxIndex(idx); setIsLightboxOpen(true); }}
+                    onClick={() => {
+                      setLightboxIndex(idx);
+                      setIsLightboxOpen(true);
+                    }}
                     className="group relative aspect-video overflow-hidden rounded-xl border bg-slate-100"
                     aria-label="Mở ảnh lớn"
                   >
@@ -533,10 +562,7 @@ export default function PlaceDetail() {
               </div>
             </div>
           )}
-
         </SectionCard>
-
-
 
         {/* Highlights & Tips */}
         <div className="grid md:grid-cols-2 gap-6 mt-8">
@@ -586,7 +612,9 @@ export default function PlaceDetail() {
                   "Cuối tuần thường đông, nên đặt trước",
                 ]
               ).map((tip, idx) => (
-                <p key={idx} className="text-sm text-slate-700">💡 {tip}</p>
+                <p key={idx} className="text-sm text-slate-700">
+                  💡 {tip}
+                </p>
               ))}
             </div>
           </SectionCard>
@@ -753,12 +781,22 @@ export default function PlaceDetail() {
         {/* Reviews */}
         {place.reviews && place.reviews.length > 0 && (
           <SectionCard className="p-6 mt-8">
-            <SectionTitle icon={CalendarDays} right={<span className="text-sm text-slate-500">{place.reviews.length} đánh giá</span>}>
+            <SectionTitle
+              icon={CalendarDays}
+              right={
+                <span className="text-sm text-slate-500">
+                  {place.reviews.length} đánh giá
+                </span>
+              }
+            >
               Đánh giá từ du khách
             </SectionTitle>
             <div className="grid md:grid-cols-2 gap-5">
               {place.reviews.slice(0, 2).map((review) => (
-                <div key={review.id} className="p-5 rounded-xl bg-slate-50 border border-slate-100">
+                <div
+                  key={review.id}
+                  className="p-5 rounded-xl bg-slate-50 border border-slate-100"
+                >
                   <div className="flex items-start gap-3">
                     <img
                       src={review.avatar}
@@ -768,7 +806,10 @@ export default function PlaceDetail() {
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-3 mb-1">
-                        <h4 className="font-semibold text-slate-900 truncate" title={review.reviewer}>
+                        <h4
+                          className="font-semibold text-slate-900 truncate"
+                          title={review.reviewer}
+                        >
                           {review.reviewer}
                         </h4>
                         <span className="text-xs text-slate-500 whitespace-nowrap">
@@ -778,7 +819,9 @@ export default function PlaceDetail() {
                       <div className="flex items-center mb-2">
                         <StarRating value={review.rating} />
                       </div>
-                      <p className="text-slate-700 text-sm leading-relaxed">{review.comment}</p>
+                      <p className="text-slate-700 text-sm leading-relaxed">
+                        {review.comment}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -821,7 +864,9 @@ export default function PlaceDetail() {
                         <MapPin className="w-3.5 h-3.5 mr-1" />
                         <span className="line-clamp-1">{np.address}</span>
                       </p>
-                      <p className="text-slate-700 text-sm line-clamp-2">{np.description}</p>
+                      <p className="text-slate-700 text-sm line-clamp-2">
+                        {np.description}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -839,8 +884,8 @@ export default function PlaceDetail() {
                 place.lat && place.lng
                   ? `https://www.google.com/maps?q=${place.lat},${place.lng}&output=embed&z=15`
                   : `https://www.google.com/maps?q=${encodeURIComponent(
-                    place.address || "Quy Nhon"
-                  )}&output=embed`
+                      place.address || "Quy Nhon"
+                    )}&output=embed`
               }
               width="100%"
               height="100%"
@@ -892,7 +937,11 @@ export default function PlaceDetail() {
           {/* Prev */}
           {galleryImages.length > 1 && (
             <button
-              onClick={() => setLightboxIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length)}
+              onClick={() =>
+                setLightboxIndex(
+                  (i) => (i - 1 + galleryImages.length) % galleryImages.length
+                )
+              }
               className="absolute left-4 md:left-6 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
               aria-label="Ảnh trước"
             >
@@ -903,7 +952,9 @@ export default function PlaceDetail() {
           {/* Next */}
           {galleryImages.length > 1 && (
             <button
-              onClick={() => setLightboxIndex((i) => (i + 1) % galleryImages.length)}
+              onClick={() =>
+                setLightboxIndex((i) => (i + 1) % galleryImages.length)
+              }
               className="absolute right-4 md:right-6 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
               aria-label="Ảnh kế"
             >
@@ -921,7 +972,6 @@ export default function PlaceDetail() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

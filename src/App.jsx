@@ -17,6 +17,7 @@ import FoodDetail from "./page/FoodDetailPage";
 import AcceptInvite from "./page/AcceptInvitePage";
 import MyProfile from "./page/MyProfile"; // ✅ import MyProfile page
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import ItineraryEditor from "./page/ItineraryEditor.jsx";
 
 const App = () => {
   return (
@@ -37,7 +38,8 @@ const App = () => {
           <Route path="/category/:category" element={<SearchCategoryPage />} />
           <Route path="/trip-planner" element={<TripPlanner />} />
           <Route path="/foods/:id" element={<FoodDetail />} />
-
+          <Route path="/itinerary-editor/:id" element={<ItineraryEditor />} />
+          <Route path="/itinerary/:id" element={<ItineraryDetailPage />} />
           <Route
             path="/trip-list"
             element={

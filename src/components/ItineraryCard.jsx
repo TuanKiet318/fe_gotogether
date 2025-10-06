@@ -1,6 +1,6 @@
 import { CalendarDaysIcon, MapIcon } from "@heroicons/react/24/outline";
 
-export default function ItineraryCard({ itinerary }) {
+export default function ItineraryCard({ itinerary, onViewDetail }) {
   return (
     <div className="p-6 bg-white border border-gray-200 rounded-xl shadow hover:shadow-md transition group cursor-pointer">
       {/* Tiêu đề */}
@@ -27,7 +27,9 @@ export default function ItineraryCard({ itinerary }) {
         <button
           className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow hover:shadow-lg hover:scale-105 transition-transform"
           onClick={() => {
-            console.log("Xem chi tiết:", itinerary.id);
+            if (onViewDetail) {
+              onViewDetail(itinerary.id);
+            }
           }}
         >
           Xem chi tiết
