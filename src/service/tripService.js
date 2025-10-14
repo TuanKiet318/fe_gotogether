@@ -148,3 +148,58 @@ export const createItinerary = async (tripData) => {
 };
 
 export const getAllItineraries = getItineraries; // ====== CREATE: thêm 1 địa điểm (item) vào lịch trình ====== @PostMapping @ResponseStatus(HttpStatus.CREATED) public ItineraryItemDto createItem(@PathVariable String itineraryId, @Valid @RequestBody CreateItemRequest req) { String userId = currentUserId(); return itineraryService.createItem(userId, itineraryId, req); }
+
+/**
+ * Thêm ngày mới **sau** một ngày cụ thể trong itinerary
+ * @param {string} itineraryId - ID của chuyến đi
+ * @param {number} dayNumber - số thứ tự ngày muốn chèn sau
+ * @param {number} count - số lượng ngày muốn thêm
+ */
+export const insertDaysAfter = async (itineraryId, dayNumber, count = 1) => {
+  try {
+    const res = await instance.post(
+      `/itineraries/${itineraryId}/days/insert-after`,
+      { dayNumber, count }
+    );
+    return res.data;
+  } catch (error) {
+    console.error("Error in insertDaysAfter:", error);
+    throw error;
+  }
+};
+
+/**
+ * Thêm ngày mới **trước** một ngày cụ thể trong itinerary
+ * @param {string} itineraryId - ID của chuyến đi
+ * @param {number} dayNumber - số thứ tự ngày muốn chèn trước
+ * @param {number} count - số lượng ngày muốn thêm
+ */
+export const insertDaysBefore = async (itineraryId, dayNumber, count = 1) => {
+  try {
+    const res = await instance.post(
+      `/itineraries/${itineraryId}/days/insert-before`,
+      { dayNumber, count }
+    );
+    return res.data;
+  } catch (error) {
+    console.error("Error in insertDaysBefore:", error);
+    throw error;
+  }
+};
+
+/**
+ * Xoá 1 ngày trong itinerary
+ * @param {string} itineraryId - ID chuyến đi
+ * @param {number} dayNumber - số thứ tự của ngày muốn xoá
+ */
+export const deleteDay = async (itineraryId, dayNumber) => {
+  try {
+    const res = await instance.delete(
+      `/itineraries/${itineraryId}/days/${dayNumber}`
+    );
+    return res.data;
+  } catch (error) {
+    console.error("Error in deleteDay:", error);
+    throw error;
+  }
+};

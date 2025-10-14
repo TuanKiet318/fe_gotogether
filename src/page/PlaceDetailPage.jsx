@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
@@ -110,15 +110,16 @@ const StarRating = ({ value = 0, size = 16 }) => {
   );
 };
 
-export default function PlaceDetail() {
-  const { id } = useParams();
+export default function PlaceDetail({ placeId: propPlaceId, isModal = false }) {
+  const params = useParams();
+  const navigate = isModal ? null : useNavigate();
+  const placeId = propPlaceId || params?.id;
+
   const [place, setPlace] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-
   const isRestaurant = place?.category?.id === "cat-restaurant";
-
 
   // Like states
   const [isLiked, setIsLiked] = useState(false);
@@ -142,10 +143,19 @@ export default function PlaceDetail() {
   }, [place]);
   // Fetch place detail
   useEffect(() => {
+    console.log("PlaceDetailPage - placeId:", placeId); // Debug
+    console.log("PlaceDetailPage - isModal:", isModal); // Debug
+
+    if (!placeId) {
+      console.error("No placeId provided!");
+      setLoading(false);
+      return;
+    }
+
     const fetchPlace = async () => {
       try {
         setLoading(true);
-        const res = await GetPlaceDetail(id);
+        const res = await GetPlaceDetail(placeId); // ✅ Dùng placeId đã xử lý
         const data = res?.data ?? res;
 
         // Seed demo reviews if none
@@ -192,8 +202,8 @@ export default function PlaceDetail() {
       }
     };
 
-    if (id) fetchPlace();
-  }, [id]);
+    fetchPlace();
+  }, [placeId]);
   useEffect(() => {
     if (!isLightboxOpen) return;
     const onKey = (e) => {
@@ -365,7 +375,6 @@ export default function PlaceDetail() {
     ...getPlaceInfoByCategory(place?.category?.id),
   };
 
-
   // Precompute chips
   const infoChips = useMemo(() => {
     const chips = [];
@@ -524,7 +533,6 @@ export default function PlaceDetail() {
                   : "Một điểm đến tuyệt vời để khám phá và trải nghiệm. Nơi đây mang đến cho du khách những khoảnh khắc đáng nhớ và cơ hội tìm hiểu về văn hóa, lịch sử địa phương."}
               </p>
             </div>
-
           </div>
           {/* Inline Gallery under Intro */}
           {galleryImages.length > 0 && (
@@ -573,17 +581,17 @@ export default function PlaceDetail() {
             <ul className="grid gap-3 text-slate-700">
               {(isRestaurant
                 ? [
-                  "Hải sản tươi sống theo ngày",
-                  "View biển chuẩn chill",
-                  "Phục vụ nhanh, nhân viên thân thiện",
-                  "Có phòng riêng và không gian gia đình",
-                ]
+                    "Hải sản tươi sống theo ngày",
+                    "View biển chuẩn chill",
+                    "Phục vụ nhanh, nhân viên thân thiện",
+                    "Có phòng riêng và không gian gia đình",
+                  ]
                 : [
-                  "View đẹp, check-in sống ảo",
-                  "Nhiều hoạt động trải nghiệm",
-                  "Không khí trong lành",
-                  "Gần các điểm du lịch khác",
-                ]
+                    "View đẹp, check-in sống ảo",
+                    "Nhiều hoạt động trải nghiệm",
+                    "Không khí trong lành",
+                    "Gần các điểm du lịch khác",
+                  ]
               ).map((item, idx) => (
                 <li key={idx} className="flex items-start gap-2">
                   <span className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" />
@@ -600,17 +608,17 @@ export default function PlaceDetail() {
             <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl space-y-2">
               {(isRestaurant
                 ? [
-                  "Nên đặt bàn trước vào cuối tuần",
-                  "Giờ cao điểm: 18:00 - 20:00",
-                  "Một số món cần gọi trước (lẩu, hải sản sống)",
-                  "Có nhận thanh toán thẻ và chuyển khoản",
-                ]
+                    "Nên đặt bàn trước vào cuối tuần",
+                    "Giờ cao điểm: 18:00 - 20:00",
+                    "Một số món cần gọi trước (lẩu, hải sản sống)",
+                    "Có nhận thanh toán thẻ và chuyển khoản",
+                  ]
                 : [
-                  "Nên đi vào sáng sớm hoặc chiều muộn để tránh nắng",
-                  "Mang theo kem chống nắng, kính râm và mũ",
-                  "Chuẩn bị tiền mặt vì một số chỗ không nhận thẻ",
-                  "Cuối tuần thường đông, nên đặt trước",
-                ]
+                    "Nên đi vào sáng sớm hoặc chiều muộn để tránh nắng",
+                    "Mang theo kem chống nắng, kính râm và mũ",
+                    "Chuẩn bị tiền mặt vì một số chỗ không nhận thẻ",
+                    "Cuối tuần thường đông, nên đặt trước",
+                  ]
               ).map((tip, idx) => (
                 <p key={idx} className="text-sm text-slate-700">
                   💡 {tip}
@@ -618,8 +626,8 @@ export default function PlaceDetail() {
               ))}
             </div>
           </SectionCard>
-
         </div>
+
         {/* Operating Hours & Ticket Pricing */}
         {placeWithDefaults.openingHours && (
           <SectionCard className="p-6 mt-8">
@@ -650,7 +658,7 @@ export default function PlaceDetail() {
 
               return (
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div>
+                  {/* <div>
                     <h3 className="text-sm font-semibold text-slate-600 mb-3">
                       Giờ mở cửa
                     </h3>
@@ -658,8 +666,9 @@ export default function PlaceDetail() {
                       {rows.map((r, i) => (
                         <div
                           key={r.d}
-                          className={`px-4 py-3 ${i % 2 === 0 ? "bg-white" : ""
-                            } border-b border-slate-100 col-span-2 grid grid-cols-2`}
+                          className={`px-4 py-3 ${
+                            i % 2 === 0 ? "bg-white" : ""
+                          } border-b border-slate-100 col-span-2 grid grid-cols-2`}
                         >
                           <span className="text-slate-600">{r.d}</span>
                           <span className="text-right font-medium text-slate-900">
@@ -668,9 +677,9 @@ export default function PlaceDetail() {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div> */}
 
-                  {ticket && (
+                  {/* {ticket && (
                     <div>
                       <h3 className="text-sm font-semibold text-slate-600 mb-3">
                         Giá vé tham khảo
@@ -699,7 +708,7 @@ export default function PlaceDetail() {
                         </p>
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               );
             })()}
