@@ -68,3 +68,18 @@
          focus:ring-[oklch(68.5%_0.169_237.323)]
          bg-white text-gray-800;
 }
+
+@keyframes slide-left {
+  from {
+    transform: translateX(100%);
+    opacity: 0.3;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-left {
+  animation: slide-left 0.25s ease-out;
+}

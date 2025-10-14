@@ -100,7 +100,7 @@ export default function TripList() {
                   <img
                     src={
                       trip.coverImage ||
-                      "https://source.unsplash.com/random/800x600?travel"
+                      "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Quy-Nhon-morning-city-view-1300px.jpg/500px-Quy-Nhon-morning-city-view-1300px.jpg"
                     }
                     alt={trip.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

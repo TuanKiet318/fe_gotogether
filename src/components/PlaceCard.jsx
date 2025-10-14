@@ -1,11 +1,27 @@
 import { Star, Quote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-export default function PlaceCard({ place, index, onHover }) {
+export default function PlaceCard({
+  place,
+  index,
+  onHover,
+  onClick,
+  disableNavigation = false,
+}) {
   const navigate = useNavigate();
 
-  const handleClick = () => {
-    navigate(`/destination/place/${place.id}`);
+  const handleClick = (e) => {
+    // Nếu có onClick custom, ưu tiên dùng nó
+    if (onClick) {
+      e.stopPropagation();
+      onClick(place);
+      return;
+    }
+
+    // Nếu không disable navigation thì mới navigate
+    if (!disableNavigation) {
+      navigate(`/destination/place/${place.id}`);
+    }
   };
 
   return (

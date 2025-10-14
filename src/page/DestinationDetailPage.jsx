@@ -291,7 +291,7 @@ export default function DestinationDetail() {
         </div>
 
         {/* Main Navigation - overlay bottom hero */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-50">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-20">
           <div
             className="flex items-center gap-6 px-8 py-4 
                bg-white/80 backdrop-blur-xl shadow-2xl 
