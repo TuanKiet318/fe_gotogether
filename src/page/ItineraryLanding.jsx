@@ -44,9 +44,9 @@ const MetaPill = ({ icon: Icon, children }) => (
 );
 
 function Gallery({ photos = [] }) {
-    const a = photos[0] || "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1600&auto=format&fit=crop";
-    const b = photos[1] || "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200&auto=format&fit=crop";
-    const c = photos[2] || "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop";
+    const a = photos[0] || "https://quynhon.binhdinh.gov.vn/upload/105285/20230906/317d87c43e445667a2583a74106fc130trung_luong_nguyen_an_khanh_304608393_d3638.jpg";
+    const b = photos[1] || "https://image.vietgoing.com/editor/image_olq1638950902.jpg";
+    const c = photos[2] || "https://static.vinwonders.com/production/Banner-banh-hoi-chao-long-Quy-Nhon.jpg";
     return (
         <div className="grid grid-cols-3 gap-3 mt-4">
             <div className="col-span-3 lg:col-span-2 rounded-2xl overflow-hidden">
@@ -222,11 +222,10 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
             };
 
             // Dùng axios instance qua service
-            const data = await cloneItinerary(sourceId, body);
-            const newId = data?.id || data?.data?.id || data?.itineraryId;
+            const newId = await cloneItinerary(sourceId, body);
 
             if (!newId) throw new Error("Clone thành công nhưng không nhận được ID mới.");
-            navigate(`/itineraries/${newId}/edit`);
+            navigate(`/itinerary-editor/${newId}`);
         } catch (e) {
             console.error(e);
             alert(e?.response?.data?.message || e.message || "Không thể clone lịch trình. Vui lòng thử lại.");
@@ -288,7 +287,7 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
                     <section id="overview" className="scroll-mt-20">
                         <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-3">Tổng quan</h2>
                         <div className="rounded-2xl border bg-white p-5">
-                            <p className="text-slate-700 leading-relaxed">{itinerary?.overview}</p>
+                            <p className="text-slate-700 leading-relaxed">{demo?.overview}</p>
                             <div className="flex flex-wrap gap-2 mt-4">
                                 <MetaPill icon={Calendar}>{metaDates || "Linh hoạt"}</MetaPill>
                                 <MetaPill icon={Clock}>{metaDays} ngày</MetaPill>
@@ -304,7 +303,7 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
                         </h2>
                         <div className="rounded-2xl border bg-white p-5">
                             <ul className="list-disc pl-5 space-y-2 text-slate-700">
-                                {(itinerary?.notes || []).map((n, idx) => (
+                                {(demo?.notes || []).map((n, idx) => (
                                     <li key={idx}>{n}</li>
                                 ))}
                             </ul>
@@ -503,7 +502,7 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
                         </button>
                     </div>
 
-                    {/* Author card */}
+                    {/* Author card
                     <div className="rounded-2xl border bg-white p-5 text-center">
                         <img
                             src={itinerary?.author?.avatar}
@@ -516,7 +515,7 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
                         <a href="#" className="mt-3 inline-flex items-center gap-2 text-rose-600 hover:underline text-sm">
                             <Info size={14} /> Đọc thêm
                         </a>
-                    </div>
+                    </div> */}
 
                     {/* Quick facts */}
                     <div className="rounded-2xl border bg-white p-5">

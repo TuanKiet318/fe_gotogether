@@ -15,7 +15,7 @@ import TripDetail from "./page/TripDetailPage";
 import PrivateRoute from "./routes/PrivateRoute";
 import FoodDetail from "./page/FoodDetailPage";
 import AcceptInvite from "./page/AcceptInvitePage";
-import MyProfile from "./page/MyProfile"; // ✅ import MyProfile page
+import MyProfile from "./page/MyProfile";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import ItineraryEditor from "./page/ItineraryEditor.jsx";
 import ItineraryLandingPage from "./page/ItineraryLandingPage.jsx";

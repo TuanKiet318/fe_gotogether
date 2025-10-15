@@ -877,6 +877,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               <LeafletMap
                 key={JSON.stringify(getRouteItems())}
                 places={getRouteItems()}
+                image={itinerary.destinationImage}
                 hoveredPlaceId={hoveredItemId}
                 route={getRouteItems()}
               />

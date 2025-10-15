@@ -52,9 +52,18 @@ export const getItineraries = async () => {
 export const cloneItinerary = async (sourceId, payload) => {
   try {
     const res = await instance.post(`/itineraries/${sourceId}/clone`, payload);
-    // backend nên trả { id }, nhưng để an toàn, trả về res.data return res.data;
+    const body = res?.data ?? res;            // hỗ trợ axios chuẩn hoặc mock
+    // Hỗ trợ các shape phổ biến:
+    // { id } hoặc { data: { id } } hoặc { status, message, data: { id } }
+    const id =
+      body?.id ??
+      body?.data?.id ??
+      body?.data?.data?.id ??
+      null;
+
+    return id; // ➜ Component nhận trực tiếp ID
   } catch (error) {
-    console.error("Error in cloneItinerary:", error.response?.data || error);
+    console.error("Error in cloneItinerary:", error?.response?.data || error);
     throw error;
   }
 };

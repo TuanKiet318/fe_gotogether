@@ -35,16 +35,16 @@ import { AnimatePresence, motion } from "framer-motion";
 const MOCK_FEATURED_ITINERARIES = [
   {
     id: "2466a75e-f6b1-4e28-b986-ae9cd40d07eb",
-    title: "Chuyến đi Vũng Tàu",
+    title: "Quy Nhơn 3 ngày 2 đêm",
     startDate: "2025-10-09",
-    endDate: "2025-10-12",
+    endDate: "2025-10-11",
     totalItems: 1,
     destinationId: "dest-quynhon",
     destinationName: "Quy Nhơn",
     // có thể thêm coverImage / bannerImage nếu muốn
     // coverImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
     shortDescription:
-      "Lịch trình mẫu 4 ngày 3 đêm: bãi biển, ẩm thực và các điểm check-in nổi bật.",
+      "Lịch trình mẫu 3 ngày 2 đêm: bãi biển, ẩm thực và các điểm check-in nổi bật.",
   },
 ];
 

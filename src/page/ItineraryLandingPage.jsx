@@ -253,5 +253,5 @@ export default function ItineraryLandingPage() {
     if (!mapped)
         return <div className="p-6 text-gray-600">Đang tải lịch trình…</div>;
 
-    return <ItineraryLanding itinerary={mapped} sourceId={id} />
+    return <ItineraryLanding itinerary={mapped} sourceId={id} />;
 }
