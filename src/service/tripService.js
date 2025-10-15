@@ -49,6 +49,15 @@ export const getItineraries = async () => {
     throw error;
   }
 };
+export const cloneItinerary = async (sourceId, payload) => {
+  try {
+    const res = await instance.post(`/itineraries/${sourceId}/clone`, payload);
+    // backend nên trả { id }, nhưng để an toàn, trả về res.data return res.data;
+  } catch (error) {
+    console.error("Error in cloneItinerary:", error.response?.data || error);
+    throw error;
+  }
+};
 
 /**
  * Tạo item mới

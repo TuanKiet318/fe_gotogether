@@ -12,6 +12,7 @@ import {
   Eye,
   MapPin,
   EyeOff,
+  Navigation,
 } from "lucide-react";
 import instance from "../service/axios.admin.customize";
 import {
@@ -45,7 +46,7 @@ function generateDays(startDate, endDate, items) {
     const dayItems = (items || [])
       .filter((it) => it.date === dateStr || it.dayNumber === i)
       .map((it, idx) => {
-        const place = it.place || {}; // <-- thêm dòng này
+        const place = it.place || {};
         return {
           id: it.id || `item-${Math.random()}`,
           placeId: it.placeId || place.id,
@@ -79,6 +80,32 @@ function cleanPlaceId(placeId) {
   return placeId;
 }
 
+// Format số tiền VND
+const formatVND = (v) => {
+  const n = Number(v) || 0;
+  return n.toLocaleString("vi-VN") + " đ";
+};
+
+// Haversine (km)
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 6371; // km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function formatDistance(a, b) {
+  if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null;
+  const d = haversineKm(Number(a.lat), Number(a.lng), Number(b.lat), Number(b.lng));
+  if (!isFinite(d)) return null;
+  return d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(1)} km`;
+}
+
 /* ------------------- COMPONENT ------------------- */
 export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const params = useParams();
@@ -95,7 +122,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [selectedDayNumber, setSelectedDayNumber] = useState(null);
   const [hoveredItemId, setHoveredItemId] = useState(null);
   const [mapSize, setMapSize] = useState("default");
-  // showMapMenu sẽ được quản lý trong itinerary state
+
   /* ----- FETCH ITINERARY ----- */
   useEffect(() => {
     if (!itineraryId) {
@@ -274,43 +301,28 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         });
       });
 
-      console.log("Saving changes:", {
-        newItemsCount: newItems.length,
-        modifiedItemsCount: modifiedItems.length,
-      });
-
       // 1. Create new items
       if (newItems.length > 0) {
         for (const itemData of newItems) {
-          try {
-            await instance.post(`/itineraries/${itineraryId}/items`, itemData);
-          } catch (err) {
-            console.error("Failed to create item:", itemData, err);
-            throw err;
-          }
+          await instance.post(`/itineraries/${itineraryId}/items`, itemData);
         }
       }
 
       // 2. Update modified items
       if (modifiedItems.length > 0) {
         for (const item of modifiedItems) {
-          try {
-            await instance.patch(
-              `/itineraries/${itineraryId}/items/${item.id}`,
-              {
-                dayNumber: item.dayNumber,
-                orderInDay: item.orderInDay,
-                startTime: item.startTime,
-                endTime: item.endTime,
-                description: item.description,
-                estimatedCost: item.estimatedCost,
-                transportMode: item.transportMode,
-              }
-            );
-          } catch (err) {
-            console.error("Failed to update item:", item, err);
-            throw err;
-          }
+          await instance.patch(
+            `/itineraries/${itineraryId}/items/${item.id}`,
+            {
+              dayNumber: item.dayNumber,
+              orderInDay: item.orderInDay,
+              startTime: item.startTime,
+              endTime: item.endTime,
+              description: item.description,
+              estimatedCost: item.estimatedCost,
+              transportMode: item.transportMode,
+            }
+          );
         }
       }
 
@@ -342,10 +354,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         items: day.items.map((item) =>
           item.id === itemId
             ? {
-                ...item,
-                ...updates,
-                isModified: !item.isNew ? true : item.isModified,
-              }
+              ...item,
+              ...updates,
+              isModified: !item.isNew ? true : item.isModified,
+            }
             : item
         ),
       }));
@@ -390,23 +402,39 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   if (loading) return <p className="p-4">Đang tải...</p>;
   if (!itinerary) return <p className="p-4">Không tìm thấy lịch trình.</p>;
+
   const getRouteItems = () => {
     if (!itinerary) return [];
-    return itinerary.days
-      .flatMap((day) => day.items)
-      .filter((item) => item.lat && item.lng)
-      .sort((a, b) => {
-        if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
-        return a.orderInDay - b.orderInDay;
-      })
-      .map((item) => ({
+    // Mỗi item cần lat, lng, dayNumber, orderInDay
+    const items = itinerary.days.flatMap((day) =>
+      day.items.map((item) => ({
         id: item.id,
         name: item.placeName,
         lat: item.lat,
         lng: item.lng,
         placeAddress: item.placeAddress,
-      }));
+        dayNumber: day.dayNumber,
+        orderInDay: item.orderInDay || 0,
+      }))
+    );
+
+    // lọc thiếu tọa độ + sort ngày/thứ tự trong ngày
+    return items
+      .filter((p) => p.lat && p.lng)
+      .sort((a, b) => {
+        if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
+        return (a.orderInDay || 0) - (b.orderInDay || 0);
+      });
   };
+
+  // Tổng chi phí toàn chuyến
+  const grandTotal = itinerary.days.reduce(
+    (sum, d) =>
+      sum +
+      d.items.reduce((s, i) => s + (Number(i.estimatedCost) || 0), 0),
+    0
+  );
+
   // ----- DRAG AND DROP HANDLER -----
   const handleDragEnd = (result) => {
     if (!result.destination) return;
@@ -500,6 +528,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   {itinerary.startDate}{" "}
                   <span className="text-purple-500">→</span> {itinerary.endDate}
                 </span>
+                {/* Tổng chi phí toàn chuyến */}
+                <span className="text-gray-300 mx-1">•</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  💰 Tổng: <b>{formatVND(grandTotal)}</b>
+                </span>
               </p>
             </div>
 
@@ -531,11 +564,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               className={`
     flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-sm
           transition-all duration-200 transform
-          ${
-            hasUnsavedChanges && !saving
-              ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:scale-[1.02]"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }
+          ${hasUnsavedChanges && !saving
+                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }
         `}
             >
               {saving ? (
@@ -571,177 +603,208 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       <div className="flex gap-6 flex-1 overflow-hidden">
         {/* Days List */}
         <div
-          className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${
-            mapSize === "full"
-              ? "w-1/4"
-              : mapSize === "half"
+          className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${mapSize === "full"
+            ? "w-1/4"
+            : mapSize === "half"
               ? "w-1/2"
               : "w-2/3"
-          }`}
+            }`}
         >
           <div className="flex gap-4 min-w-max h-full">
             <DragDropContext onDragEnd={handleDragEnd}>
-              {itinerary.days.map((day) => (
-                <div
-                  key={day.dayNumber}
-                  className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl shadow w-96 flex-shrink-0 flex flex-col max-h-full"
-                >
-                  <div className="flex justify-between items-center flex-shrink-0">
-                    <h3 className="font-semibold text-lg">
-                      Ngày {day.dayNumber} ({day.date})
-                    </h3>
+              {itinerary.days.map((day) => {
+                const daySubtotal = day.items.reduce(
+                  (s, i) => s + (Number(i.estimatedCost) || 0),
+                  0
+                );
+                return (
+                  <div
+                    key={day.dayNumber}
+                    className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl shadow w-96 flex-shrink-0 flex flex-col max-h-full"
+                  >
+                    <div className="flex justify-between items-center flex-shrink-0">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold text-lg">
+                          Ngày {day.dayNumber} ({day.date})
+                        </h3>
 
-                    <div className="flex items-center gap-2">
-                      {/* Nút thêm địa điểm */}
-                      <button
-                        onClick={() => {
-                          setSelectedDayNumber(day.dayNumber);
-                          setShowPlaceModal(true);
-                        }}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
-                      >
-                        <Plus size={16} />
-                        <span>Thêm</span>
-                      </button>
+                      </div>
 
-                      {/* Menu 3 chấm */}
-                      <div className="relative" ref={menuRef}>
+                      <div className="flex items-center gap-2">
+                        {/* Nút thêm địa điểm */}
                         <button
                           onClick={() => {
-                            setItinerary((prev) => ({
-                              ...prev,
-                              activeMenu:
-                                prev.activeMenu === day.dayNumber
-                                  ? null
-                                  : day.dayNumber,
-                            }));
+                            setSelectedDayNumber(day.dayNumber);
+                            setShowPlaceModal(true);
                           }}
-                          className="p-2 rounded-full hover:bg-gray-100 transition"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
                         >
-                          <MoreVertical size={18} />
+                          <Plus size={16} />
+                          <span>Thêm</span>
                         </button>
+                        {/* Tổng chi phí ngày
+                        <span className="text-xs px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                          Chi phí: {formatVND(daySubtotal)}
+                        </span> */}
+                        {/* Menu 3 chấm */}
+                        <div className="relative" ref={menuRef}>
+                          <button
+                            onClick={() => {
+                              setItinerary((prev) => ({
+                                ...prev,
+                                activeMenu:
+                                  prev.activeMenu === day.dayNumber
+                                    ? null
+                                    : day.dayNumber,
+                              }));
+                            }}
+                            className="p-2 rounded-full hover:bg-gray-100 transition"
+                          >
+                            <MoreVertical size={18} />
+                          </button>
 
-                        <AnimatePresence>
-                          {itinerary.activeMenu === day.dayNumber && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                              transition={{ duration: 0.15 }}
-                              className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg w-48 z-10"
-                            >
-                              <button
-                                onClick={() => {
-                                  handleAddDayBefore(day.dayNumber);
-                                  setItinerary((prev) => ({
-                                    ...prev,
-                                    activeMenu: null,
-                                  }));
-                                }}
-                                className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
+                          <AnimatePresence>
+                            {itinerary.activeMenu === day.dayNumber && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg w-48 z-10"
                               >
-                                <Plus size={16} />
-                                <span>Thêm ngày trước</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleAddDayAfter(day.dayNumber);
-                                  setItinerary((prev) => ({
-                                    ...prev,
-                                    activeMenu: null,
-                                  }));
-                                }}
-                                className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
-                              >
-                                <Plus size={16} />
-                                <span>Thêm ngày sau</span>
-                              </button>
-                              <hr />
-                              <button
-                                onClick={() => {
-                                  handleDeleteDay(day.dayNumber);
-                                  setItinerary((prev) => ({
-                                    ...prev,
-                                    activeMenu: null,
-                                  }));
-                                }}
-                                className="flex items-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 text-left"
-                              >
-                                <Trash2 size={16} />
-                                <span>Xóa ngày</span>
-                              </button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                                <button
+                                  onClick={() => {
+                                    handleAddDayBefore(day.dayNumber);
+                                    setItinerary((prev) => ({
+                                      ...prev,
+                                      activeMenu: null,
+                                    }));
+                                  }}
+                                  className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
+                                >
+                                  <Plus size={16} />
+                                  <span>Thêm ngày trước</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleAddDayAfter(day.dayNumber);
+                                    setItinerary((prev) => ({
+                                      ...prev,
+                                      activeMenu: null,
+                                    }));
+                                  }}
+                                  className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
+                                >
+                                  <Plus size={16} />
+                                  <span>Thêm ngày sau</span>
+                                </button>
+                                <hr />
+                                <button
+                                  onClick={() => {
+                                    handleDeleteDay(day.dayNumber);
+                                    setItinerary((prev) => ({
+                                      ...prev,
+                                      activeMenu: null,
+                                    }));
+                                  }}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 text-left"
+                                >
+                                  <Trash2 size={16} />
+                                  <span>Xóa ngày</span>
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
+
+
+                    </div>
+
+
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 mt-2">
+                      {day.items.length === 0 && (
+                        <p className="text-gray-400 text-center py-8 text-sm">
+                          Chưa có địa điểm nào. Nhấn "Thêm" để bắt đầu.
+                        </p>
+                      )}
+
+                      <Droppable droppableId={String(day.dayNumber)} type="ITEM">
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className={`space-y-3 min-h-[100px] ${snapshot.isDraggingOver
+                              ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
+                              : ""
+                              }`}
+                          >
+                            {day.items.map((item, index) => (
+                              <Draggable
+                                key={item.id}
+                                draggableId={String(item.id)}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <>
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      onMouseEnter={() => setHoveredItemId(item.id)}
+                                      onMouseLeave={() => setHoveredItemId(null)}
+                                      className={`transition-transform ${snapshot.isDragging
+                                        ? "scale-[1.02] shadow-lg"
+                                        : ""
+                                        }`}
+                                    >
+                                      <DayItemCard
+                                        item={item}
+                                        onRemove={removeItem}
+                                        onUpdate={updateItem}
+                                      />
+                                    </div>
+
+                                    {/* Khoảng cách đến điểm tiếp theo (chỉ hiển thị nếu còn điểm sau) */}
+                                    {index < day.items.length - 1 && (() => {
+                                      const next = day.items[index + 1];
+                                      const dist = formatDistance(item, next);
+                                      return (
+                                        <div className="flex items-center gap-2 text-xs text-gray-600 pl-3 pr-2 py-1">
+                                          <div className="flex-1 h-px bg-gray-200" />
+                                          <div className="flex items-center gap-1 whitespace-nowrap">
+                                            <Navigation size={14} className="text-gray-400" />
+                                            <span>{dist ? `~ ${dist}` : "Khoảng cách: N/A"}</span>
+                                          </div>
+                                          <div className="flex-1 h-px bg-gray-200" />
+                                        </div>
+                                      );
+                                    })()}
+                                  </>
+                                )}
+                              </Draggable>
+                            ))}
+
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 mt-2">
-                    {day.items.length === 0 && (
-                      <p className="text-gray-400 text-center py-8 text-sm">
-                        Chưa có địa điểm nào. Nhấn "Thêm" để bắt đầu.
-                      </p>
-                    )}
-
-                    <Droppable droppableId={String(day.dayNumber)} type="ITEM">
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={`space-y-3 min-h-[100px] ${
-                            snapshot.isDraggingOver
-                              ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
-                              : ""
-                          }`}
-                        >
-                          {day.items.map((item, index) => (
-                            <Draggable
-                              key={item.id}
-                              draggableId={String(item.id)}
-                              index={index}
-                            >
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  onMouseEnter={() => setHoveredItemId(item.id)}
-                                  onMouseLeave={() => setHoveredItemId(null)}
-                                  className={`transition-transform ${
-                                    snapshot.isDragging
-                                      ? "scale-[1.02] shadow-lg"
-                                      : ""
-                                  }`}
-                                >
-                                  <DayItemCard
-                                    item={item}
-                                    onRemove={removeItem}
-                                    onUpdate={updateItem}
-                                  />
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </DragDropContext>
           </div>
         </div>
         {/* Map - Right side */}
         <div
-          className={`transition-all duration-300 flex-shrink-0 ${
-            mapSize === "full"
-              ? "w-3/4"
-              : mapSize === "half"
+          className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
+            ? "w-3/4"
+            : mapSize === "half"
               ? "w-1/2"
               : "w-1/3"
-          }`}
+            }`}
         >
           <div className="h-full relative">
             <div className="absolute top-4 left-4 z-[1000]">
@@ -769,11 +832,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                        mapSize === "default"
-                          ? "bg-blue-50 text-blue-600 font-medium"
-                          : ""
-                      }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
+                        ? "bg-blue-50 text-blue-600 font-medium"
+                        : ""
+                        }`}
                     >
                       {mapSize === "default" && "✓ "}Default
                     </button>
@@ -785,11 +847,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                        mapSize === "half"
-                          ? "bg-blue-50 text-blue-600 font-medium"
-                          : ""
-                      }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
+                        ? "bg-blue-50 text-blue-600 font-medium"
+                        : ""
+                        }`}
                     >
                       {mapSize === "half" && "✓ "}Half
                     </button>
@@ -801,11 +862,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                        mapSize === "full"
-                          ? "bg-blue-50 text-blue-600 font-medium"
-                          : ""
-                      }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
+                        ? "bg-blue-50 text-blue-600 font-medium"
+                        : ""
+                        }`}
                     >
                       {mapSize === "full" && "✓ "}Full
                     </button>

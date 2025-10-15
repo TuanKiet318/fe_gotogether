@@ -32,6 +32,33 @@ import { ArrowLeft } from "lucide-react";
 import FoodCard from "../components/FoodCard.jsx";
 import { AnimatePresence, motion } from "framer-motion";
 
+const MOCK_FEATURED_ITINERARIES = [
+  {
+    id: "2466a75e-f6b1-4e28-b986-ae9cd40d07eb",
+    title: "Chuyến đi Vũng Tàu",
+    startDate: "2025-10-09",
+    endDate: "2025-10-12",
+    totalItems: 1,
+    destinationId: "dest-quynhon",
+    destinationName: "Quy Nhơn",
+    // có thể thêm coverImage / bannerImage nếu muốn
+    // coverImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
+    shortDescription:
+      "Lịch trình mẫu 4 ngày 3 đêm: bãi biển, ẩm thực và các điểm check-in nổi bật.",
+  },
+];
+
+// helper tính số ngày (nếu backend không trả)
+const calcDays = (start, end) => {
+  try {
+    const s = new Date(start);
+    const e = new Date(end);
+    return Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1);
+  } catch {
+    return undefined;
+  }
+};
+
 const categoryIcons = {
   "cat-food": FireIcon,
   "cat-beach": HomeIcon,
@@ -42,7 +69,6 @@ const categoryIcons = {
   "cat-restaurant": FireIcon,
 };
 
-// Icon mapping cho các info keys
 const infoIcons = {
   tips: InformationCircleIcon,
   "Thời gian": ClockIcon,
@@ -55,6 +81,7 @@ const infoIcons = {
 export default function DestinationDetail() {
   const [itineraries, setItineraries] = useState([]);
   const [loadingItineraries, setLoadingItineraries] = useState(false);
+
   const { category } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,11 +93,10 @@ export default function DestinationDetail() {
   const [selectedCategory, setSelectedCategory] = useState(category || "");
   const [destinationDetail, setDestinationDetail] = useState(null);
   const [selectedItinerary, setSelectedItinerary] = useState(null);
-  // State cho main navigation
+
   const defaultTab = searchParams.get("tab") || "gioi-thieu";
   const [activeMainTab, setActiveMainTab] = useState(defaultTab);
 
-  // State cho places theo category
   const [categoryPlaces, setCategoryPlaces] = useState([]);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [foods, setFoods] = useState([]);
@@ -83,28 +109,22 @@ export default function DestinationDetail() {
   const closeModal = () => setSelectedPlace(null);
 
   useEffect(() => {
-    const fetchItineraries = async () => {
-      if (activeMainTab !== "lich-trinh") return;
-      if (!id) return;
+    if (activeMainTab !== "lich-trinh") return;
 
-      try {
-        setLoadingItineraries(true);
-        const res = await GetItinerariesByDestination(id, 0, 5); // lấy 5 lịch trình đầu
-        if (res?.content) {
-          setItineraries(res.content);
-        } else {
-          setItineraries([]);
-        }
-      } catch (err) {
-        console.error("Fetch itineraries error:", err);
-        setItineraries([]);
-      } finally {
-        setLoadingItineraries(false);
-      }
-    };
+    // giả delay nhỏ nếu muốn animation "đang tải"
+    setLoadingItineraries(true);
+    const t = setTimeout(() => {
+      // map thêm totalDays nếu chưa có
+      const data = MOCK_FEATURED_ITINERARIES.map((x) => ({
+        ...x,
+        totalDays: x.totalDays ?? calcDays(x.startDate, x.endDate),
+      }));
+      setItineraries(data);
+      setLoadingItineraries(false);
+    }, 250);
 
-    fetchItineraries();
-  }, [activeMainTab, id]);
+    return () => clearTimeout(t);
+  }, [activeMainTab]);
 
   // Sync selectedCategory khi URL thay đổi
   useEffect(() => {
@@ -311,11 +331,10 @@ export default function DestinationDetail() {
                   key={tab.id}
                   onClick={() => handleMainTabSelect(tab.id)}
                   className={`relative px-4 py-2 text-lg font-semibold transition-all duration-500
-            ${
-              isActive
-                ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
-                : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
-            }`}
+            ${isActive
+                      ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
+                      : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
+                    }`}
                 >
                   {tab.label}
                   {/* underline glow */}
@@ -442,21 +461,19 @@ export default function DestinationDetail() {
                     <button
                       onClick={() => handleCategorySelect("")}
                       className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                    ${
-                      !selectedCategory
-                        ? "text-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-blue-500"
-                    }
+                    ${!selectedCategory
+                          ? "text-blue-600 font-semibold"
+                          : "text-gray-600 hover:text-blue-500"
+                        }
                   `}
                     >
                       Nổi bật
                       <span
                         className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
-                      ${
-                        !selectedCategory
-                          ? "w-full opacity-100"
-                          : "w-0 opacity-0"
-                      }
+                      ${!selectedCategory
+                            ? "w-full opacity-100"
+                            : "w-0 opacity-0"
+                          }
                     `}
                       />
                     </button>
@@ -470,11 +487,10 @@ export default function DestinationDetail() {
                           key={cat.id}
                           onClick={() => handleCategorySelect(cat.id)}
                           className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                        ${
-                          isActive
-                            ? "text-blue-600 font-semibold"
-                            : "text-gray-600 hover:text-blue-500"
-                        }
+                        ${isActive
+                              ? "text-blue-600 font-semibold"
+                              : "text-gray-600 hover:text-blue-500"
+                            }
                       `}
                         >
                           {cat.name}
@@ -491,15 +507,13 @@ export default function DestinationDetail() {
 
                 {/* Places Content */}
                 <div
-                  className={`grid gap-8 transition-all duration-500 ease-in-out ${
-                    isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
-                  }`}
+                  className={`grid gap-8 transition-all duration-500 ease-in-out ${isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
+                    }`}
                 >
                   {/* Left: Places List */}
                   <div
-                    className={`space-y-10 ${
-                      isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
-                    }`}
+                    className={`space-y-10 ${isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
+                      }`}
                   >
                     <AnimatePresence mode="wait">
                       {/* Khi có category được chọn */}
@@ -704,7 +718,6 @@ export default function DestinationDetail() {
               </>
             </motion.div>
           )}
-
           {activeMainTab === "lich-trinh" && (
             <motion.div
               key="lich-trinh"
@@ -713,51 +726,81 @@ export default function DestinationDetail() {
               exit={{ x: -100, opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {selectedItinerary ? (
-                // Hiển thị chi tiết
-                <div className="relative">
-                  <button
-                    onClick={() => setSelectedItinerary(null)}
-                    className="mb-6 flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    <ArrowLeft size={20} />
-                    <span className="font-medium">Quay lại danh sách</span>
-                  </button>
-                  <ItineraryDetailPage itineraryId={selectedItinerary} />
-                </div>
-              ) : (
-                // Hiển thị danh sách
-                <div className="max-w-4xl mx-auto space-y-8">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
-                    <h2 className="text-2xl font-bold text-gray-800">
-                      Lịch trình tại {destinationDetail?.name}
-                    </h2>
-                  </div>
-
-                  {loadingItineraries ? (
-                    <p className="text-center text-gray-500">
-                      Đang tải lịch trình...
-                    </p>
-                  ) : itineraries.length === 0 ? (
-                    <p className="text-center text-gray-500">
-                      Chưa có lịch trình nào cho điểm đến này.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {itineraries.map((itinerary) => (
-                        <ItineraryCard
-                          key={itinerary.id}
-                          itinerary={itinerary}
-                          onViewDetail={(id) => setSelectedItinerary(id)}
-                        />
-                      ))}
+              <div className="max-w-5xl mx-auto space-y-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full" />
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800">Lịch trình mẫu nổi bật</h2>
+                      <p className="text-sm text-gray-500">
+                        Chọn một lịch trình có sẵn để tham khảo chi tiết
+                      </p>
                     </div>
-                  )}
+                  </div>
                 </div>
-              )}
+
+                {loadingItineraries ? (
+                  <p className="text-center text-gray-500">Đang tải lịch trình...</p>
+                ) : itineraries.length === 0 ? (
+                  <p className="text-center text-gray-500">Chưa có lịch trình nào cho điểm đến này.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {itineraries.map((itinerary) => (
+                      <button
+                        key={itinerary.id}
+                        onClick={() => navigate(`/itineraries/${itinerary.id}/landing`)}
+                        className="group text-left rounded-2xl overflow-hidden border bg-white hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      >
+                        <div className="h-44 overflow-hidden">
+                          <img
+                            src={
+                              itinerary.coverImage ||
+                              itinerary.bannerImage ||
+                              "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop"
+                            }
+                            alt={itinerary.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        </div>
+
+                        <div className="p-4">
+                          <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                            {itinerary.title}
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                            {itinerary.shortDescription ||
+                              itinerary.description ||
+                              "Lịch trình tham khảo chi tiết các điểm đến, ăn uống và di chuyển."}
+                          </p>
+
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
+                            {itinerary.totalDays ? (
+                              <span className="px-2 py-1 rounded-full bg-gray-50 border">
+                                {itinerary.totalDays} ngày
+                              </span>
+                            ) : null}
+                            {itinerary.startDate && itinerary.endDate ? (
+                              <span className="px-2 py-1 rounded-full bg-gray-50 border">
+                                {itinerary.startDate} → {itinerary.endDate}
+                              </span>
+                            ) : null}
+                            {itinerary.destinationName || itinerary.destination?.name ? (
+                              <span className="px-2 py-1 rounded-full bg-gray-50 border">
+                                {itinerary.destinationName || itinerary.destination?.name}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className="mt-3 text-blue-600 font-medium text-sm">Xem chi tiết →</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
+
 
           {/* Show Map Toggle Button when hidden */}
           {!isMapVisible && activeMainTab === "dia-diem" && (
