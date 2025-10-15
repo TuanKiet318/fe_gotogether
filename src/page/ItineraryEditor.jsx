@@ -23,12 +23,15 @@ import {
   insertDaysAfter,
   insertDaysBefore,
   deleteDay,
+  renameItinerary,
+  updateItineraryDates,
 } from "../service/tripService";
 import PlaceSidebar from "../components/PlaceSidebar.jsx";
 import DayItemCard from "../components/DayItemCard.jsx";
 import PlaceDetailModal from "../components/PlaceDetailModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import PlaceDetailModalWrapper from "../components/PlaceDetailModalWrapper";
 
 /* ------------------- HELPER ------------------- */
 function generateDays(startDate, endDate, items) {
@@ -101,7 +104,12 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 
 function formatDistance(a, b) {
   if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null;
-  const d = haversineKm(Number(a.lat), Number(a.lng), Number(b.lat), Number(b.lng));
+  const d = haversineKm(
+    Number(a.lat),
+    Number(a.lng),
+    Number(b.lat),
+    Number(b.lng)
+  );
   if (!isFinite(d)) return null;
   return d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(1)} km`;
 }
@@ -122,6 +130,21 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [selectedDayNumber, setSelectedDayNumber] = useState(null);
   const [hoveredItemId, setHoveredItemId] = useState(null);
   const [mapSize, setMapSize] = useState("default");
+  const [selectedPlaceForDetail, setSelectedPlaceForDetail] = useState(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
+  const titleInputRef = useRef(null);
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [selectedStartDate, setSelectedStartDate] = useState(null);
+  const [selectedEndDate, setSelectedEndDate] = useState(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
 
   /* ----- FETCH ITINERARY ----- */
   useEffect(() => {
@@ -179,6 +202,140 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     };
   }, []);
 
+  const handleDateClick = () => {
+    setSelectedStartDate(new Date(itinerary.startDate));
+    setSelectedEndDate(new Date(itinerary.endDate));
+    setCurrentMonth(new Date(itinerary.startDate));
+    setShowDateModal(true);
+  };
+
+  const handleDateSelect = (date) => {
+    // Không cho chọn ngày trong quá khứ
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return;
+
+    if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+      // Bắt đầu chọn mới
+      setSelectedStartDate(date);
+      setSelectedEndDate(null);
+    } else {
+      // Chọn ngày kết thúc
+      if (date >= selectedStartDate) {
+        setSelectedEndDate(date);
+      } else {
+        // Nếu chọn ngày trước startDate, đổi lại
+        setSelectedEndDate(selectedStartDate);
+        setSelectedStartDate(date);
+      }
+    }
+  };
+
+  const handleUpdateDates = async () => {
+    if (!selectedStartDate || !selectedEndDate) {
+      alert("Vui lòng chọn ngày bắt đầu và kết thúc");
+      return;
+    }
+
+    const startDateStr = selectedStartDate.toISOString().split("T")[0];
+    const endDateStr = selectedEndDate.toISOString().split("T")[0];
+
+    try {
+      await updateItineraryDates(itineraryId, startDateStr, endDateStr);
+
+      // Reload data
+      const response = await GetItineraryDetail(itineraryId);
+      const data = response?.data || response;
+      const days = generateDays(data.startDate, data.endDate, data.items || []);
+
+      setItinerary((prev) => ({
+        ...prev,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        days,
+      }));
+
+      setShowDateModal(false);
+      alert("✅ Cập nhật ngày thành công!");
+    } catch (err) {
+      console.error("Error updating dates:", err);
+      alert("Không thể cập nhật ngày. Vui lòng thử lại.");
+    }
+  };
+
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+
+    // Thêm ngày của tháng trước
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+      days.push({
+        date: new Date(year, month - 1, prevMonthLastDay - i),
+        isCurrentMonth: false,
+      });
+    }
+
+    // Thêm ngày của tháng hiện tại
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({
+        date: new Date(year, month, i),
+        isCurrentMonth: true,
+      });
+    }
+
+    // Thêm ngày của tháng sau
+    const remainingDays = 42 - days.length; // 6 rows x 7 days
+    for (let i = 1; i <= remainingDays; i++) {
+      days.push({
+        date: new Date(year, month + 1, i),
+        isCurrentMonth: false,
+      });
+    }
+
+    return days;
+  };
+
+  const isSameDay = (date1, date2) => {
+    if (!date1 || !date2) return false;
+    return (
+      date1.getDate() === date2.getDate() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getFullYear() === date2.getFullYear()
+    );
+  };
+
+  const isInRange = (date) => {
+    if (!selectedStartDate || !selectedEndDate) return false;
+    return date >= selectedStartDate && date <= selectedEndDate;
+  };
+
+  const formatDateRange = () => {
+    if (!selectedStartDate || !selectedEndDate) return "Select dates";
+
+    const start = selectedStartDate.toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+    const end = selectedEndDate.toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+
+    const days =
+      Math.ceil((selectedEndDate - selectedStartDate) / (1000 * 60 * 60 * 24)) +
+      1;
+
+    return `${start} - ${end} · ${days} days`;
+  };
   /* ----- QUẢN LÝ NGÀY (THÊM / XOÁ) ----- */
   const handleAddDayBefore = async (dayNumber) => {
     if (!itineraryId) return;
@@ -262,6 +419,36 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     });
   };
 
+  const handleTitleEdit = () => {
+    setEditedTitle(itinerary.title);
+    setIsEditingTitle(true);
+  };
+
+  const handleTitleSave = async () => {
+    if (!editedTitle.trim() || editedTitle === itinerary.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    try {
+      await renameItinerary(itineraryId, editedTitle.trim());
+      setItinerary((prev) => ({ ...prev, title: editedTitle.trim() }));
+      setIsEditingTitle(false);
+    } catch (err) {
+      console.error("Error renaming itinerary:", err);
+      alert("Không thể đổi tên lịch trình. Vui lòng thử lại.");
+      setIsEditingTitle(false);
+    }
+  };
+
+  const handleTitleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleTitleSave();
+    } else if (e.key === "Escape") {
+      setIsEditingTitle(false);
+    }
+  };
+
   /* ----- SAVE ITINERARY ----- */
   const handleSave = async () => {
     if (!itinerary || !itineraryId) return;
@@ -311,18 +498,15 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       // 2. Update modified items
       if (modifiedItems.length > 0) {
         for (const item of modifiedItems) {
-          await instance.patch(
-            `/itineraries/${itineraryId}/items/${item.id}`,
-            {
-              dayNumber: item.dayNumber,
-              orderInDay: item.orderInDay,
-              startTime: item.startTime,
-              endTime: item.endTime,
-              description: item.description,
-              estimatedCost: item.estimatedCost,
-              transportMode: item.transportMode,
-            }
-          );
+          await instance.patch(`/itineraries/${itineraryId}/items/${item.id}`, {
+            dayNumber: item.dayNumber,
+            orderInDay: item.orderInDay,
+            startTime: item.startTime,
+            endTime: item.endTime,
+            description: item.description,
+            estimatedCost: item.estimatedCost,
+            transportMode: item.transportMode,
+          });
         }
       }
 
@@ -354,10 +538,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         items: day.items.map((item) =>
           item.id === itemId
             ? {
-              ...item,
-              ...updates,
-              isModified: !item.isNew ? true : item.isModified,
-            }
+                ...item,
+                ...updates,
+                isModified: !item.isNew ? true : item.isModified,
+              }
             : item
         ),
       }));
@@ -430,8 +614,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   // Tổng chi phí toàn chuyến
   const grandTotal = itinerary.days.reduce(
     (sum, d) =>
-      sum +
-      d.items.reduce((s, i) => s + (Number(i.estimatedCost) || 0), 0),
+      sum + d.items.reduce((s, i) => s + (Number(i.estimatedCost) || 0), 0),
     0
   );
 
@@ -515,20 +698,45 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-6">
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {itinerary.title}
-              </h1>
+              {isEditingTitle ? (
+                <input
+                  ref={titleInputRef}
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={handleTitleKeyDown}
+                  className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent border-b-2 border-blue-500 outline-none px-1"
+                  style={{
+                    width: `${Math.max(editedTitle.length * 16, 200)}px`,
+                    caretColor: "#2563eb", // Màu xanh dương cho con trỏ nhập liệu
+                  }}
+                />
+              ) : (
+                <h1
+                  onClick={handleTitleEdit}
+                  className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent cursor-pointer hover:opacity-70 transition relative group"
+                  title="Click để sửa tên"
+                >
+                  {itinerary.title}
+                  <span className="absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition text-gray-400 text-sm">
+                    ✏️
+                  </span>
+                </h1>
+              )}
               <p className="text-sm flex items-center gap-2 mt-1">
                 <MapPin size={16} className="text-blue-500" />
                 <span className="font-semibold text-blue-600">
                   {itinerary.destination}
                 </span>
                 <span className="text-gray-300 mx-1">•</span>
-                <span className="text-gray-600 font-medium">
+                <button
+                  onClick={handleDateClick}
+                  className="text-gray-600 font-medium hover:text-blue-600 transition cursor-pointer underline decoration-dotted"
+                >
                   {itinerary.startDate}{" "}
                   <span className="text-purple-500">→</span> {itinerary.endDate}
-                </span>
-                {/* Tổng chi phí toàn chuyến */}
+                </button>
                 <span className="text-gray-300 mx-1">•</span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                   💰 Tổng: <b>{formatVND(grandTotal)}</b>
@@ -564,10 +772,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               className={`
     flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-sm
           transition-all duration-200 transform
-          ${hasUnsavedChanges && !saving
-                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:scale-[1.02]"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }
+          ${
+            hasUnsavedChanges && !saving
+              ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:scale-[1.02]"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }
         `}
             >
               {saving ? (
@@ -603,12 +812,13 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       <div className="flex gap-6 flex-1 overflow-hidden">
         {/* Days List */}
         <div
-          className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${mapSize === "full"
-            ? "w-1/4"
-            : mapSize === "half"
+          className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${
+            mapSize === "full"
+              ? "w-1/4"
+              : mapSize === "half"
               ? "w-1/2"
               : "w-2/3"
-            }`}
+          }`}
         >
           <div className="flex gap-4 min-w-max h-full">
             <DragDropContext onDragEnd={handleDragEnd}>
@@ -627,7 +837,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                         <h3 className="font-semibold text-lg">
                           Ngày {day.dayNumber} ({day.date})
                         </h3>
-
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -717,10 +926,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           </AnimatePresence>
                         </div>
                       </div>
-
-
                     </div>
-
 
                     <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 mt-2">
                       {day.items.length === 0 && (
@@ -729,15 +935,19 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                         </p>
                       )}
 
-                      <Droppable droppableId={String(day.dayNumber)} type="ITEM">
+                      <Droppable
+                        droppableId={String(day.dayNumber)}
+                        type="ITEM"
+                      >
                         {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            className={`space-y-3 min-h-[100px] ${snapshot.isDraggingOver
-                              ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
-                              : ""
-                              }`}
+                            className={`space-y-3 min-h-[100px] ${
+                              snapshot.isDraggingOver
+                                ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
+                                : ""
+                            }`}
                           >
                             {day.items.map((item, index) => (
                               <Draggable
@@ -751,35 +961,54 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                       {...provided.dragHandleProps}
-                                      onMouseEnter={() => setHoveredItemId(item.id)}
-                                      onMouseLeave={() => setHoveredItemId(null)}
-                                      className={`transition-transform ${snapshot.isDragging
-                                        ? "scale-[1.02] shadow-lg"
-                                        : ""
-                                        }`}
+                                      onMouseEnter={() =>
+                                        setHoveredItemId(item.id)
+                                      }
+                                      onMouseLeave={() =>
+                                        setHoveredItemId(null)
+                                      }
+                                      className={`transition-transform ${
+                                        snapshot.isDragging
+                                          ? "scale-[1.02] shadow-lg"
+                                          : ""
+                                      }`}
                                     >
                                       <DayItemCard
                                         item={item}
                                         onRemove={removeItem}
                                         onUpdate={updateItem}
+                                        onClick={(clickedItem) => {
+                                          setSelectedPlaceForDetail({
+                                            id: clickedItem.placeId,
+                                            name: clickedItem.placeName,
+                                          });
+                                        }}
                                       />
                                     </div>
 
                                     {/* Khoảng cách đến điểm tiếp theo (chỉ hiển thị nếu còn điểm sau) */}
-                                    {index < day.items.length - 1 && (() => {
-                                      const next = day.items[index + 1];
-                                      const dist = formatDistance(item, next);
-                                      return (
-                                        <div className="flex items-center gap-2 text-xs text-gray-600 pl-3 pr-2 py-1">
-                                          <div className="flex-1 h-px bg-gray-200" />
-                                          <div className="flex items-center gap-1 whitespace-nowrap">
-                                            <Navigation size={14} className="text-gray-400" />
-                                            <span>{dist ? `~ ${dist}` : "Khoảng cách: N/A"}</span>
+                                    {index < day.items.length - 1 &&
+                                      (() => {
+                                        const next = day.items[index + 1];
+                                        const dist = formatDistance(item, next);
+                                        return (
+                                          <div className="flex items-center gap-2 text-xs text-gray-600 pl-3 pr-2 py-1">
+                                            <div className="flex-1 h-px bg-gray-200" />
+                                            <div className="flex items-center gap-1 whitespace-nowrap">
+                                              <Navigation
+                                                size={14}
+                                                className="text-gray-400"
+                                              />
+                                              <span>
+                                                {dist
+                                                  ? `~ ${dist}`
+                                                  : "Khoảng cách: N/A"}
+                                              </span>
+                                            </div>
+                                            <div className="flex-1 h-px bg-gray-200" />
                                           </div>
-                                          <div className="flex-1 h-px bg-gray-200" />
-                                        </div>
-                                      );
-                                    })()}
+                                        );
+                                      })()}
                                   </>
                                 )}
                               </Draggable>
@@ -791,7 +1020,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       </Droppable>
                     </div>
                   </div>
-
                 );
               })}
             </DragDropContext>
@@ -799,12 +1027,13 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         </div>
         {/* Map - Right side */}
         <div
-          className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
-            ? "w-3/4"
-            : mapSize === "half"
+          className={`transition-all duration-300 flex-shrink-0 ${
+            mapSize === "full"
+              ? "w-3/4"
+              : mapSize === "half"
               ? "w-1/2"
               : "w-1/3"
-            }`}
+          }`}
         >
           <div className="h-full relative">
             <div className="absolute top-4 left-4 z-[1000]">
@@ -832,10 +1061,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
-                        ? "bg-blue-50 text-blue-600 font-medium"
-                        : ""
-                        }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                        mapSize === "default"
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : ""
+                      }`}
                     >
                       {mapSize === "default" && "✓ "}Default
                     </button>
@@ -847,10 +1077,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
-                        ? "bg-blue-50 text-blue-600 font-medium"
-                        : ""
-                        }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                        mapSize === "half"
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : ""
+                      }`}
                     >
                       {mapSize === "half" && "✓ "}Half
                     </button>
@@ -862,10 +1093,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
-                        ? "bg-blue-50 text-blue-600 font-medium"
-                        : ""
-                        }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                        mapSize === "full"
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : ""
+                      }`}
                     >
                       {mapSize === "full" && "✓ "}Full
                     </button>
@@ -919,6 +1151,268 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   }}
                 />
               </div>
+            </div>
+          </div>
+        </>
+      )}
+      {selectedPlaceForDetail && (
+        <PlaceDetailModalWrapper
+          placeId={selectedPlaceForDetail.id}
+          onClose={() => setSelectedPlaceForDetail(null)}
+        />
+      )}
+
+      {showDateModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9998]"
+            onClick={() => setShowDateModal(false)}
+          />
+
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-white rounded-2xl shadow-2xl w-[800px]">
+            {/* Header */}
+            <div className="border-b border-gray-200 p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">When</h2>
+                  <p className="text-gray-600 mt-1">{formatDateRange()}</p>
+                </div>
+                <button
+                  onClick={() => setShowDateModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-8">
+                {/* Tháng hiện tại */}
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <button
+                      onClick={() =>
+                        setCurrentMonth(
+                          new Date(
+                            currentMonth.getFullYear(),
+                            currentMonth.getMonth() - 1
+                          )
+                        )
+                      }
+                      className="p-2 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M15 18l-6-6 6-6" />
+                      </svg>
+                    </button>
+                    <h3 className="font-semibold text-lg">
+                      {currentMonth.toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </h3>
+                    <div className="w-9" />
+                  </div>
+
+                  {/* Days of week */}
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                    {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day) => (
+                      <div
+                        key={day}
+                        className="text-center text-sm font-medium text-gray-500 py-2"
+                      >
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Calendar days */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {getDaysInMonth(currentMonth).map((day, idx) => {
+                      const isStart = isSameDay(day.date, selectedStartDate);
+                      const isEnd = isSameDay(day.date, selectedEndDate);
+                      const inRange = isInRange(day.date);
+
+                      // Kiểm tra ngày quá khứ
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const isPast = day.date < today;
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() =>
+                            day.isCurrentMonth &&
+                            !isPast &&
+                            handleDateSelect(day.date)
+                          }
+                          disabled={!day.isCurrentMonth || isPast}
+                          className={`
+          aspect-square flex items-center justify-center rounded-lg text-sm
+          transition-all duration-200
+          ${
+            !day.isCurrentMonth || isPast
+              ? "text-gray-300 cursor-not-allowed"
+              : ""
+          }
+          ${
+            day.isCurrentMonth && !isPast && !isStart && !isEnd && !inRange
+              ? "hover:bg-gray-100 text-gray-700"
+              : ""
+          }
+          ${isStart || isEnd ? "bg-red-500 text-white font-semibold" : ""}
+          ${inRange && !isStart && !isEnd ? "bg-red-100 text-red-600" : ""}
+        `}
+                        >
+                          {day.date.getDate()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Tháng tiếp theo */}
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="w-9" />
+                    <h3 className="font-semibold text-lg">
+                      {new Date(
+                        currentMonth.getFullYear(),
+                        currentMonth.getMonth() + 1
+                      ).toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </h3>
+                    <button
+                      onClick={() =>
+                        setCurrentMonth(
+                          new Date(
+                            currentMonth.getFullYear(),
+                            currentMonth.getMonth() + 1
+                          )
+                        )
+                      }
+                      className="p-2 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M9 18l6-6-6-6" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Days of week */}
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                    {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day) => (
+                      <div
+                        key={day}
+                        className="text-center text-sm font-medium text-gray-500 py-2"
+                      >
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Calendar days */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {getDaysInMonth(
+                      new Date(
+                        currentMonth.getFullYear(),
+                        currentMonth.getMonth() + 1
+                      )
+                    ).map((day, idx) => {
+                      const isStart = isSameDay(day.date, selectedStartDate);
+                      const isEnd = isSameDay(day.date, selectedEndDate);
+                      const inRange = isInRange(day.date);
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() =>
+                            day.isCurrentMonth && handleDateSelect(day.date)
+                          }
+                          disabled={!day.isCurrentMonth}
+                          className={`
+                      aspect-square flex items-center justify-center rounded-lg text-sm
+                      transition-all duration-200
+                      ${
+                        !day.isCurrentMonth
+                          ? "text-gray-300 cursor-not-allowed"
+                          : ""
+                      }
+                      ${
+                        day.isCurrentMonth && !isStart && !isEnd && !inRange
+                          ? "hover:bg-gray-100 text-gray-700"
+                          : ""
+                      }
+                      ${
+                        isStart || isEnd
+                          ? "bg-red-500 text-white font-semibold"
+                          : ""
+                      }
+                      ${
+                        inRange && !isStart && !isEnd
+                          ? "bg-red-100 text-red-600"
+                          : ""
+                      }
+                    `}
+                        >
+                          {day.date.getDate()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 p-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowDateModal(false)}
+                className="px-6 py-2.5 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateDates}
+                disabled={!selectedStartDate || !selectedEndDate}
+                className={`
+            px-6 py-2.5 rounded-lg font-medium transition
+            ${
+              selectedStartDate && selectedEndDate
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+            }
+          `}
+              >
+                Update
+              </button>
             </div>
           </div>
         </>
