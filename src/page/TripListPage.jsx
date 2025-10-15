@@ -1,6 +1,6 @@
 // src/pages/TripList.jsx
 import React, { useEffect, useState } from "react";
-import { Plus, Calendar, MapPin, Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Calendar, MapPin, Trash2 } from "lucide-react";
 import { getAllItineraries } from "../service/tripService";
 import { DeleteItinerary } from "../service/api.admin.service.jsx";
 import { Link } from "react-router-dom";
@@ -41,7 +41,10 @@ export default function TripList() {
   };
 
   // ===== Handle Delete =====
-  const handleDelete = async (id) => {
+  const handleDelete = async (e, id) => {
+    e.preventDefault(); // Ngăn chặn navigate khi click nút xóa
+    e.stopPropagation();
+
     const confirmDelete = window.confirm(
       "Bạn có chắc muốn xoá lịch trình này?"
     );
@@ -91,9 +94,10 @@ export default function TripList() {
         {!loading && trips.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trips.map((trip) => (
-              <div
+              <Link
                 key={trip.id}
-                className="relative bg-white border rounded-2xl shadow-md hover:shadow-xl overflow-hidden transition-all duration-300 group"
+                to={`/itinerary-editor/${trip.id}`}
+                className="relative bg-white border rounded-2xl shadow-md hover:shadow-xl overflow-hidden transition-all duration-300 group cursor-pointer"
               >
                 {/* Cover Image */}
                 <div className="relative h-40 bg-gray-200">
@@ -109,32 +113,14 @@ export default function TripList() {
                     {calculateDuration(trip.startDate, trip.endDate)}
                   </span>
 
-                  {/* Action buttons (hiện khi hover) */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-4 transition-opacity duration-300">
-                    {/* Xem */}
-                    <Link
-                      to={`/itinerary/${trip.id}`} // ← Đường dẫn mới
-                      className="bg-white text-gray-800 px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-blue-100 font-semibold transition"
-                    >
-                      <Eye className="w-4 h-4" /> Xem
-                    </Link>
-
-                    {/* Sửa */}
+                  {/* Nút xóa (hiện khi hover) */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <button
-                      onClick={() =>
-                        (window.location.href = `/itinerary-editor/${trip.id}`)
-                      }
-                      className="bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-blue-700 font-semibold transition"
+                      onClick={(e) => handleDelete(e, trip.id)}
+                      className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 shadow-lg transition"
+                      title="Xóa lịch trình"
                     >
-                      <Pencil className="w-4 h-4" /> Sửa
-                    </button>
-
-                    {/* Xóa */}
-                    <button
-                      onClick={() => handleDelete(trip.id)}
-                      className="bg-red-600 text-white px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-red-700 font-semibold transition"
-                    >
-                      <Trash2 className="w-4 h-4" /> Xóa
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
@@ -157,7 +143,7 @@ export default function TripList() {
                     )}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

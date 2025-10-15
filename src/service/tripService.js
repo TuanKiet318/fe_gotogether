@@ -221,3 +221,43 @@ export const deleteDay = async (itineraryId, dayNumber) => {
     throw error;
   }
 };
+
+/**
+ * Đổi tên lịch trình
+ * @param {string} itineraryId - ID của chuyến đi
+ * @param {string} newTitle - Tên mới cho lịch trình
+ */
+export const renameItinerary = async (itineraryId, newTitle) => {
+  try {
+    const res = await instance.patch(`/itineraries/${itineraryId}/rename`, {
+      newTitle,
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error in renameItinerary:", error.response?.data || error);
+    throw error;
+  }
+};
+
+/**
+ * Cập nhật ngày bắt đầu / kết thúc của lịch trình
+ * Nếu rút ngắn thì backend sẽ xóa item vượt phạm vi ngày mới
+ * @param {string} itineraryId
+ * @param {string} startDate - yyyy-MM-dd
+ * @param {string} endDate - yyyy-MM-dd
+ */
+export const updateItineraryDates = async (itineraryId, startDate, endDate) => {
+  try {
+    const res = await instance.patch(`/itineraries/${itineraryId}/dates`, {
+      startDate,
+      endDate,
+    });
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Error in updateItineraryDates:",
+      error.response?.data || error
+    );
+    throw error;
+  }
+};

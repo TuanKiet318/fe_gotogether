@@ -1,9 +1,13 @@
 import React from "react";
 import { Clock, MapPin, DollarSign, Trash2 } from "lucide-react";
 
-export default function DayItemCard({ item, onRemove, onUpdate }) {
+export default function DayItemCard({ item, onRemove, onUpdate, onClick }) {
   return (
-    <div className="p-3 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+    <div
+      className="p-3 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow"
+      onClick={() => onClick?.(item)}
+      style={{ cursor: "pointer" }}
+    >
       {/* Header với ảnh và tên */}
       <div className="flex gap-3 mb-2">
         <img
