@@ -120,10 +120,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const itineraryId = propItineraryId || params.id;
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
   const [itinerary, setItinerary] = useState(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const navigate = useNavigate();
   const menuRef = useRef(null);
   const [showPlaceModal, setShowPlaceModal] = useState(false);
@@ -382,41 +379,34 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   /* ----- THÊM ĐỊA ĐIỂM VÀO NGÀY ----- */
-  const handleAddPlaceToDay = (dayNumber, place) => {
-    setItinerary((prev) => {
-      if (!prev) return prev;
-      const newDays = JSON.parse(JSON.stringify(prev.days));
+  const handleAddPlaceToDay = async (dayNumber, place) => {
+    const newItem = {
+      placeId: place.id,
+      dayNumber: dayNumber,
+      orderInDay: 0, // Backend sẽ tự động gán
+      startTime: "09:00",
+      endTime: "11:00",
+      description: "",
+      estimatedCost: 0,
+      transportMode: "WALK",
+    };
 
-      const targetDay = newDays.find((d) => d.dayNumber === dayNumber);
-      if (!targetDay) return prev;
+    try {
+      // Gọi API tạo item mới
+      const response = await instance.post(
+        `/itineraries/${itineraryId}/items`,
+        newItem
+      );
 
-      const newItem = {
-        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        placeId: place.id,
-        placeName: place.name,
-        placeAddress: place.address || "",
-        placeImage: place.mainImage || "https://via.placeholder.com/150",
-        placeDescription: place.description || "Chưa có mô tả",
-        placeRating: place.rating || 0,
-        placeReviews: place.reviews || 0,
-        dayNumber: targetDay.dayNumber,
-        orderInDay: targetDay.items.length + 1,
-        startTime: "09:00",
-        endTime: "11:00",
-        description: "",
-        estimatedCost: 0,
-        transportMode: "WALK",
-        lat: place.lat || null,
-        lng: place.lng || null,
-        isNew: true,
-        isModified: false,
-      };
-
-      targetDay.items.push(newItem);
-      setHasUnsavedChanges(true);
-
-      return { ...prev, days: newDays };
-    });
+      // Reload lại data để đồng bộ với backend
+      const res = await GetItineraryDetail(itineraryId);
+      const data = res?.data || res;
+      const days = generateDays(data.startDate, data.endDate, data.items || []);
+      setItinerary((prev) => ({ ...prev, days }));
+    } catch (err) {
+      console.error("Error adding place:", err);
+      alert("Không thể thêm địa điểm. Vui lòng thử lại.");
+    }
   };
 
   const handleTitleEdit = () => {
@@ -449,88 +439,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     }
   };
 
-  /* ----- SAVE ITINERARY ----- */
-  const handleSave = async () => {
-    if (!itinerary || !itineraryId) return;
-
-    try {
-      setSaving(true);
-      setSaveStatus(null);
-
-      const newItems = [];
-      const modifiedItems = [];
-
-      itinerary.days.forEach((day) => {
-        day.items.forEach((item) => {
-          if (item.isNew) {
-            newItems.push({
-              placeId: cleanPlaceId(item.placeId),
-              dayNumber: item.dayNumber,
-              orderInDay: item.orderInDay,
-              startTime: item.startTime,
-              endTime: item.endTime,
-              description: item.description,
-              estimatedCost: item.estimatedCost,
-              transportMode: item.transportMode,
-            });
-          } else if (item.isModified) {
-            modifiedItems.push({
-              id: item.id,
-              dayNumber: item.dayNumber,
-              orderInDay: item.orderInDay,
-              startTime: item.startTime,
-              endTime: item.endTime,
-              description: item.description,
-              estimatedCost: item.estimatedCost,
-              transportMode: item.transportMode,
-            });
-          }
-        });
-      });
-
-      // 1. Create new items
-      if (newItems.length > 0) {
-        for (const itemData of newItems) {
-          await instance.post(`/itineraries/${itineraryId}/items`, itemData);
-        }
-      }
-
-      // 2. Update modified items
-      if (modifiedItems.length > 0) {
-        for (const item of modifiedItems) {
-          await instance.patch(`/itineraries/${itineraryId}/items/${item.id}`, {
-            dayNumber: item.dayNumber,
-            orderInDay: item.orderInDay,
-            startTime: item.startTime,
-            endTime: item.endTime,
-            description: item.description,
-            estimatedCost: item.estimatedCost,
-            transportMode: item.transportMode,
-          });
-        }
-      }
-
-      setHasUnsavedChanges(false);
-      setSaveStatus("success");
-
-      // Reload data
-      const response = await GetItineraryDetail(itineraryId);
-      const data = response?.data || response;
-      const days = generateDays(data.startDate, data.endDate, data.items || []);
-      setItinerary((prev) => ({ ...prev, days }));
-
-      setTimeout(() => setSaveStatus(null), 3000);
-    } catch (err) {
-      console.error("Error saving itinerary:", err);
-      setSaveStatus("error");
-      setTimeout(() => setSaveStatus(null), 5000);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   /* ----- UPDATE ITEM ----- */
-  const updateItem = (itemId, updates) => {
+  const updateItem = async (itemId, updates) => {
+    // Tìm item để kiểm tra xem nó có phải item mới chưa lưu không
+    const item = itinerary.days
+      .flatMap((d) => d.items)
+      .find((it) => it.id === itemId);
+
+    // Cập nhật UI ngay lập tức
     setItinerary((prev) => {
       if (!prev) return prev;
       const newDays = prev.days.map((day) => ({
@@ -540,14 +456,38 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             ? {
                 ...item,
                 ...updates,
-                isModified: !item.isNew ? true : item.isModified,
               }
             : item
         ),
       }));
-      setHasUnsavedChanges(true);
       return { ...prev, days: newDays };
     });
+
+    // Nếu là item mới (chưa lưu vào DB), chỉ cập nhật UI, không gọi API
+    if (item?.isNew) {
+      return;
+    }
+
+    // Nếu là item đã tồn tại, gọi API để cập nhật
+    try {
+      await instance.patch(`/itineraries/${itineraryId}/items/${itemId}`, {
+        dayNumber: updates.dayNumber,
+        orderInDay: updates.orderInDay,
+        startTime: updates.startTime,
+        endTime: updates.endTime,
+        description: updates.description,
+        estimatedCost: updates.estimatedCost,
+        transportMode: updates.transportMode,
+      });
+    } catch (err) {
+      console.error("Error updating item:", err);
+      alert("Không thể cập nhật địa điểm. Vui lòng thử lại.");
+      // Reload lại data nếu có lỗi
+      const response = await GetItineraryDetail(itineraryId);
+      const data = response?.data || response;
+      const days = generateDays(data.startDate, data.endDate, data.items || []);
+      setItinerary((prev) => ({ ...prev, days }));
+    }
   };
 
   /* ----- REMOVE ITEM ----- */
@@ -619,76 +559,165 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   );
 
   // ----- DRAG AND DROP HANDLER -----
-  const handleDragEnd = (result) => {
+  const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
     const { source, destination } = result;
 
+    // Lấy thông tin trước khi cập nhật UI
+    const sourceDayNumber = parseInt(source.droppableId);
+    const destDayNumber = parseInt(destination.droppableId);
+
+    const sourceDay = itinerary.days.find(
+      (d) => d.dayNumber === sourceDayNumber
+    );
+    const destDay = itinerary.days.find((d) => d.dayNumber === destDayNumber);
+
+    if (!sourceDay || !destDay) return;
+
+    const movedItem = sourceDay.items[source.index];
+
+    // Cập nhật UI trước
     setItinerary((prev) => {
       const newDays = [...prev.days];
       const sourceDayIndex = newDays.findIndex(
-        (d) => String(d.dayNumber) === source.droppableId
+        (d) => d.dayNumber === sourceDayNumber
       );
       const destDayIndex = newDays.findIndex(
-        (d) => String(d.dayNumber) === destination.droppableId
+        (d) => d.dayNumber === destDayNumber
       );
 
       if (sourceDayIndex === -1 || destDayIndex === -1) return prev;
 
-      // Clone items
-      const sourceDay = { ...newDays[sourceDayIndex] };
-      const destDay = { ...newDays[destDayIndex] };
-      const sourceItems = [...sourceDay.items];
+      const newSourceDay = { ...newDays[sourceDayIndex] };
+      const newDestDay = { ...newDays[destDayIndex] };
+      const sourceItems = [...newSourceDay.items];
       const destItems =
-        sourceDayIndex === destDayIndex ? sourceItems : [...destDay.items];
+        sourceDayIndex === destDayIndex ? sourceItems : [...newDestDay.items];
 
-      // Remove from source
-      const [movedItem] = sourceItems.splice(source.index, 1);
+      const [removed] = sourceItems.splice(source.index, 1);
 
-      // Same day reorder
-      if (source.droppableId === destination.droppableId) {
-        sourceItems.splice(destination.index, 0, movedItem);
-
+      if (sourceDayIndex === destDayIndex) {
+        // Reorder trong cùng ngày
+        sourceItems.splice(destination.index, 0, removed);
         newDays[sourceDayIndex] = {
-          ...sourceDay,
+          ...newSourceDay,
           items: sourceItems.map((item, idx) => ({
             ...item,
             orderInDay: idx + 1,
-            isModified: !item.isNew,
           })),
         };
       } else {
-        // Move to different day
+        // Di chuyển sang ngày khác
         const updatedItem = {
-          ...movedItem,
-          dayNumber: destDay.dayNumber,
-          isModified: !movedItem.isNew,
+          ...removed,
+          dayNumber: newDestDay.dayNumber,
         };
 
         destItems.splice(destination.index, 0, updatedItem);
 
         newDays[sourceDayIndex] = {
-          ...sourceDay,
+          ...newSourceDay,
           items: sourceItems.map((item, idx) => ({
             ...item,
             orderInDay: idx + 1,
-            isModified: !item.isNew,
           })),
         };
 
         newDays[destDayIndex] = {
-          ...destDay,
+          ...newDestDay,
           items: destItems.map((item, idx) => ({
             ...item,
             orderInDay: idx + 1,
-            isModified: !item.isNew,
+            dayNumber: newDestDay.dayNumber,
           })),
         };
       }
 
-      setHasUnsavedChanges(true);
       return { ...prev, days: newDays };
     });
+
+    // Gọi API để lưu thay đổi
+    try {
+      if (movedItem.isNew) {
+        // Item mới chưa lưu vào DB, không cần gọi API
+        return;
+      }
+
+      if (sourceDayNumber === destDayNumber) {
+        // Reorder trong cùng ngày - cập nhật tất cả items trong ngày đó
+        const updatedItems = [...sourceDay.items];
+        const [removed] = updatedItems.splice(source.index, 1);
+        updatedItems.splice(destination.index, 0, removed);
+
+        // Cập nhật orderInDay cho tất cả items trong ngày
+        for (let i = 0; i < updatedItems.length; i++) {
+          const item = updatedItems[i];
+          if (!item.isNew) {
+            await instance.patch(
+              `/itineraries/${itineraryId}/items/${item.id}`,
+              {
+                orderInDay: i + 1,
+              }
+            );
+          }
+        }
+      } else {
+        // Di chuyển sang ngày khác
+        // 1. Cập nhật item được di chuyển
+        await instance.patch(
+          `/itineraries/${itineraryId}/items/${movedItem.id}`,
+          {
+            dayNumber: destDayNumber,
+            orderInDay: destination.index + 1,
+          }
+        );
+
+        // 2. Cập nhật orderInDay cho các items còn lại trong ngày nguồn
+        const remainingSourceItems = sourceDay.items.filter(
+          (_, idx) => idx !== source.index
+        );
+        for (let i = 0; i < remainingSourceItems.length; i++) {
+          const item = remainingSourceItems[i];
+          if (!item.isNew) {
+            await instance.patch(
+              `/itineraries/${itineraryId}/items/${item.id}`,
+              {
+                orderInDay: i + 1,
+              }
+            );
+          }
+        }
+
+        // 3. Cập nhật orderInDay cho các items trong ngày đích
+        const updatedDestItems = [...destDay.items];
+        updatedDestItems.splice(destination.index, 0, movedItem);
+
+        for (let i = 0; i < updatedDestItems.length; i++) {
+          const item = updatedDestItems[i];
+          if (!item.isNew && item.id !== movedItem.id) {
+            await instance.patch(
+              `/itineraries/${itineraryId}/items/${item.id}`,
+              {
+                dayNumber: destDayNumber,
+                orderInDay: i + 1,
+              }
+            );
+          }
+        }
+      }
+
+      console.log("✅ Drag & drop saved successfully");
+    } catch (err) {
+      console.error("Error saving drag and drop:", err);
+      alert("Không thể lưu thay đổi. Đang tải lại dữ liệu...");
+
+      // Reload data nếu có lỗi
+      const response = await GetItineraryDetail(itineraryId);
+      const data = response?.data || response;
+      const days = generateDays(data.startDate, data.endDate, data.items || []);
+      setItinerary((prev) => ({ ...prev, days }));
+    }
   };
 
   return (
@@ -743,54 +772,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 </span>
               </p>
             </div>
-
-            {/* Thông báo unsaved changes trong header */}
-            {hasUnsavedChanges && (
-              <div className="flex items-center gap-2 text-yellow-700 bg-yellow-50 px-3 py-1.5 rounded-lg border border-yellow-200 text-sm">
-                <span>⚠️</span>
-                <span>Có thay đổi chưa lưu</span>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
-            {saveStatus === "success" && (
-              <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-lg">
-                <CheckCircle size={16} />
-                <span className="text-sm font-medium">Đã lưu!</span>
-              </div>
-            )}
-            {saveStatus === "error" && (
-              <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">
-                <span className="text-sm font-medium">Lỗi khi lưu</span>
-              </div>
-            )}
-
-            <button
-              onClick={handleSave}
-              disabled={saving || !hasUnsavedChanges}
-              className={`
-    flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-sm
-          transition-all duration-200 transform
-          ${
-            hasUnsavedChanges && !saving
-              ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:scale-[1.02]"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }
-        `}
-            >
-              {saving ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Đang lưu...</span>
-                </>
-              ) : (
-                <>
-                  <Save size={16} />
-                  <span>Lưu</span>
-                </>
-              )}
-            </button>
             <button
               onClick={() => navigate("/trip-list")}
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200"
