@@ -1,5 +1,5 @@
-// src/components/LeafletMap.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import PropTypes from "prop-types";
 
 /**
  * props:
@@ -11,29 +11,36 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  *     image?: string, placeImage?: string
  *   }>
  * - hoveredPlaceId?: string|number
+ * - provider?: "esri-street" | "esri-imagery" | "google-roadmap" | "google-satellite" | "geoapify"
+ * - geoapifyApiKey?: string        // chỉ cần khi provider="geoapify"
+ * - mapStyle?: string              // chỉ áp dụng cho Geoapify (vd: "osm-bright", "carto-dark"...)
+ * - language?: string              // chỉ áp dụng cho Geoapify (vd: "vi")
  */
-export function LeafletMap({ places = [], hoveredPlaceId = null }) {
-  const mapElRef = useRef(null);
+function LeafletMap({
+  places = [],
+  hoveredPlaceId = null,
+  provider = "esri-street",
+  geoapifyApiKey,
+  mapStyle = "osm-bright",
+  language = "vi",
+}) {
   const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
   const markersRef = useRef([]); // [{ id, marker }]
   const legendRef = useRef(null);
-  const resizeObsRef = useRef(null);
+  const baseLayerRef = useRef(null); // giữ tham chiếu tile layer để thay đổi provider nếu cần
 
-  /* -------------------- Days & Filter state -------------------- */
+  /* -------------------- Days & Filter state (popover) -------------------- */
   const days = useMemo(() => {
     const s = new Set(
       (places || [])
-        .filter((p) => p?.lat != null && p?.lng != null)
+        .filter((p) => p.lat && p.lng)
         .map((p) => Number(p.dayNumber) || 1)
     );
     return Array.from(s).sort((a, b) => a - b);
   }, [places]);
 
   const [selectedDays, setSelectedDays] = useState(new Set(days));
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [pendingDays, setPendingDays] = useState(new Set(days));
-
-  // Khi danh sách "days" thay đổi, giữ lại lựa chọn hợp lệ; nếu rỗng => chọn tất cả
   useEffect(() => {
     setSelectedDays((prev) => {
       if (!prev || prev.size === 0) return new Set(days);
@@ -42,15 +49,22 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
     });
   }, [days.join(",")]);
 
-  // Đồng bộ pendingDays theo selectedDays (1 nơi duy nhất)
-  useEffect(() => {
-    setPendingDays(new Set(selectedDays));
-  }, [selectedDays]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [pendingDays, setPendingDays] = useState(new Set(days));
+  useEffect(() => setPendingDays(new Set(selectedDays)), [selectedDays]);
 
   /* ------------------------------ Colors ------------------------------- */
   const dayColors = [
-    "#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6",
-    "#06b6d4", "#f97316", "#0ea5e9", "#22c55e", "#7c3aed",
+    "#2563eb",
+    "#16a34a",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#06b6d4",
+    "#f97316",
+    "#0ea5e9",
+    "#22c55e",
+    "#7c3aed",
   ];
   const colorForDay = (d) =>
     dayColors[(Math.max(1, Number(d) || 1) - 1) % dayColors.length];
@@ -86,95 +100,146 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
     document.head.appendChild(style);
   }, []);
 
+  /* -------------------------- Base layer helper ------------------------ */
+  const buildBaseLayer = (L, map) => {
+    // Gỡ base layer cũ (nếu có)
+    if (baseLayerRef.current) {
+      map.removeLayer(baseLayerRef.current);
+      baseLayerRef.current = null;
+    }
+
+    let url = "";
+    let options = { maxZoom: 20, attribution: "" };
+
+    switch (provider) {
+      case "google-roadmap": {
+        url = "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}";
+        options.attribution = "© Google Maps";
+        break;
+      }
+      case "google-satellite": {
+        url = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
+        options.attribution = "© Google Satellite";
+        break;
+      }
+      case "esri-imagery": {
+        url =
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+        options.attribution =
+          "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, GIS User Community";
+        break;
+      }
+      case "esri-street":
+      default: {
+        url =
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+        options.attribution =
+          "Tiles © Esri — Source: Esri, HERE, Garmin, FAO, NOAA, USGS, NGA, GEBCO, NPS";
+        break;
+      }
+      case "geoapify": {
+        if (!geoapifyApiKey) {
+          console.warn(
+            "LeafletMap: provider=geoapify nhưng thiếu geoapifyApiKey. Fallback sang esri-street."
+          );
+          url =
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+          options.attribution =
+            "Tiles © Esri — Source: Esri, HERE, Garmin, FAO, NOAA, USGS, NGA, GEBCO, NPS";
+          break;
+        }
+        url = `https://maps.geoapify.com/v1/tile/${mapStyle}/{z}/{x}/{y}.png?lang=${encodeURIComponent(
+          language
+        )}&apiKey=${encodeURIComponent(geoapifyApiKey)}`;
+        options.attribution =
+          "© OpenMapTiles © OpenStreetMap contributors • Powered by Geoapify";
+        break;
+      }
+    }
+
+    baseLayerRef.current = L.tileLayer(url, options).addTo(map);
+  };
+
   /* -------------------------- Load Leaflet lib ------------------------- */
   useEffect(() => {
-    // CSS
     if (!document.getElementById("leaflet-css")) {
       const link = document.createElement("link");
       link.id = "leaflet-css";
       link.rel = "stylesheet";
-      link.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css";
+      link.href =
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css";
       document.head.appendChild(link);
     }
 
     const initMap = () => {
-      if (!mapElRef.current || !window.L || mapRef.current) return;
-
-      const L = window.L;
+      if (!mapRef.current || !window.L || mapInstanceRef.current) return;
       const center = [16.047079, 108.20623]; // VN center
-
-      const map = L.map(mapElRef.current, {
+      const map = window.L.map(mapRef.current, {
         center,
         zoom: 6,
         zoomControl: true,
       });
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-        maxZoom: 19,
-      }).addTo(map);
+      // Chọn base layer theo provider
+      buildBaseLayer(window.L, map);
 
-      mapRef.current = map;
-
-      // chỉ render/invalidate sau khi map ready
-      map.whenReady(() => {
-        safeInvalidate();
-        renderAll();
-      });
-
-      // ResizeObserver
-      if ("ResizeObserver" in window) {
-        resizeObsRef.current = new ResizeObserver(() => safeInvalidate());
-        resizeObsRef.current.observe(mapElRef.current);
-      }
+      mapInstanceRef.current = map;
+      renderAll();
     };
 
     if (!window.L) {
       const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js";
-      script.onload = initMap;
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js";
+      script.onload = () => initMap();
       document.body.appendChild(script);
     } else {
       initMap();
     }
 
+    let ro;
+    if (mapRef.current) {
+      ro = new ResizeObserver(() => {
+        if (mapInstanceRef.current) {
+          setTimeout(() => mapInstanceRef.current.invalidateSize(), 120);
+        }
+      });
+      ro.observe(mapRef.current);
+    }
+
     return () => {
-      if (resizeObsRef.current) {
-        resizeObsRef.current.disconnect();
-        resizeObsRef.current = null;
-      }
-      clearLayers();
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
+      if (ro) ro.disconnect();
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // chỉ init một lần
+
+  // Khi đổi provider / mapStyle / language / key -> thay base layer
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L) return;
+    buildBaseLayer(window.L, mapInstanceRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider, mapStyle, language, geoapifyApiKey]);
 
   /* ------------------------ Re-render conditions ----------------------- */
   useEffect(() => {
-    if (!mapRef.current || !window.L) return;
-    // Delay nhẹ để DOM ổn định (nhất là khi tab vừa mở)
+    if (!mapInstanceRef.current || !window.L) return;
     const t = setTimeout(() => {
-      safeInvalidate();
+      mapInstanceRef.current.invalidateSize();
       renderAll();
     }, 60);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(places), hoveredPlaceId, JSON.stringify(Array.from(selectedDays))]);
+  }, [
+    JSON.stringify(places),
+    hoveredPlaceId,
+    JSON.stringify(Array.from(selectedDays)),
+  ]);
 
   /* ------------------------------ Helpers ------------------------------ */
-  const safeInvalidate = () => {
-    const m = mapRef.current;
-    if (!m) return;
-    requestAnimationFrame(() => {
-      try {
-        m.invalidateSize();
-      } catch { }
-    });
-  };
-
   const currency = (v) =>
     v == null ? "" : (Number(v) || 0).toLocaleString("vi-VN") + " đ";
 
@@ -214,26 +279,24 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
   const clearLayers = () => {
     markersRef.current.forEach((m) => m.marker.remove());
     markersRef.current = [];
-    if (legendRef.current && mapRef.current) {
-      mapRef.current.removeControl(legendRef.current);
+    if (legendRef.current) {
+      mapInstanceRef.current.removeControl(legendRef.current);
       legendRef.current = null;
     }
   };
 
   /* ----------------------------- Renderer ------------------------------ */
   const renderAll = () => {
-    const map = mapRef.current;
-    if (!map) return;
-
+    if (!mapInstanceRef.current) return;
     clearLayers();
 
     const filtered = (places || [])
-      .filter((p) => p?.lat != null && p?.lng != null)
+      .filter((p) => p.lat && p.lng)
       .filter((p) => selectedDays.has(Number(p.dayNumber) || 1));
 
     if (filtered.length === 0) return;
 
-    // Bổ sung orderInDay liên tục theo từng ngày nếu thiếu
+    // Liên tục orderInDay theo từng ngày khi thiếu
     const idxByDay = new Map();
     filtered.forEach((p) => {
       const d = Number(p.dayNumber) || 1;
@@ -248,14 +311,20 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
 
     const bounds = [];
     filtered.forEach((p) => {
-      const isHovered = hoveredPlaceId != null && String(p.id) === String(hoveredPlaceId);
-      const icon = makeMarkerIcon(p.orderInDay, p.dayNumber || 1, isHovered);
+      const isHoveredFromList =
+        hoveredPlaceId != null && String(p.id) === String(hoveredPlaceId);
 
-      const marker = window.L.marker([+p.lat, +p.lng], {
+      const icon = makeMarkerIcon(
+        p.orderInDay,
+        p.dayNumber || 1,
+        isHoveredFromList
+      );
+
+      const marker = window.L.marker([p.lat, p.lng], {
         icon,
-        zIndexOffset: isHovered ? 1000 : 0,
+        zIndexOffset: isHoveredFromList ? 1000 : 0,
         bubblingMouseEvents: true,
-      }).addTo(map);
+      }).addTo(mapInstanceRef.current);
 
       const color = colorForDay(p.dayNumber || 1);
       const title = p.name || p.placeName || "Địa điểm";
@@ -275,14 +344,26 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
               <div class="title">${title}</div>
               <div class="row">
                 <span class="dot" style="background:${color}"></span>
-                <span>Ngày <b style="color:${color}">${p.dayNumber || 1}</b> • Thứ tự <b>${p.orderInDay || 1}</b></span>
+                <span>Ngày <b style="color:${color}">${p.dayNumber || 1
+        }</b> • Thứ tự <b>${p.orderInDay || 1}</b></span>
               </div>
-              ${timeStr ? `<div class="row">🕒 <span>${timeStr}</span></div>` : ""}
-              ${costStr ? `<div class="row" style="color:#047857">💰 <b>${costStr}</b></div>` : ""}
-              ${addr ? `<div class="row" style="align-items:flex-start">📍 <span style="line-height:1.4">${addr}</span></div>` : ""}
+              ${timeStr
+          ? `<div class="row">🕒 <span>${timeStr}</span></div>`
+          : ""
+        }
+              ${costStr
+          ? `<div class="row" style="color:#047857">💰 <b>${costStr}</b></div>`
+          : ""
+        }
+              ${addr
+          ? `<div class="row" style="align-items:flex-start">📍 <span style="line-height:1.4">${addr}</span></div>`
+          : ""
+        }
               <a target="_blank" rel="noreferrer"
-                 href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${title} ${addr}`)}"
-                 class="link">🧭 Mở Google Maps</a>
+                href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          `${title} ${addr}`
+        )}"
+                class="link">🧭 Mở Google Maps</a>
             </div>
           </div>
         </div>
@@ -297,27 +378,16 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
 
       marker.on("mouseover", () => marker.openTooltip());
       marker.on("mouseout", () => marker.closeTooltip());
-
-      if (isHovered) marker.openTooltip();
+      if (isHoveredFromList) marker.openTooltip();
 
       markersRef.current.push({ id: String(p.id), marker });
-      bounds.push([+p.lat, +p.lng]);
+      bounds.push([p.lat, p.lng]);
     });
 
-    // Fit bounds với padding
     if (bounds.length > 0) {
-      try {
-        map.fitBounds(bounds, { padding: [48, 48] });
-      } catch {
-        setTimeout(() => {
-          try {
-            map.fitBounds(bounds, { padding: [48, 48] });
-          } catch { }
-        }, 0);
-      }
+      mapInstanceRef.current.fitBounds(bounds, { padding: [48, 48] });
     }
 
-    // Legend theo ngày hiển thị
     const legendDays = Array.from(
       new Set(filtered.map((p) => Number(p.dayNumber) || 1))
     ).sort((a, b) => a - b);
@@ -345,12 +415,13 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
           .join("");
       return div;
     };
-    legend.addTo(map);
+    legend.addTo(mapInstanceRef.current);
     legendRef.current = legend;
   };
 
   // Mở/đóng tooltip khi hover từ list
   useEffect(() => {
+    if (!mapInstanceRef.current) return;
     const id = hoveredPlaceId != null ? String(hoveredPlaceId) : null;
     markersRef.current.forEach(({ id: mid, marker }) => {
       if (id && mid === id) marker.openTooltip();
@@ -358,10 +429,10 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
     });
   }, [hoveredPlaceId]);
 
-  /* ----------------------------- JSX return ---------------------------- */
   return (
     <div className="relative w-full h-full">
-      <div ref={mapElRef} className="w-full h-full rounded-lg" />
+      {/* Map */}
+      <div ref={mapRef} className="w-full h-full rounded-lg" />
 
       {/* Filter days trigger + popover */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000]">
@@ -372,7 +443,7 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
           <span className="inline-flex items-center justify-center w-5 h-5 rounded-lg border bg-white">
             ⧉
           </span>
-          Lọc theo ngày
+          Filter days
         </button>
 
         {filterOpen && (
@@ -384,7 +455,9 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
             <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[1001] w-[280px] sm:w-[320px]">
               <div className="rounded-2xl border bg-white shadow-2xl">
                 <div className="p-3 sm:p-4 border-b flex items-start justify-between">
-                  <div className="text-sm font-semibold">Xem lịch trình theo ngày</div>
+                  <div className="text-sm font-semibold">
+                    View itinerary by day
+                  </div>
                   <label className="inline-flex items-center gap-2 text-sm select-none">
                     <input
                       type="checkbox"
@@ -395,7 +468,7 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
                         else setPendingDays(new Set());
                       }}
                     />
-                    <span className="text-gray-700">Chọn tất cả</span>
+                    <span className="text-gray-700">Select all</span>
                   </label>
                 </div>
 
@@ -435,15 +508,16 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
                               color: "#111827",
                             }}
                           >
-                            Ngày {d}
+                            Day {d}
                           </span>
+                          <span className="text-gray-500">(Untitled)</span>
                         </span>
                       </label>
                     );
                   })}
                   {days.length === 0 && (
                     <div className="text-sm text-gray-500 px-2 py-4 text-center">
-                      Không có ngày nào để lọc
+                      No days to filter
                     </div>
                   )}
                 </div>
@@ -462,7 +536,7 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
                     }}
                     className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 text-sm shadow"
                   >
-                    Áp dụng
+                    Apply
                   </button>
                 </div>
               </div>
@@ -471,7 +545,6 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
         )}
       </div>
 
-      {/* Empty overlay */}
       {(!places || places.length === 0) && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
           <div className="text-center text-gray-400">
@@ -501,3 +574,21 @@ export function LeafletMap({ places = [], hoveredPlaceId = null }) {
     </div>
   );
 }
+
+LeafletMap.propTypes = {
+  places: PropTypes.array,
+  hoveredPlaceId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  provider: PropTypes.oneOf([
+    "esri-street",
+    "esri-imagery",
+    "google-roadmap",
+    "google-satellite",
+    "geoapify",
+  ]),
+  geoapifyApiKey: PropTypes.string,
+  mapStyle: PropTypes.string,
+  language: PropTypes.string,
+};
+
+export default LeafletMap;
+export { LeafletMap };

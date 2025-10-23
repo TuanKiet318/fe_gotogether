@@ -261,6 +261,20 @@ export const updateItineraryDates = async (itineraryId, startDate, endDate) => {
     throw error;
   }
 };
+
+/**
+ * Lấy địa điểm gần nhất của mỗi category từ một place
+ * placeId: ID của place làm điểm tham chiếu
+ */
+export const getNearestPlacesByCategories = async (placeId) => {
+  try {
+    const res = await instance.get(`/places/${placeId}/nearest-by-categories`);
+    return res;
+  } catch (error) {
+    console.error("Error in getNearestPlacesByCategories:", error);
+    throw error;
+  }
+};
 export const sendInvite = async (itineraryId, payload) => {
   try {
     const res = await instance.post(
@@ -280,6 +294,40 @@ export const listInvites = async (itineraryId) => {
     return res?.data ?? res;
   } catch (error) {
     console.error("Error fetching invites:", error?.response?.data || error);
+    throw error;
+  }
+};
+/**
+ * Cập nhật quyền (role) của một collaborator
+ * PUT /api/itineraries/{itineraryId}/collaborators/{userId}/role
+ * @param {'VIEWER'|'EDITOR'} role
+ */
+export const updateCollaboratorRole = async (itineraryId, userId, role) => {
+  try {
+    const payload = { role };
+    const res = await instance.put(
+      `/itineraries/${itineraryId}/collaborators/${userId}/role`,
+      payload
+    );
+    return res?.data ?? res;
+  } catch (error) {
+    console.error("Error in updateCollaboratorRole:", error?.response?.data || error);
+    throw error;
+  }
+};
+
+/**
+ * Xoá một collaborator khỏi itinerary
+ * DELETE /api/itineraries/{itineraryId}/collaborators/{userId}
+ */
+export const removeCollaborator = async (itineraryId, userId) => {
+  try {
+    const res = await instance.delete(
+      `/itineraries/${itineraryId}/collaborators/${userId}`
+    );
+    return res?.data ?? res;
+  } catch (error) {
+    console.error("Error in removeCollaborator:", error?.response?.data || error);
     throw error;
   }
 };

@@ -143,10 +143,10 @@ export default function ShareModal({
                             />
                             <span
                                 className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full ${inviteEmail
-                                        ? isValidEmail
-                                            ? "bg-blue-500"
-                                            : "bg-red-400"
-                                        : "bg-gray-300"
+                                    ? isValidEmail
+                                        ? "bg-blue-500"
+                                        : "bg-red-400"
+                                    : "bg-gray-300"
                                     }`}
                             />
                         </div>
@@ -164,8 +164,8 @@ export default function ShareModal({
                             onClick={handleSendInvite}
                             disabled={!isValidEmail || sending}
                             className={`inline-flex h-[42px] items-center justify-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition ${!isValidEmail || sending
-                                    ? "bg-blue-300 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
+                                ? "bg-blue-300 cursor-not-allowed"
+                                : "bg-blue-600 hover:bg-blue-700"
                                 }`}
                             title={!isValidEmail ? "Nhập email hợp lệ" : ""}
                         >
@@ -261,48 +261,6 @@ export default function ShareModal({
                         )}
                     </div>
 
-                    {/* Link permission */}
-                    <div className="mb-4 flex items-center justify-between rounded-xl border border-gray-100 bg-gradient-to-r from-sky-50 to-blue-50 px-3 py-3">
-                        <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                                <Globe size={18} className="text-blue-700" />
-                            </div>
-                            <span className="text-sm font-semibold text-gray-800">
-                                Anyone with the link
-                            </span>
-                        </div>
-                        <select
-                            value={linkPermission}
-                            onChange={(e) => setLinkPermission(e.target.value)}
-                            className="h-[34px] rounded-lg border border-blue-200 bg-white px-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        >
-                            <option>Can Edit</option>
-                            <option>Can View</option>
-                            <option>Restricted</option>
-                        </select>
-                    </div>
-
-                    {/* Copy link */}
-                    <button
-                        onClick={copyPlannerLink}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-[16px] w-[16px]"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2}
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M8 17l4 4 4-4m-4-5v9m8-7a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                        </svg>
-                        Copy planner link
-                    </button>
                 </div>
             </div>
         </div>
