@@ -32,6 +32,7 @@ import PlaceDetailModal from "../components/PlaceDetailModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import PlaceDetailModalWrapper from "../components/PlaceDetailModalWrapper";
+import SuggestedPlacesModal from "../components/SuggestedPlacesModal";
 
 /* ------------------- HELPER ------------------- */
 function generateDays(startDate, endDate, items) {
@@ -135,7 +136,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [selectedStartDate, setSelectedStartDate] = useState(null);
   const [selectedEndDate, setSelectedEndDate] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-
+  const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
+  const [lastAddedPlace, setLastAddedPlace] = useState(null);
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
       titleInputRef.current.focus();
@@ -383,7 +385,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     const newItem = {
       placeId: place.id,
       dayNumber: dayNumber,
-      orderInDay: 0, // Backend sẽ tự động gán
+      orderInDay: 0,
       startTime: "09:00",
       endTime: "11:00",
       description: "",
@@ -392,17 +394,20 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     };
 
     try {
-      // Gọi API tạo item mới
-      const response = await instance.post(
-        `/itineraries/${itineraryId}/items`,
-        newItem
-      );
+      await instance.post(`/itineraries/${itineraryId}/items`, newItem);
 
-      // Reload lại data để đồng bộ với backend
+      // Reload lại data
       const res = await GetItineraryDetail(itineraryId);
       const data = res?.data || res;
       const days = generateDays(data.startDate, data.endDate, data.items || []);
       setItinerary((prev) => ({ ...prev, days }));
+
+      // Hiển thị modal đề xuất
+      setLastAddedPlace({
+        id: place.id,
+        name: place.name,
+        dayNumber: dayNumber,
+      });
     } catch (err) {
       console.error("Error adding place:", err);
       alert("Không thể thêm địa điểm. Vui lòng thử lại.");
@@ -967,6 +972,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                             name: clickedItem.placeName,
                                           });
                                         }}
+                                        onSuggest={(clickedItem) => {
+                                          setLastAddedPlace({
+                                            id: clickedItem.placeId,
+                                            name: clickedItem.placeName,
+                                            dayNumber: clickedItem.dayNumber,
+                                          });
+                                          setShowSuggestionsModal(true);
+                                        }}
                                       />
                                     </div>
 
@@ -1400,6 +1413,20 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </div>
           </div>
         </>
+      )}
+      {/* Modal đề xuất địa điểm tiếp theo */}
+      {showSuggestionsModal && lastAddedPlace && (
+        <SuggestedPlacesModal
+          placeId={lastAddedPlace.id}
+          placeName={lastAddedPlace.name}
+          onClose={() => {
+            setShowSuggestionsModal(false);
+            setLastAddedPlace(null);
+          }}
+          onSelectPlace={(place) => {
+            handleAddPlaceToDay(lastAddedPlace.dayNumber, place);
+          }}
+        />
       )}
     </div>
   );

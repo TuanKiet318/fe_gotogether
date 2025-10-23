@@ -1,15 +1,20 @@
 import React from "react";
-import { Clock, MapPin, DollarSign, Trash2 } from "lucide-react";
+import { Clock, MapPin, DollarSign, Trash2, Navigation } from "lucide-react";
 
-export default function DayItemCard({ item, onRemove, onUpdate, onClick }) {
+export default function DayItemCard({
+  item,
+  onRemove,
+  onUpdate,
+  onClick,
+  onSuggest,
+}) {
   return (
-    <div
-      className="p-3 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow"
-      onClick={() => onClick?.(item)}
-      style={{ cursor: "pointer" }}
-    >
+    <div className="p-3 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow relative group">
       {/* Header với ảnh và tên */}
-      <div className="flex gap-3 mb-2">
+      <div
+        className="flex gap-3 mb-2 cursor-pointer"
+        onClick={() => onClick?.(item)}
+      >
         <img
           src={item.placeImage}
           alt={item.placeName}
@@ -23,7 +28,10 @@ export default function DayItemCard({ item, onRemove, onUpdate, onClick }) {
           </p>
         </div>
         <button
-          onClick={() => onRemove(item.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(item.id);
+          }}
           className="text-red-500 hover:text-red-700 h-fit"
         >
           <Trash2 className="w-4 h-4" />
@@ -37,6 +45,7 @@ export default function DayItemCard({ item, onRemove, onUpdate, onClick }) {
           type="time"
           value={item.startTime || ""}
           onChange={(e) => onUpdate(item.id, { startTime: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
           className="border rounded px-2 py-1 text-xs"
         />
         <span className="text-xs">→</span>
@@ -44,6 +53,7 @@ export default function DayItemCard({ item, onRemove, onUpdate, onClick }) {
           type="time"
           value={item.endTime || ""}
           onChange={(e) => onUpdate(item.id, { endTime: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
           className="border rounded px-2 py-1 text-xs"
         />
       </div>
@@ -53,6 +63,7 @@ export default function DayItemCard({ item, onRemove, onUpdate, onClick }) {
         <select
           value={item.transportMode || ""}
           onChange={(e) => onUpdate(item.id, { transportMode: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
           className="flex-1 border rounded px-2 py-1 text-xs"
         >
           <option value="">Phương tiện</option>
@@ -73,6 +84,7 @@ export default function DayItemCard({ item, onRemove, onUpdate, onClick }) {
             onChange={(e) =>
               onUpdate(item.id, { estimatedCost: parseFloat(e.target.value) })
             }
+            onClick={(e) => e.stopPropagation()}
             placeholder="0"
             className="w-16 text-xs outline-none"
           />
@@ -83,10 +95,23 @@ export default function DayItemCard({ item, onRemove, onUpdate, onClick }) {
       <textarea
         value={item.description || ""}
         onChange={(e) => onUpdate(item.id, { description: e.target.value })}
+        onClick={(e) => e.stopPropagation()}
         placeholder="Ghi chú cho hoạt động này..."
         className="w-full border rounded px-2 py-1 text-xs resize-none"
         rows={2}
       />
+
+      {/* Nút gợi ý địa điểm tiếp theo - hiện khi hover */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onSuggest?.(item);
+        }}
+        className="absolute -bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full hover:from-purple-600 hover:to-blue-600 shadow-lg text-xs font-medium z-10"
+      >
+        <Navigation size={12} />
+        <span>Gợi ý tiếp theo</span>
+      </button>
     </div>
   );
 }

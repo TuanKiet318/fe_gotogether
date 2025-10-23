@@ -252,3 +252,17 @@ export const updateItineraryDates = async (itineraryId, startDate, endDate) => {
     throw error;
   }
 };
+
+/**
+ * Lấy địa điểm gần nhất của mỗi category từ một place
+ * placeId: ID của place làm điểm tham chiếu
+ */
+export const getNearestPlacesByCategories = async (placeId) => {
+  try {
+    const res = await instance.get(`/places/${placeId}/nearest-by-categories`);
+    return res;
+  } catch (error) {
+    console.error("Error in getNearestPlacesByCategories:", error);
+    throw error;
+  }
+};
