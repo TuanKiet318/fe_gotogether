@@ -19,6 +19,7 @@ import MyProfile from "./page/MyProfile";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import ItineraryEditor from "./page/ItineraryEditor.jsx";
 import ItineraryLandingPage from "./page/ItineraryLandingPage.jsx";
+import MyItinerariesPage from "./page/MyItinerariesPage.jsx";
 const App = () => {
   return (
     <AuthProvider>
@@ -56,6 +57,15 @@ const App = () => {
             element={
               <PrivateRoute>
                 <MyProfile />
+              </PrivateRoute>
+            }
+          />
+          {/* ✅ Route MyProfile */}
+          <Route
+            path="/my-itineraries"
+            element={
+              <PrivateRoute>
+                <MyItinerariesPage />
               </PrivateRoute>
             }
           />

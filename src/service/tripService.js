@@ -261,3 +261,25 @@ export const updateItineraryDates = async (itineraryId, startDate, endDate) => {
     throw error;
   }
 };
+export const sendInvite = async (itineraryId, payload) => {
+  try {
+    const res = await instance.post(
+      `/itineraries/${itineraryId}/invites`,
+      { itineraryId, inviteEmail: payload.inviteEmail, role: payload.role }
+    );
+    // axios: dữ liệu thường nằm ở res.data
+    return res?.data ?? res;
+  } catch (error) {
+    console.error("Error in sendInvite:", error?.response?.data || error);
+    throw error;
+  }
+};
+export const listInvites = async (itineraryId) => {
+  try {
+    const res = await instance.get(`/itineraries/${itineraryId}/invites`);
+    return res?.data ?? res;
+  } catch (error) {
+    console.error("Error fetching invites:", error?.response?.data || error);
+    throw error;
+  }
+};

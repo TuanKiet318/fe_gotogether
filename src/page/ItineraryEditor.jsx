@@ -7,6 +7,8 @@ import {
   CheckCircle,
   LogOut,
   MoreVertical,
+  Share2,
+  X, Globe, Mail,
   Plus,
   Trash2,
   Eye,
@@ -15,6 +17,7 @@ import {
   Navigation,
 } from "lucide-react";
 import instance from "../service/axios.admin.customize";
+import ShareModal from "../components/ShareModal.jsx";
 import {
   GetItineraryDetail,
   DeleteItineraryItem,
@@ -135,6 +138,25 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [selectedStartDate, setSelectedStartDate] = useState(null);
   const [selectedEndDate, setSelectedEndDate] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [sharedUsers, setSharedUsers] = useState([
+    { name: "Kiệt Bùi", email: "kietbadao318@gmail.com", role: "Owner", isOwner: true },
+    { name: "Kiệt Huỳnh Tuấn", email: "huynhtuankiet31804@gmail.com", role: "Can Edit", isOwner: false },
+  ]);
+  const [linkPermission, setLinkPermission] = useState("Can Edit");
+
+  const handleSendInvite = () => {
+    if (!inviteEmail.trim()) return;
+    // TODO: gọi API gửi invite nếu có
+    console.log("Sending invite to:", inviteEmail);
+    setInviteEmail("");
+  };
+
+  const copyPlannerLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Đã copy link!");
+  };
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -454,9 +476,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         items: day.items.map((item) =>
           item.id === itemId
             ? {
-                ...item,
-                ...updates,
-              }
+              ...item,
+              ...updates,
+            }
             : item
         ),
       }));
@@ -724,6 +746,19 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     <div className="flex flex-col h-screen">
       {/* Header */}
       <header className="bg-white shadow-md border-b border-gray-200 px-6 py-3 flex-shrink-0">
+        {showShareModal && (
+          <ShareModal
+            onClose={() => setShowShareModal(false)}
+            inviteEmail={inviteEmail}
+            setInviteEmail={setInviteEmail}
+            sharedUsers={sharedUsers}
+            linkPermission={linkPermission}
+            setLinkPermission={setLinkPermission}
+            copyPlannerLink={copyPlannerLink}
+            itineraryId={itinerary.id}
+          />
+        )}
+
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-6">
             <div>
@@ -776,6 +811,16 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
           <div className="flex items-center gap-3">
             <button
+              onClick={() => {
+                setShowShareModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200"
+            >
+              <Share2 size={16} />
+              <span>Chia sẻ</span>
+            </button>
+
+            <button
               onClick={() => navigate("/trip-list")}
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200"
             >
@@ -796,13 +841,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       <div className="flex gap-6 flex-1 overflow-hidden">
         {/* Days List */}
         <div
-          className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${
-            mapSize === "full"
-              ? "w-1/4"
-              : mapSize === "half"
+          className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${mapSize === "full"
+            ? "w-1/4"
+            : mapSize === "half"
               ? "w-1/2"
               : "w-2/3"
-          }`}
+            }`}
         >
           <div className="flex gap-4 min-w-max h-full">
             <DragDropContext onDragEnd={handleDragEnd}>
@@ -927,11 +971,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           <div
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            className={`space-y-3 min-h-[100px] ${
-                              snapshot.isDraggingOver
-                                ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
-                                : ""
-                            }`}
+                            className={`space-y-3 min-h-[100px] ${snapshot.isDraggingOver
+                              ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
+                              : ""
+                              }`}
                           >
                             {day.items.map((item, index) => (
                               <Draggable
@@ -951,11 +994,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                       onMouseLeave={() =>
                                         setHoveredItemId(null)
                                       }
-                                      className={`transition-transform ${
-                                        snapshot.isDragging
-                                          ? "scale-[1.02] shadow-lg"
-                                          : ""
-                                      }`}
+                                      className={`transition-transform ${snapshot.isDragging
+                                        ? "scale-[1.02] shadow-lg"
+                                        : ""
+                                        }`}
                                     >
                                       <DayItemCard
                                         item={item}
@@ -1011,13 +1053,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         </div>
         {/* Map - Right side */}
         <div
-          className={`transition-all duration-300 flex-shrink-0 ${
-            mapSize === "full"
-              ? "w-3/4"
-              : mapSize === "half"
+          className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
+            ? "w-3/4"
+            : mapSize === "half"
               ? "w-1/2"
               : "w-1/3"
-          }`}
+            }`}
         >
           <div className="h-full relative">
             <div className="absolute top-4 left-4 z-[1000]">
@@ -1045,11 +1086,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                        mapSize === "default"
-                          ? "bg-blue-50 text-blue-600 font-medium"
-                          : ""
-                      }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
+                        ? "bg-blue-50 text-blue-600 font-medium"
+                        : ""
+                        }`}
                     >
                       {mapSize === "default" && "✓ "}Default
                     </button>
@@ -1061,11 +1101,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                        mapSize === "half"
-                          ? "bg-blue-50 text-blue-600 font-medium"
-                          : ""
-                      }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
+                        ? "bg-blue-50 text-blue-600 font-medium"
+                        : ""
+                        }`}
                     >
                       {mapSize === "half" && "✓ "}Half
                     </button>
@@ -1077,11 +1116,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           showMapMenu: false,
                         }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                        mapSize === "full"
-                          ? "bg-blue-50 text-blue-600 font-medium"
-                          : ""
-                      }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
+                        ? "bg-blue-50 text-blue-600 font-medium"
+                        : ""
+                        }`}
                     >
                       {mapSize === "full" && "✓ "}Full
                     </button>
@@ -1253,16 +1291,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           className={`
           aspect-square flex items-center justify-center rounded-lg text-sm
           transition-all duration-200
-          ${
-            !day.isCurrentMonth || isPast
-              ? "text-gray-300 cursor-not-allowed"
-              : ""
-          }
-          ${
-            day.isCurrentMonth && !isPast && !isStart && !isEnd && !inRange
-              ? "hover:bg-gray-100 text-gray-700"
-              : ""
-          }
+          ${!day.isCurrentMonth || isPast
+                              ? "text-gray-300 cursor-not-allowed"
+                              : ""
+                            }
+          ${day.isCurrentMonth && !isPast && !isStart && !isEnd && !inRange
+                              ? "hover:bg-gray-100 text-gray-700"
+                              : ""
+                            }
           ${isStart || isEnd ? "bg-red-500 text-white font-semibold" : ""}
           ${inRange && !isStart && !isEnd ? "bg-red-100 text-red-600" : ""}
         `}
@@ -1345,26 +1381,22 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           className={`
                       aspect-square flex items-center justify-center rounded-lg text-sm
                       transition-all duration-200
-                      ${
-                        !day.isCurrentMonth
-                          ? "text-gray-300 cursor-not-allowed"
-                          : ""
-                      }
-                      ${
-                        day.isCurrentMonth && !isStart && !isEnd && !inRange
-                          ? "hover:bg-gray-100 text-gray-700"
-                          : ""
-                      }
-                      ${
-                        isStart || isEnd
-                          ? "bg-red-500 text-white font-semibold"
-                          : ""
-                      }
-                      ${
-                        inRange && !isStart && !isEnd
-                          ? "bg-red-100 text-red-600"
-                          : ""
-                      }
+                      ${!day.isCurrentMonth
+                              ? "text-gray-300 cursor-not-allowed"
+                              : ""
+                            }
+                      ${day.isCurrentMonth && !isStart && !isEnd && !inRange
+                              ? "hover:bg-gray-100 text-gray-700"
+                              : ""
+                            }
+                      ${isStart || isEnd
+                              ? "bg-red-500 text-white font-semibold"
+                              : ""
+                            }
+                      ${inRange && !isStart && !isEnd
+                              ? "bg-red-100 text-red-600"
+                              : ""
+                            }
                     `}
                         >
                           {day.date.getDate()}
@@ -1389,11 +1421,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 disabled={!selectedStartDate || !selectedEndDate}
                 className={`
             px-6 py-2.5 rounded-lg font-medium transition
-            ${
-              selectedStartDate && selectedEndDate
-                ? "bg-red-500 text-white hover:bg-red-600"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }
+            ${selectedStartDate && selectedEndDate
+                    ? "bg-red-500 text-white hover:bg-red-600"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }
           `}
               >
                 Update
