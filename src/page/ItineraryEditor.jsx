@@ -604,23 +604,33 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
       if (sourceDayIndex === destDayIndex) {
         // Reorder trong cùng ngày
+        // Lưu lại tất cả thời gian TRƯỚC KHI di chuyển (bao gồm cả item sẽ bị di chuyển)
+        const originalItemsWithTimes = [...newSourceDay.items]; // Mảng gốc chưa xóa item
+
+        // Di chuyển item
         sourceItems.splice(destination.index, 0, removed);
+
+        // Gán lại thời gian: mỗi item ở vị trí mới sẽ nhận thời gian của vị trí đó trong mảng gốc
         newDays[sourceDayIndex] = {
           ...newSourceDay,
           items: sourceItems.map((item, idx) => ({
             ...item,
             orderInDay: idx + 1,
+            startTime: originalItemsWithTimes[idx]?.startTime || "09:00",
+            endTime: originalItemsWithTimes[idx]?.endTime || "11:00",
           })),
         };
       } else {
-        // Di chuyển sang ngày khác
+        // Di chuyển sang ngày khác - GIỮ NGUYÊN THỜI GIAN CỦA ITEM
         const updatedItem = {
           ...removed,
           dayNumber: newDestDay.dayNumber,
+          // Item giữ nguyên thời gian của nó
         };
 
         destItems.splice(destination.index, 0, updatedItem);
 
+        // Ngày nguồn - items tự động thu lại, giữ nguyên thời gian
         newDays[sourceDayIndex] = {
           ...newSourceDay,
           items: sourceItems.map((item, idx) => ({
@@ -629,6 +639,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
           })),
         };
 
+        // Ngày đích - các items giữ nguyên thời gian của chúng
         newDays[destDayIndex] = {
           ...newDestDay,
           items: destItems.map((item, idx) => ({
@@ -1104,10 +1115,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </div>
             <div className="bg-gray-100 overflow-hidden h-full">
               <LeafletMap
-                key={JSON.stringify(getRouteItems())}
                 places={getRouteItems()}
                 hoveredPlaceId={hoveredItemId}
-                route={getRouteItems()}
+                provider="google-roadmap"
               />
             </div>
           </div>

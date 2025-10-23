@@ -290,7 +290,7 @@ export default function PlaceSidebar({
           <LeafletMap
             places={places.filter((p) => p.lat && p.lng)}
             hoveredPlaceId={hoveredPlaceId}
-            route={[]}
+            provider="google-roadmap"
           />
         </div>
       </div>
