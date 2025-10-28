@@ -177,7 +177,7 @@ function LeafletMap({
       const map = window.L.map(mapRef.current, {
         center,
         zoom: 6,
-        zoomControl: true,
+        zoomControl: false,
       });
 
       // Chọn base layer theo provider
@@ -344,25 +344,29 @@ function LeafletMap({
               <div class="title">${title}</div>
               <div class="row">
                 <span class="dot" style="background:${color}"></span>
-                <span>Ngày <b style="color:${color}">${p.dayNumber || 1
-        }</b> • Thứ tự <b>${p.orderInDay || 1}</b></span>
+                <span>Ngày <b style="color:${color}">${
+        p.dayNumber || 1
+      }</b> • Thứ tự <b>${p.orderInDay || 1}</b></span>
               </div>
-              ${timeStr
-          ? `<div class="row">🕒 <span>${timeStr}</span></div>`
-          : ""
-        }
-              ${costStr
-          ? `<div class="row" style="color:#047857">💰 <b>${costStr}</b></div>`
-          : ""
-        }
-              ${addr
-          ? `<div class="row" style="align-items:flex-start">📍 <span style="line-height:1.4">${addr}</span></div>`
-          : ""
-        }
+              ${
+                timeStr
+                  ? `<div class="row">🕒 <span>${timeStr}</span></div>`
+                  : ""
+              }
+              ${
+                costStr
+                  ? `<div class="row" style="color:#047857">💰 <b>${costStr}</b></div>`
+                  : ""
+              }
+              ${
+                addr
+                  ? `<div class="row" style="align-items:flex-start">📍 <span style="line-height:1.4">${addr}</span></div>`
+                  : ""
+              }
               <a target="_blank" rel="noreferrer"
                 href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-          `${title} ${addr}`
-        )}"
+                  `${title} ${addr}`
+                )}"
                 class="link">🧭 Mở Google Maps</a>
             </div>
           </div>
