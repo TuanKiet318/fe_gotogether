@@ -39,7 +39,11 @@ function generateDays(startDate, endDate, items) {
   const end = new Date(endDate);
   const days = [];
 
-  for (let d = new Date(start), i = 1; d <= end; d.setDate(d.getDate() + 1), i++) {
+  for (
+    let d = new Date(start), i = 1;
+    d <= end;
+    d.setDate(d.getDate() + 1), i++
+  ) {
     const dateStr = d.toISOString().split("T")[0];
     const dayItems = (items || [])
       .filter((it) => it.date === dateStr || it.dayNumber === i)
@@ -51,7 +55,9 @@ function generateDays(startDate, endDate, items) {
           placeName: it.placeName || place.name || "Địa điểm không xác định",
           placeAddress: it.placeAddress || place.address || "",
           placeImage:
-            it.placeImage || place.mainImage || "https://via.placeholder.com/150",
+            it.placeImage ||
+            place.mainImage ||
+            "https://via.placeholder.com/150",
           dayNumber: it.dayNumber || i,
           orderInDay: it.orderInDay || idx + 1,
           startTime: it.startTime || null,
@@ -93,7 +99,12 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 
 function formatDistance(a, b) {
   if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null;
-  const d = haversineKm(Number(a.lat), Number(a.lng), Number(b.lat), Number(b.lng));
+  const d = haversineKm(
+    Number(a.lat),
+    Number(a.lng),
+    Number(b.lat),
+    Number(b.lng)
+  );
   if (!isFinite(d)) return null;
   return d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(1)} km`;
 }
@@ -122,8 +133,18 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [sharedUsers, setSharedUsers] = useState([
-    { name: "Kiệt Bùi", email: "kietbadao318@gmail.com", role: "Owner", isOwner: true },
-    { name: "Kiệt Huỳnh Tuấn", email: "huynhtuankiet31804@gmail.com", role: "Can Edit", isOwner: false },
+    {
+      name: "Kiệt Bùi",
+      email: "kietbadao318@gmail.com",
+      role: "Owner",
+      isOwner: true,
+    },
+    {
+      name: "Kiệt Huỳnh Tuấn",
+      email: "huynhtuankiet31804@gmail.com",
+      role: "Can Edit",
+      isOwner: false,
+    },
   ]);
   const [linkPermission, setLinkPermission] = useState("Can Edit");
   const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
@@ -167,7 +188,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
           return;
         }
 
-        const days = generateDays(data.startDate, data.endDate, data.items || []);
+        const days = generateDays(
+          data.startDate,
+          data.endDate,
+          data.items || []
+        );
 
         setItinerary({
           id: data.id,
@@ -178,7 +203,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
           destinationId: data.destination?.id || data.destinationId,
           days,
           showMapMenu: false,
-          canEdit: !!data.canEdit,           // lấy cờ từ backend
+          canEdit: !!data.canEdit, // lấy cờ từ backend
           myRole: data.myRole || "VIEWER",
         });
       } catch (err) {
@@ -274,7 +299,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     const days = [];
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-      days.push({ date: new Date(year, month - 1, prevMonthLastDay - i), isCurrentMonth: false });
+      days.push({
+        date: new Date(year, month - 1, prevMonthLastDay - i),
+        isCurrentMonth: false,
+      });
     }
     for (let i = 1; i <= daysInMonth; i++) {
       days.push({ date: new Date(year, month, i), isCurrentMonth: true });
@@ -420,9 +448,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         items: day.items.map((it) =>
           it.id === itemId
             ? {
-              ...it,
-              ...updates,
-            }
+                ...it,
+                ...updates,
+              }
             : it
         ),
       }));
@@ -513,7 +541,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const grandTotal = itinerary.days.reduce(
-    (sum, d) => sum + d.items.reduce((s, i) => s + (Number(i.estimatedCost) || 0), 0),
+    (sum, d) =>
+      sum + d.items.reduce((s, i) => s + (Number(i.estimatedCost) || 0), 0),
     0
   );
 
@@ -526,7 +555,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     const sourceDayNumber = parseInt(source.droppableId);
     const destDayNumber = parseInt(destination.droppableId);
 
-    const sourceDay = itinerary.days.find((d) => d.dayNumber === sourceDayNumber);
+    const sourceDay = itinerary.days.find(
+      (d) => d.dayNumber === sourceDayNumber
+    );
     const destDay = itinerary.days.find((d) => d.dayNumber === destDayNumber);
 
     if (!sourceDay || !destDay) return;
@@ -535,15 +566,20 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
     setItinerary((prev) => {
       const newDays = [...prev.days];
-      const sourceDayIndex = newDays.findIndex((d) => d.dayNumber === sourceDayNumber);
-      const destDayIndex = newDays.findIndex((d) => d.dayNumber === destDayNumber);
+      const sourceDayIndex = newDays.findIndex(
+        (d) => d.dayNumber === sourceDayNumber
+      );
+      const destDayIndex = newDays.findIndex(
+        (d) => d.dayNumber === destDayNumber
+      );
 
       if (sourceDayIndex === -1 || destDayIndex === -1) return prev;
 
       const newSourceDay = { ...newDays[sourceDayIndex] };
       const newDestDay = { ...newDays[destDayIndex] };
       const sourceItems = [...newSourceDay.items];
-      const destItems = sourceDayIndex === destDayIndex ? sourceItems : [...newDestDay.items];
+      const destItems =
+        sourceDayIndex === destDayIndex ? sourceItems : [...newDestDay.items];
 
       const [removed] = sourceItems.splice(source.index, 1);
 
@@ -565,7 +601,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
         newDays[sourceDayIndex] = {
           ...newSourceDay,
-          items: sourceItems.map((item, idx) => ({ ...item, orderInDay: idx + 1 })),
+          items: sourceItems.map((item, idx) => ({
+            ...item,
+            orderInDay: idx + 1,
+          })),
         };
         newDays[destDayIndex] = {
           ...newDestDay,
@@ -591,24 +630,35 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         for (let i = 0; i < updatedItems.length; i++) {
           const item = updatedItems[i];
           if (!item.isNew) {
-            await instance.patch(`/itineraries/${itineraryId}/items/${item.id}`, {
-              orderInDay: i + 1,
-            });
+            await instance.patch(
+              `/itineraries/${itineraryId}/items/${item.id}`,
+              {
+                orderInDay: i + 1,
+              }
+            );
           }
         }
       } else {
-        await instance.patch(`/itineraries/${itineraryId}/items/${movedItem.id}`, {
-          dayNumber: destDayNumber,
-          orderInDay: destination.index + 1,
-        });
+        await instance.patch(
+          `/itineraries/${itineraryId}/items/${movedItem.id}`,
+          {
+            dayNumber: destDayNumber,
+            orderInDay: destination.index + 1,
+          }
+        );
 
-        const remainingSourceItems = sourceDay.items.filter((_, idx) => idx !== source.index);
+        const remainingSourceItems = sourceDay.items.filter(
+          (_, idx) => idx !== source.index
+        );
         for (let i = 0; i < remainingSourceItems.length; i++) {
           const item = remainingSourceItems[i];
           if (!item.isNew) {
-            await instance.patch(`/itineraries/${itineraryId}/items/${item.id}`, {
-              orderInDay: i + 1,
-            });
+            await instance.patch(
+              `/itineraries/${itineraryId}/items/${item.id}`,
+              {
+                orderInDay: i + 1,
+              }
+            );
           }
         }
 
@@ -618,10 +668,13 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         for (let i = 0; i < updatedDestItems.length; i++) {
           const item = updatedDestItems[i];
           if (!item.isNew && item.id !== movedItem.id) {
-            await instance.patch(`/itineraries/${itineraryId}/items/${item.id}`, {
-              dayNumber: destDayNumber,
-              orderInDay: i + 1,
-            });
+            await instance.patch(
+              `/itineraries/${itineraryId}/items/${item.id}`,
+              {
+                dayNumber: destDayNumber,
+                orderInDay: i + 1,
+              }
+            );
           }
         }
       }
@@ -672,8 +725,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               ) : (
                 <h1
                   onClick={handleTitleEdit}
-                  className={`text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${itinerary?.canEdit ? "cursor-pointer hover:opacity-70" : "cursor-default opacity-90"
-                    } transition relative group`}
+                  className={`text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${
+                    itinerary?.canEdit
+                      ? "cursor-pointer hover:opacity-70"
+                      : "cursor-default opacity-90"
+                  } transition relative group`}
                   title={itinerary?.canEdit ? "Click để sửa tên" : "Chỉ xem"}
                 >
                   {itinerary.title}
@@ -691,14 +747,20 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               )}
               <p className="text-sm flex items-center gap-2 mt-1">
                 <MapPin size={16} className="text-blue-500" />
-                <span className="font-semibold text-blue-600">{itinerary.destination}</span>
+                <span className="font-semibold text-blue-600">
+                  {itinerary.destination}
+                </span>
                 <span className="text-gray-300 mx-1">•</span>
                 <button
                   onClick={handleDateClick}
-                  className={`text-gray-600 font-medium underline decoration-dotted transition ${itinerary?.canEdit ? "hover:text-blue-600 cursor-pointer" : "text-gray-400 cursor-not-allowed"
-                    }`}
+                  className={`text-gray-600 font-medium underline decoration-dotted transition ${
+                    itinerary?.canEdit
+                      ? "hover:text-blue-600 cursor-pointer"
+                      : "text-gray-400 cursor-not-allowed"
+                  }`}
                 >
-                  {itinerary.startDate} <span className="text-purple-500">→</span> {itinerary.endDate}
+                  {itinerary.startDate}{" "}
+                  <span className="text-purple-500">→</span> {itinerary.endDate}
                 </button>
                 <span className="text-gray-300 mx-1">•</span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -720,7 +782,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             )}
 
             <button
-              onClick={() => navigate("/trip-list")}
+              onClick={() => navigate(-1)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200"
             >
               <LogOut size={16} />
@@ -731,14 +793,22 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       </header>
 
       {selectedPlace && (
-        <PlaceDetailModal place={selectedPlace} onClose={() => setSelectedPlace(null)} />
+        <PlaceDetailModal
+          place={selectedPlace}
+          onClose={() => setSelectedPlace(null)}
+        />
       )}
 
       <div className="flex gap-6 flex-1 overflow-hidden">
         {/* Days List */}
         <div
-          className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${mapSize === "full" ? "w-1/4" : mapSize === "half" ? "w-1/2" : "w-2/3"
-            }`}
+          className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${
+            mapSize === "full"
+              ? "w-1/4"
+              : mapSize === "half"
+              ? "w-1/2"
+              : "w-2/3"
+          }`}
         >
           <div className="flex gap-4 min-w-max h-full">
             <DragDropContext onDragEnd={handleDragEnd}>
@@ -768,10 +838,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             setShowPlaceModal(true);
                           }}
                           disabled={!itinerary?.canEdit}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm ${itinerary?.canEdit
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${
+                            itinerary?.canEdit
                               ? "bg-blue-500 text-white hover:bg-blue-600"
                               : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                            }`}
+                          }`}
                         >
                           <Plus size={16} />
                           <span>Thêm</span>
@@ -785,7 +856,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                 setItinerary((prev) => ({
                                   ...prev,
                                   activeMenu:
-                                    prev.activeMenu === day.dayNumber ? null : day.dayNumber,
+                                    prev.activeMenu === day.dayNumber
+                                      ? null
+                                      : day.dayNumber,
                                 }));
                               }}
                               className="p-2 rounded-full hover:bg-gray-100 transition"
@@ -805,7 +878,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                   <button
                                     onClick={() => {
                                       handleAddDayBefore(day.dayNumber);
-                                      setItinerary((prev) => ({ ...prev, activeMenu: null }));
+                                      setItinerary((prev) => ({
+                                        ...prev,
+                                        activeMenu: null,
+                                      }));
                                     }}
                                     className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
                                   >
@@ -815,7 +891,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                   <button
                                     onClick={() => {
                                       handleAddDayAfter(day.dayNumber);
-                                      setItinerary((prev) => ({ ...prev, activeMenu: null }));
+                                      setItinerary((prev) => ({
+                                        ...prev,
+                                        activeMenu: null,
+                                      }));
                                     }}
                                     className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
                                   >
@@ -826,7 +905,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                   <button
                                     onClick={() => {
                                       handleDeleteDay(day.dayNumber);
-                                      setItinerary((prev) => ({ ...prev, activeMenu: null }));
+                                      setItinerary((prev) => ({
+                                        ...prev,
+                                        activeMenu: null,
+                                      }));
                                     }}
                                     className="flex items-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 text-left"
                                   >
@@ -857,10 +939,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           <div
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            className={`space-y-3 min-h-[100px] ${snapshot.isDraggingOver
+                            className={`space-y-3 min-h-[100px] ${
+                              snapshot.isDraggingOver
                                 ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
                                 : ""
-                              }`}
+                            }`}
                           >
                             {day.items.map((item, index) => (
                               <Draggable
@@ -875,10 +958,17 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                       {...provided.dragHandleProps}
-                                      onMouseEnter={() => setHoveredItemId(item.id)}
-                                      onMouseLeave={() => setHoveredItemId(null)}
-                                      className={`transition-transform ${snapshot.isDragging ? "scale-[1.02] shadow-lg" : ""
-                                        }`}
+                                      onMouseEnter={() =>
+                                        setHoveredItemId(item.id)
+                                      }
+                                      onMouseLeave={() =>
+                                        setHoveredItemId(null)
+                                      }
+                                      className={`transition-transform ${
+                                        snapshot.isDragging
+                                          ? "scale-[1.02] shadow-lg"
+                                          : ""
+                                      }`}
                                     >
                                       <DayItemCard
                                         item={item}
@@ -912,8 +1002,15 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                           <div className="flex items-center gap-2 text-xs text-gray-600 pl-3 pr-2 py-1">
                                             <div className="flex-1 h-px bg-gray-200" />
                                             <div className="flex items-center gap-1 whitespace-nowrap">
-                                              <Navigation size={14} className="text-gray-400" />
-                                              <span>{dist ? `~ ${dist}` : "Khoảng cách: N/A"}</span>
+                                              <Navigation
+                                                size={14}
+                                                className="text-gray-400"
+                                              />
+                                              <span>
+                                                {dist
+                                                  ? `~ ${dist}`
+                                                  : "Khoảng cách: N/A"}
+                                              </span>
                                             </div>
                                             <div className="flex-1 h-px bg-gray-200" />
                                           </div>
@@ -938,15 +1035,23 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
         {/* Map - Right side */}
         <div
-          className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full" ? "w-3/4" : mapSize === "half" ? "w-1/2" : "w-1/3"
-            }`}
+          className={`transition-all duration-300 flex-shrink-0 ${
+            mapSize === "full"
+              ? "w-3/4"
+              : mapSize === "half"
+              ? "w-1/2"
+              : "w-1/3"
+          }`}
         >
           <div className="h-full relative">
             <div className="absolute top-4 left-4 z-[1000]">
               <div className="relative">
                 <button
                   onClick={() =>
-                    setItinerary((prev) => ({ ...prev, showMapMenu: !prev.showMapMenu }))
+                    setItinerary((prev) => ({
+                      ...prev,
+                      showMapMenu: !prev.showMapMenu,
+                    }))
                   }
                   className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition text-sm font-medium"
                 >
@@ -959,30 +1064,48 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                     <button
                       onClick={() => {
                         setMapSize("default");
-                        setItinerary((prev) => ({ ...prev, showMapMenu: false }));
+                        setItinerary((prev) => ({
+                          ...prev,
+                          showMapMenu: false,
+                        }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default" ? "bg-blue-50 text-blue-600 font-medium" : ""
-                        }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                        mapSize === "default"
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : ""
+                      }`}
                     >
                       {mapSize === "default" && "✓ "}Default
                     </button>
                     <button
                       onClick={() => {
                         setMapSize("half");
-                        setItinerary((prev) => ({ ...prev, showMapMenu: false }));
+                        setItinerary((prev) => ({
+                          ...prev,
+                          showMapMenu: false,
+                        }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half" ? "bg-blue-50 text-blue-600 font-medium" : ""
-                        }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                        mapSize === "half"
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : ""
+                      }`}
                     >
                       {mapSize === "half" && "✓ "}Half
                     </button>
                     <button
                       onClick={() => {
                         setMapSize("full");
-                        setItinerary((prev) => ({ ...prev, showMapMenu: false }));
+                        setItinerary((prev) => ({
+                          ...prev,
+                          showMapMenu: false,
+                        }));
                       }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full" ? "bg-blue-50 text-blue-600 font-medium" : ""
-                        }`}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                        mapSize === "full"
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : ""
+                      }`}
                     >
                       {mapSize === "full" && "✓ "}Full
                     </button>
@@ -1016,7 +1139,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
           >
             <div className="relative h-full">
               <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
-                <h2 className="text-xl font-semibold">Chọn địa điểm cho Ngày {selectedDayNumber}</h2>
+                <h2 className="text-xl font-semibold">
+                  Chọn địa điểm cho Ngày {selectedDayNumber}
+                </h2>
                 <button
                   onClick={() => setShowPlaceModal(false)}
                   className="text-gray-500 hover:text-black text-2xl font-bold px-2"
@@ -1061,12 +1186,16 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   <h2 className="text-2xl font-bold text-gray-800">When</h2>
                   <p className="text-gray-600 mt-1">
                     {(() => {
-                      if (!selectedStartDate || !selectedEndDate) return "Select dates";
-                      const start = selectedStartDate.toLocaleDateString("en-US", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                      });
+                      if (!selectedStartDate || !selectedEndDate)
+                        return "Select dates";
+                      const start = selectedStartDate.toLocaleDateString(
+                        "en-US",
+                        {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                        }
+                      );
                       const end = selectedEndDate.toLocaleDateString("en-US", {
                         weekday: "short",
                         day: "numeric",
@@ -1074,7 +1203,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       });
                       const days =
                         Math.ceil(
-                          (selectedEndDate - selectedStartDate) / (1000 * 60 * 60 * 24)
+                          (selectedEndDate - selectedStartDate) /
+                            (1000 * 60 * 60 * 24)
                         ) + 1;
                       return `${start} - ${end} · ${days} days`;
                     })()}
@@ -1084,7 +1214,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   onClick={() => setShowDateModal(false)}
                   className="text-gray-400 hover:text-gray-600 transition"
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
@@ -1105,21 +1242,38 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   selectedEndDate={selectedEndDate}
                   isSameDay={isSameDay}
                   isInRange={isInRange}
-                  onSelect={(date) => itinerary?.canEdit && handleDateSelect(date)}
+                  onSelect={(date) =>
+                    itinerary?.canEdit && handleDateSelect(date)
+                  }
                 />
 
                 {/* Tháng tiếp theo */}
                 <CalendarMonth
-                  monthDate={new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)}
-                  setMonthDate={(d) =>
-                    setCurrentMonth(new Date(d.getFullYear(), d.getMonth() - 1, 1))
+                  monthDate={
+                    new Date(
+                      currentMonth.getFullYear(),
+                      currentMonth.getMonth() + 1,
+                      1
+                    )
                   }
-                  days={getDaysInMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                  setMonthDate={(d) =>
+                    setCurrentMonth(
+                      new Date(d.getFullYear(), d.getMonth() - 1, 1)
+                    )
+                  }
+                  days={getDaysInMonth(
+                    new Date(
+                      currentMonth.getFullYear(),
+                      currentMonth.getMonth() + 1
+                    )
+                  )}
                   selectedStartDate={selectedStartDate}
                   selectedEndDate={selectedEndDate}
                   isSameDay={isSameDay}
                   isInRange={isInRange}
-                  onSelect={(date) => itinerary?.canEdit && handleDateSelect(date)}
+                  onSelect={(date) =>
+                    itinerary?.canEdit && handleDateSelect(date)
+                  }
                   next
                 />
               </div>
@@ -1135,11 +1289,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               </button>
               <button
                 onClick={handleUpdateDates}
-                disabled={!selectedStartDate || !selectedEndDate || !itinerary?.canEdit}
-                className={`px-6 py-2.5 rounded-lg font-medium transition ${selectedStartDate && selectedEndDate && itinerary?.canEdit
+                disabled={
+                  !selectedStartDate || !selectedEndDate || !itinerary?.canEdit
+                }
+                className={`px-6 py-2.5 rounded-lg font-medium transition ${
+                  selectedStartDate && selectedEndDate && itinerary?.canEdit
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
+                }`}
               >
                 Update
               </button>
@@ -1189,11 +1346,20 @@ function CalendarMonth({
         {!next ? (
           <button
             onClick={() =>
-              setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() - 1))
+              setMonthDate(
+                new Date(monthDate.getFullYear(), monthDate.getMonth() - 1)
+              )
             }
             className="p-2 hover:bg-gray-100 rounded-lg transition"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
@@ -1208,11 +1374,20 @@ function CalendarMonth({
         ) : (
           <button
             onClick={() =>
-              setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1))
+              setMonthDate(
+                new Date(monthDate.getFullYear(), monthDate.getMonth() + 1)
+              )
             }
             className="p-2 hover:bg-gray-100 rounded-lg transition"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M9 18l6-6-6-6" />
             </svg>
           </button>
@@ -1221,7 +1396,10 @@ function CalendarMonth({
 
       <div className="grid grid-cols-7 gap-1 mb-2">
         {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
-          <div key={d} className="text-center text-sm font-medium text-gray-500 py-2">
+          <div
+            key={d}
+            className="text-center text-sm font-medium text-gray-500 py-2"
+          >
             {d}
           </div>
         ))}
@@ -1240,14 +1418,34 @@ function CalendarMonth({
           return (
             <button
               key={idx}
-              onClick={() => day.isCurrentMonth && !isPast && onSelect(day.date)}
+              onClick={() =>
+                day.isCurrentMonth && !isPast && onSelect(day.date)
+              }
               disabled={!day.isCurrentMonth || isPast}
               className={`
                 aspect-square flex items-center justify-center rounded-lg text-sm transition-all duration-200
-                ${!day.isCurrentMonth || isPast ? "text-gray-300 cursor-not-allowed" : ""}
-                ${day.isCurrentMonth && !isPast && !isStart && !isEnd && !inRange ? "hover:bg-gray-100 text-gray-700" : ""}
-                ${isStart || isEnd ? "bg-blue-600 text-white font-semibold" : ""}
-                ${inRange && !isStart && !isEnd ? "bg-blue-100 text-blue-700" : ""}
+                ${
+                  !day.isCurrentMonth || isPast
+                    ? "text-gray-300 cursor-not-allowed"
+                    : ""
+                }
+                ${
+                  day.isCurrentMonth &&
+                  !isPast &&
+                  !isStart &&
+                  !isEnd &&
+                  !inRange
+                    ? "hover:bg-gray-100 text-gray-700"
+                    : ""
+                }
+                ${
+                  isStart || isEnd ? "bg-blue-600 text-white font-semibold" : ""
+                }
+                ${
+                  inRange && !isStart && !isEnd
+                    ? "bg-blue-100 text-blue-700"
+                    : ""
+                }
               `}
             >
               {day.date.getDate()}

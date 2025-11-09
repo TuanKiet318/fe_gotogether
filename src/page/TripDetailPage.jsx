@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
-  Calendar, Clock, DollarSign, Navigation,
-  ArrowLeft, Edit2, Trash2, Save, X
+  Calendar,
+  Clock,
+  DollarSign,
+  Navigation,
+  ArrowLeft,
+  Edit2,
+  Trash2,
+  Save,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   getItineraryById,
   updateItem,
   createItem,
-  deleteItem
+  deleteItem,
 } from "../service/tripService";
 import { GetMyFavoritePlaces } from "../service/api.admin.service";
 
@@ -45,10 +52,10 @@ export default function TripDetailPage() {
     n === null || n === undefined || n === ""
       ? ""
       : new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-        maximumFractionDigits: 0,
-      }).format(+n);
+          style: "currency",
+          currency: "VND",
+          maximumFractionDigits: 0,
+        }).format(+n);
 
   const groupItemsByDay = (items) => {
     const grouped = {};
@@ -70,14 +77,14 @@ export default function TripDetailPage() {
         const data = await getItineraryById(id);
         const items = Array.isArray(data.items)
           ? data.items.map((it, idx) => ({
-            id: it.id ?? idx,
-            description: it.description ?? "",
-            startTime: trimSec(it.startTime),
-            endTime: trimSec(it.endTime),
-            estimatedCost: it.estimatedCost ?? "",
-            transportMode: it.transportMode ?? "",
-            dayNumber: it.dayNumber ?? 1,
-          }))
+              id: it.id ?? idx,
+              description: it.description ?? "",
+              startTime: trimSec(it.startTime),
+              endTime: trimSec(it.endTime),
+              estimatedCost: it.estimatedCost ?? "",
+              transportMode: it.transportMode ?? "",
+              dayNumber: it.dayNumber ?? 1,
+            }))
           : [];
 
         if (mounted) {
@@ -133,14 +140,14 @@ export default function TripDetailPage() {
     const updatedTrip = await getItineraryById(trip.id);
     const items = Array.isArray(updatedTrip.items)
       ? updatedTrip.items.map((it, idx) => ({
-        id: it.id ?? idx,
-        description: it.description ?? "",
-        startTime: trimSec(it.startTime),
-        endTime: trimSec(it.endTime),
-        estimatedCost: it.estimatedCost ?? "",
-        transportMode: it.transportMode ?? "",
-        dayNumber: it.dayNumber ?? 1,
-      }))
+          id: it.id ?? idx,
+          description: it.description ?? "",
+          startTime: trimSec(it.startTime),
+          endTime: trimSec(it.endTime),
+          estimatedCost: it.estimatedCost ?? "",
+          transportMode: it.transportMode ?? "",
+          dayNumber: it.dayNumber ?? 1,
+        }))
       : [];
 
     setTrip({

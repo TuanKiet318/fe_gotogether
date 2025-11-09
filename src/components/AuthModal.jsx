@@ -9,7 +9,6 @@ export default function AuthModal({ isOpen, onClose }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // ✅ user tạm sau khi đăng ký, để chuyển qua OTP
   const [pendingUser, setPendingUser] = useState(null);
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export default function AuthModal({ isOpen, onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-250 ease-out ${
+      className={`fixed inset-0 z-71 flex items-center justify-center p-4 transition-all duration-250 ease-out ${
         isAnimating ? "bg-black/50 backdrop-blur-sm" : "bg-black/0"
       }`}
     >

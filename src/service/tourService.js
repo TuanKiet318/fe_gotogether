@@ -9,7 +9,7 @@ import instance from "./axios.admin.customize";
 export const listTours = async (params = {}) => {
   try {
     const res = await instance.get("/tours", { params });
-    return res.data;
+    return res;
   } catch (error) {
     console.error("Error in listTours:", error);
     throw error;
@@ -24,7 +24,7 @@ export const listTours = async (params = {}) => {
 export const getTourDetail = async (tourId) => {
   try {
     const res = await instance.get(`/tours/${tourId}`);
-    return res.data;
+    return res;
   } catch (error) {
     console.error("Error in getTourDetail:", error);
     throw error;
@@ -103,6 +103,21 @@ export const cancelJoinTour = async (tourId) => {
     return res.data;
   } catch (error) {
     console.error("Error in cancelJoinTour:", error);
+    throw error;
+  }
+};
+
+/**
+ * Lấy danh sách tour mà user hiện tại đã tham gia
+ * @returns {Promise<Array<TourDetailResponse>>}
+ */
+export const getJoinedTours = async () => {
+  try {
+    const res = await instance.get("/tours/joined");
+    console.log("getJoinedTours response:", res);
+    return res;
+  } catch (error) {
+    console.error("Error in getJoinedTours:", error);
     throw error;
   }
 };

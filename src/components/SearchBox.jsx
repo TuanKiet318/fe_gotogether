@@ -135,7 +135,7 @@ export default function SearchBox({
           onChange={(e) => handleSearchInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full border border-gray-300 rounded-lg py-2 pl-10 pr-4
+          className="w-full border border-gray-300 rounded-full py-2 pl-10 pr-4
            focus:outline-none focus:ring-2 focus:ring-sky-500
            text-sm md:text-base"
         />

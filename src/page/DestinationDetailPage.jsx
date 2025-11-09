@@ -331,10 +331,11 @@ export default function DestinationDetail() {
                   key={tab.id}
                   onClick={() => handleMainTabSelect(tab.id)}
                   className={`relative px-4 py-2 text-lg font-semibold transition-all duration-500
-            ${isActive
-                      ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
-                      : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
-                    }`}
+            ${
+              isActive
+                ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
+                : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
+            }`}
                 >
                   {tab.label}
                   {/* underline glow */}
@@ -347,15 +348,6 @@ export default function DestinationDetail() {
                 </button>
               );
             })}
-            {/* Nút tạo lịch trình */}
-            <button
-              onClick={() => navigate("/trip-planner")}
-              className="ml-4 px-5 py-2 text-white font-semibold rounded-full 
-             bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md 
-             hover:from-indigo-600 hover:to-purple-600 transition-all"
-            >
-              + Lịch trình mới
-            </button>
           </div>
         </div>
       </section>
@@ -461,19 +453,21 @@ export default function DestinationDetail() {
                     <button
                       onClick={() => handleCategorySelect("")}
                       className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                    ${!selectedCategory
-                          ? "text-blue-600 font-semibold"
-                          : "text-gray-600 hover:text-blue-500"
-                        }
+                    ${
+                      !selectedCategory
+                        ? "text-blue-600 font-semibold"
+                        : "text-gray-600 hover:text-blue-500"
+                    }
                   `}
                     >
                       Nổi bật
                       <span
                         className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
-                      ${!selectedCategory
-                            ? "w-full opacity-100"
-                            : "w-0 opacity-0"
-                          }
+                      ${
+                        !selectedCategory
+                          ? "w-full opacity-100"
+                          : "w-0 opacity-0"
+                      }
                     `}
                       />
                     </button>
@@ -487,10 +481,11 @@ export default function DestinationDetail() {
                           key={cat.id}
                           onClick={() => handleCategorySelect(cat.id)}
                           className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                        ${isActive
-                              ? "text-blue-600 font-semibold"
-                              : "text-gray-600 hover:text-blue-500"
-                            }
+                        ${
+                          isActive
+                            ? "text-blue-600 font-semibold"
+                            : "text-gray-600 hover:text-blue-500"
+                        }
                       `}
                         >
                           {cat.name}
@@ -507,13 +502,15 @@ export default function DestinationDetail() {
 
                 {/* Places Content */}
                 <div
-                  className={`grid gap-8 transition-all duration-500 ease-in-out ${isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
-                    }`}
+                  className={`grid gap-8 transition-all duration-500 ease-in-out ${
+                    isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
+                  }`}
                 >
                   {/* Left: Places List */}
                   <div
-                    className={`space-y-10 ${isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
-                      }`}
+                    className={`space-y-10 ${
+                      isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
+                    }`}
                   >
                     <AnimatePresence mode="wait">
                       {/* Khi có category được chọn */}
@@ -731,7 +728,9 @@ export default function DestinationDetail() {
                   <div className="flex items-center gap-4">
                     <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full" />
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-800">Lịch trình mẫu nổi bật</h2>
+                      <h2 className="text-2xl font-bold text-gray-800">
+                        Lịch trình mẫu nổi bật
+                      </h2>
                       <p className="text-sm text-gray-500">
                         Chọn một lịch trình có sẵn để tham khảo chi tiết
                       </p>
@@ -740,15 +739,21 @@ export default function DestinationDetail() {
                 </div>
 
                 {loadingItineraries ? (
-                  <p className="text-center text-gray-500">Đang tải lịch trình...</p>
+                  <p className="text-center text-gray-500">
+                    Đang tải lịch trình...
+                  </p>
                 ) : itineraries.length === 0 ? (
-                  <p className="text-center text-gray-500">Chưa có lịch trình nào cho điểm đến này.</p>
+                  <p className="text-center text-gray-500">
+                    Chưa có lịch trình nào cho điểm đến này.
+                  </p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {itineraries.map((itinerary) => (
                       <button
                         key={itinerary.id}
-                        onClick={() => navigate(`/itineraries/${itinerary.id}/landing`)}
+                        onClick={() =>
+                          navigate(`/itineraries/${itinerary.id}/landing`)
+                        }
                         className="group text-left rounded-2xl overflow-hidden border bg-white hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
                       >
                         <div className="h-44 overflow-hidden">
@@ -784,14 +789,18 @@ export default function DestinationDetail() {
                                 {itinerary.startDate} → {itinerary.endDate}
                               </span>
                             ) : null}
-                            {itinerary.destinationName || itinerary.destination?.name ? (
+                            {itinerary.destinationName ||
+                            itinerary.destination?.name ? (
                               <span className="px-2 py-1 rounded-full bg-gray-50 border">
-                                {itinerary.destinationName || itinerary.destination?.name}
+                                {itinerary.destinationName ||
+                                  itinerary.destination?.name}
                               </span>
                             ) : null}
                           </div>
 
-                          <div className="mt-3 text-blue-600 font-medium text-sm">Xem chi tiết →</div>
+                          <div className="mt-3 text-blue-600 font-medium text-sm">
+                            Xem chi tiết →
+                          </div>
                         </div>
                       </button>
                     ))}
@@ -800,7 +809,6 @@ export default function DestinationDetail() {
               </div>
             </motion.div>
           )}
-
 
           {/* Show Map Toggle Button when hidden */}
           {!isMapVisible && activeMainTab === "dia-diem" && (

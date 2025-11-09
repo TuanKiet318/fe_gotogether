@@ -17,14 +17,12 @@ export default function HeroSection({ place }) {
     const urls = raw
       .map((it) => (typeof it === "string" ? it : it?.imageUrl))
       .filter(Boolean);
-    return urls.length > 0
-      ? urls
-      : (place?.mainImage ? [place.mainImage] : []);
+    return urls.length > 0 ? urls : place?.mainImage ? [place.mainImage] : [];
   }, [place]);
 
   if (!place || images.length === 0) {
     return (
-      <div className="relative w-full h-[420px] md:h-[560px] lg:h-[600px] rounded-2xl overflow-hidden bg-gradient-to-r from-slate-200 to-slate-300 shadow-xl flex items-center justify-center">
+      <div className="relative w-full h-[420px] md:h-[560px] lg:h-[600px]  overflow-hidden bg-gradient-to-r from-slate-200 to-slate-300 shadow-xl flex items-center justify-center">
         <div className="flex items-center gap-3 text-slate-600">
           <ImageOff className="w-6 h-6" />
           <span>Không có hình ảnh</span>
@@ -35,7 +33,7 @@ export default function HeroSection({ place }) {
 
   return (
     <div
-      className="relative h-[420px] md:h-[560px] lg:h-[600px] rounded-2xl overflow-hidden shadow-xl"
+      className="relative h-[420px] md:h-[560px] lg:h-[600px] overflow-hidden shadow-xl"
       style={{
         // Tinh chỉnh màu chủ đạo của Swiper qua CSS vars
         // (áp dụng cho bullets & focus states)
@@ -66,7 +64,8 @@ export default function HeroSection({ place }) {
         pagination={{
           clickable: true,
           bulletClass: "swiper-pagination-bullet custom-bullet",
-          bulletActiveClass: "swiper-pagination-bullet-active custom-bullet-active",
+          bulletActiveClass:
+            "swiper-pagination-bullet-active custom-bullet-active",
         }}
         autoplay={{ delay: 3500, disableOnInteraction: false }}
         loop
@@ -93,18 +92,6 @@ export default function HeroSection({ place }) {
                 <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,transparent_30%,rgba(0,0,0,0.25)_100%)]" />
                 {/* Gradient đáy để đọc text rõ ràng */}
                 <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              </div>
-
-              {/* Text trên ảnh */}
-              <div className="absolute bottom-6 md:bottom-8 left-5 md:left-8 right-5 md:right-8">
-                <h1 className="text-white drop-shadow-lg text-2xl md:text-4xl font-extrabold tracking-tight">
-                  {place?.name}
-                </h1>
-                {!!place?.description && (
-                  <p className="text-white/90 drop-shadow mt-2 max-w-3xl text-sm md:text-lg leading-relaxed line-clamp-3">
-                    {place.description}
-                  </p>
-                )}
               </div>
             </div>
           </SwiperSlide>
