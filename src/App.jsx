@@ -20,6 +20,8 @@ import ScrollToTop from "./components/ScrollToTop.jsx";
 import ItineraryEditor from "./page/ItineraryEditor.jsx";
 import ItineraryLandingPage from "./page/ItineraryLandingPage.jsx";
 import MyItinerariesPage from "./page/MyItinerariesPage.jsx";
+import TourListPage from "./page/TourListPage.jsx";
+import TourDetailPage from "./page/TourDetailPage.jsx";
 const App = () => {
   return (
     <AuthProvider>
@@ -41,7 +43,10 @@ const App = () => {
           <Route path="/foods/:id" element={<FoodDetail />} />
           <Route path="/itinerary-editor/:id" element={<ItineraryEditor />} />
           <Route path="/itinerary/:id" element={<ItineraryDetailPage />} />
-          <Route path="/itineraries/:id/landing" element={<ItineraryLandingPage />} />
+          <Route
+            path="/itineraries/:id/landing"
+            element={<ItineraryLandingPage />}
+          />
           <Route
             path="/trip-list"
             element={
@@ -50,8 +55,24 @@ const App = () => {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/tours"
+            element={
+              <PrivateRoute>
+                <TourListPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tour/detail"
+            element={
+              <PrivateRoute>
+                <TourDetailPage />
+              </PrivateRoute>
+            }
+          />
 
-          {/* ✅ Route MyProfile */}
+          {/* Route MyProfile */}
           <Route
             path="/profile"
             element={
@@ -60,7 +81,7 @@ const App = () => {
               </PrivateRoute>
             }
           />
-          {/* ✅ Route MyProfile */}
+          {/*  Route MyProfile */}
           <Route
             path="/my-itineraries"
             element={
