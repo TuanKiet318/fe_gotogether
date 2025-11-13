@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthModal from "../components/AuthModal.jsx";
 import {
@@ -20,6 +20,21 @@ export default function Header({ setActiveSection }) {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const { user, logout, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // nếu click ngoài menu thì đóng
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -49,19 +64,23 @@ export default function Header({ setActiveSection }) {
                 </Link>
               ))}
               <Link
+                to="/explores"
+                className="relative font-semibold text-slate-700 hover:text-sky-600 transition"
+              >
+                Khám phá
+              </Link>
+              <Link
                 to="/tours"
                 className="relative font-semibold text-slate-700 hover:text-sky-600 transition"
               >
-                Tour
+                Chuyến đi
               </Link>
-              {isAuthenticated() && (
-                <Link
-                  to="/trip-list"
-                  className="relative font-semibold text-slate-700 hover:text-sky-600 transition"
-                >
-                  Lịch trình
-                </Link>
-              )}
+              <Link
+                to="/blogs"
+                className="relative font-semibold text-slate-700 hover:text-sky-600 transition"
+              >
+                Cộng đồng
+              </Link>
             </nav>
 
             {/* Search */}
@@ -92,7 +111,10 @@ export default function Header({ setActiveSection }) {
                   </button>
 
                   {isMenuOpen && (
-                    <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                    <div
+                      ref={menuRef}
+                      className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+                    >
                       <div className="px-4 py-2 text-sm text-slate-600 border-b">
                         Xin chào,{" "}
                         <span className="font-semibold text-slate-800">
@@ -100,16 +122,22 @@ export default function Header({ setActiveSection }) {
                         </span>
                       </div>
                       <button
-                        onClick={() => navigate("/profile")}
+                        onClick={() => {
+                          navigate("/profile");
+                          setIsMenuOpen(false);
+                        }}
                         className="flex items-center gap-2 w-full px-4 py-2 text-slate-700 hover:bg-slate-100 transition"
                       >
                         <UserCircle className="w-4 h-4" /> Thông tin tài khoản
                       </button>
                       <button
-                        onClick={() => navigate("/booking")}
+                        onClick={() => {
+                          navigate("/trip-list");
+                          setIsMenuOpen(false);
+                        }}
                         className="flex items-center gap-2 w-full px-4 py-2 text-slate-700 hover:bg-slate-100 transition"
                       >
-                        <MapPin className="w-4 h-4" /> Đặt chỗ & Chuyến đi
+                        <MapPin className="w-4 h-4" /> Lịch trình của bạn
                       </button>
                       <div className="border-t my-1"></div>
                       <button

@@ -22,6 +22,8 @@ import ItineraryLandingPage from "./page/ItineraryLandingPage.jsx";
 import MyItinerariesPage from "./page/MyItinerariesPage.jsx";
 import TourListPage from "./page/TourListPage.jsx";
 import TourDetailPage from "./page/TourDetailPage.jsx";
+import TravelBlog from "./page/BlogPage.jsx";
+import VietnamTravelExplore from "./page/VietnamTravelExplore.jsx";
 const App = () => {
   return (
     <AuthProvider>
@@ -55,22 +57,8 @@ const App = () => {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/tours"
-            element={
-              <PrivateRoute>
-                <TourListPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/tour/detail"
-            element={
-              <PrivateRoute>
-                <TourDetailPage />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/tours" element={<TourListPage />} />
+          <Route path="/tour/detail/:tourId" element={<TourDetailPage />} />
 
           {/* Route MyProfile */}
           <Route
@@ -95,6 +83,8 @@ const App = () => {
           <Route path="/trips/:id" element={<TripDetail />} />
           <Route path="/itineraries/new" element={<CreateItineraryPage />} />
           <Route path="/itineraries/:id" element={<ItineraryDetailPage />} />
+          <Route path="/blogs" element={<TravelBlog />} />
+          <Route path="/explores" element={<VietnamTravelExplore />} />
         </Route>
       </Routes>
     </AuthProvider>
