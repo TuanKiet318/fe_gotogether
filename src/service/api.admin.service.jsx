@@ -255,6 +255,32 @@ const GetItinerariesByDestination = (destinationId, page = 0, size = 10) => {
   const API = `/itineraries/by-destination/${destinationId}`;
   return axios.get(API, { params: { page, size } });
 };
+const GetItineraryWarnings = async (itineraryId, timezone = "Asia/Ho_Chi_Minh") => {
+  if (!itineraryId) return { itineraryId: null, warningsByDay: {} };
+  try {
+    const API = `/itineraries/${encodeURIComponent(itineraryId)}/warnings`;
+    const res = await axios.get(API, { params: { timezone } });
+    return res.data || { itineraryId, warningsByDay: {} };
+  } catch (err) {
+    console.error("GetItineraryWarnings failed:", err);
+    // trả về cấu trúc rỗng để frontend dễ xử lý
+    return { itineraryId, warningsByDay: {} };
+  }
+};
+
+// Lấy warnings cho 1 ngày cụ thể (trả về { itineraryId, dayNumber, warnings: [...] })
+const GetItineraryWarningsForDay = async (itineraryId, day /* number */, timezone = "Asia/Ho_Chi_Minh") => {
+  if (!itineraryId || !day) return { itineraryId: null, dayNumber: day, warnings: [] };
+  try {
+    const API = `/itineraries/${encodeURIComponent(itineraryId)}/warnings`;
+    const res = await axios.get(API, { params: { day, timezone } });
+    // server trả về { itineraryId, dayNumber, warnings }
+    return res.data || { itineraryId, dayNumber: day, warnings: [] };
+  } catch (err) {
+    console.error("GetItineraryWarningsForDay failed:", err);
+    return { itineraryId, dayNumber: day, warnings: [] };
+  }
+};
 
 /* =========================
  * EXPORT
@@ -296,6 +322,10 @@ export {
   GetFeaturedItinerariesByDestination,
   GetItinerariesByDestination,
   SearchPlacesInDestination,
+
+  // NEW: warnings API
+  GetItineraryWarnings,
+  GetItineraryWarningsForDay,
 };
 // Lấy thông tin invite theo token
 const GetInviteByToken = async (token) => {
