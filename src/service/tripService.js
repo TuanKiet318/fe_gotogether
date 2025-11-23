@@ -331,3 +331,30 @@ export const removeCollaborator = async (itineraryId, userId) => {
     throw error;
   }
 };
+
+/**
+ * Lấy danh sách cảnh báo của itinerary theo ngày
+ * @param {string} itineraryId - ID của chuyến đi
+ * @param {string} timezone - Múi giờ (default: Asia/Ho_Chi_Minh)
+ * @returns {Promise} { itineraryId, warningsByDay: {} }
+ */
+export const GetItineraryWarnings = async (
+  itineraryId,
+  timezone = "Asia/Ho_Chi_Minh"
+) => {
+  // Kiểm tra xem itineraryId có tồn tại không
+  if (!itineraryId) return { itineraryId: null, warningsByDay: {} };
+
+  try {
+    // Tạo URL cho API
+    const API = `/itineraries/${encodeURIComponent(itineraryId)}/warnings`;
+    // Gọi API và lấy dữ liệu
+    const res = await instance.get(API, { params: { timezone } });
+    // Trả về dữ liệu hoặc đối tượng mặc định nếu không có dữ liệu
+    return res.data || { itineraryId, warningsByDay: {} };
+  } catch (err) {
+    // Log lỗi và trả về đối tượng mặc định
+    console.error("GetItineraryWarnings failed:", err);
+    return { itineraryId, warningsByDay: {} };
+  }
+};

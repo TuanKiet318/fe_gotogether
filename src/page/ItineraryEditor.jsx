@@ -1,6 +1,7 @@
 // ...existing code...
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ShieldAlert } from "lucide-react";
 import { LeafletMap } from "../components/LeafletMap.jsx";
 import {
   LogOut,
@@ -153,79 +154,39 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   // Only keep refreshWarnings - normalize various backend shapes into { "1": [...], ... }
   const refreshWarnings = async () => {
     if (!itineraryId) return {};
+
     try {
       setLoadingWarnings(true);
 
-      const resp = await GetItineraryWarnings(itineraryId, "Asia/Ho_Chi_Minh");
-      console.log("GetItineraryWarnings raw response:", resp);
+      const resp = await fetch(
+        `http://localhost:8080/api/itineraries/${itineraryId}/warnings?timezone=Asia/Ho_Chi_Minh`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
-      const payload = resp?.data || resp;
-      console.log("Payload after extraction:", payload);
+      const json = await resp.json();
+      console.log("RAW RESPONSE:", json);
 
-      const normalized = {};
+      const warningsByDay = json?.data?.warningsByDay || {};
+      setWarningsByDay(warningsByDay);
 
-      // Case 1: payload.warningsByDay is already the map
-      if (
-        payload &&
-        typeof payload === "object" &&
-        payload.warningsByDay &&
-        typeof payload.warningsByDay === "object"
-      ) {
-        console.log("Case 1: warningsByDay exists");
-        Object.entries(payload.warningsByDay).forEach(([k, v]) => {
-          normalized[String(k)] = Array.isArray(v) ? v : [];
-        });
-      }
-      // Case 2: payload.warnings is an array of warnings with dayNumber/day field
-      else if (
-        payload &&
-        typeof payload === "object" &&
-        Array.isArray(payload.warnings)
-      ) {
-        console.log("Case 2: warnings array exists");
-        payload.warnings.forEach((w) => {
-          const dayKey = String(w?.dayNumber ?? w?.day ?? "0");
-          if (!normalized[dayKey]) normalized[dayKey] = [];
-          normalized[dayKey].push(w);
-        });
-      }
-      // Case 3: payload is top-level array of warnings
-      else if (Array.isArray(payload)) {
-        console.log("Case 3: direct array");
-        payload.forEach((w) => {
-          const dayKey = String(w?.dayNumber ?? w?.day ?? "0");
-          if (!normalized[dayKey]) normalized[dayKey] = [];
-          normalized[dayKey].push(w);
-        });
-      }
-      // Case 4: payload is map-like object (keys => arrays)
-      else if (payload && typeof payload === "object") {
-        console.log("Case 4: generic object map");
-        Object.entries(payload).forEach(([k, v]) => {
-          // Skip non-numeric keys
-          if (/^\d+$/.test(k)) {
-            normalized[String(k)] = Array.isArray(v) ? v : [];
-          }
-        });
-      }
+      return warningsByDay;
 
-      // Ensure all keys have arrays
-      Object.keys(normalized).forEach((k) => {
-        if (!Array.isArray(normalized[k])) normalized[k] = [];
-      });
-
-      console.log("Final normalized warningsByDay:", normalized);
-      setWarningsByDay(normalized);
-      return normalized;
     } catch (err) {
       console.error("refreshWarnings failed:", err);
-      console.error("Error details:", err?.response?.data || err?.message);
       setWarningsByDay({});
       return {};
     } finally {
       setLoadingWarnings(false);
     }
   };
+
+
 
 
 
@@ -891,37 +852,45 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
       <div className="flex gap-6 flex-1">
         {/* Days List */}
+
+
+        {/* ================= DAYS LIST ================= */}
         <div
           className={`transition-all duration-300 p-6 flex-shrink-0`}
           style={{
-            width: mapSize === "full" ? "25%" : mapSize === "half" ? "50%" : "66.66%",
+            width:
+              mapSize === "full" ? "25%" : mapSize === "half" ? "50%" : "66.66%",
           }}
         >
-          <div className="flex gap-4 min-w-max h-full">
+          <div className="flex gap-6 min-w-max h-full">
             <DragDropContext onDragEnd={handleDragEnd}>
               {itinerary.days.map((day) => {
                 const dayWarnings = warningsByDay?.[String(day.dayNumber)] || [];
-                // console.log(`Warnings for day ${day.dayNumber}:`, dayWarnings);
-                const warningsCount = Array.isArray(dayWarnings) ? dayWarnings.length : 0;
+                const warningsCount = Array.isArray(dayWarnings)
+                  ? dayWarnings.length
+                  : 0;
 
                 return (
                   <div
                     key={day.dayNumber}
-                    className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl shadow w-96 flex-shrink-0 flex flex-col max-h-full"
+                    className="bg-white border border-gray-200 rounded-2xl shadow-md w-96 flex-shrink-0 flex flex-col overflow-hidden"
                   >
-                    {/* Header */}
-                    <div className="flex justify-between items-center flex-shrink-0">
-                      <h3 className="font-semibold text-lg flex items-center gap-2">
-                        Ngày {day.dayNumber} ({day.date})
+                    {/* ===== HEADER ===== */}
+                    <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-white border-b flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                          Ngày {day.dayNumber}
+                          <span className="text-sm text-gray-500">({day.date})</span>
+                        </h3>
                         {warningsCount > 0 && (
-                          <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs">
-                            <AlertTriangle size={14} /> {warningsCount}
-                          </span>
+                          <div className="flex items-center gap-2 text-sm text-orange-600 mt-1">
+                            <ShieldAlert size={15} />
+                            <span>{warningsCount} cảnh báo cần kiểm tra</span>
+                          </div>
                         )}
-                      </h3>
+                      </div>
 
                       <div className="flex items-center gap-2">
-                        {/* Add Place */}
                         <button
                           onClick={() => {
                             if (!itinerary?.canEdit) return;
@@ -929,101 +898,72 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             setShowPlaceModal(true);
                           }}
                           disabled={!itinerary?.canEdit}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${itinerary?.canEdit
-                            ? "bg-blue-500 text-white hover:bg-blue-600"
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${itinerary?.canEdit
+                            ? "bg-blue-600 text-white hover:bg-blue-700"
                             : "bg-gray-200 text-gray-500 cursor-not-allowed"
                             }`}
                         >
-                          <Plus size={16} />
-                          <span>Thêm</span>
+                          + Thêm
                         </button>
-
-                        {/* Day Menu */}
-                        {itinerary?.canEdit && (
-                          <div className="relative" ref={menuRef}>
-                            <button
-                              onClick={() =>
-                                setItinerary((prev) => ({
-                                  ...prev,
-                                  activeMenu:
-                                    prev.activeMenu === day.dayNumber ? null : day.dayNumber,
-                                }))
-                              }
-                              className="p-2 rounded-full hover:bg-gray-100 transition"
-                            >
-                              <MoreVertical size={18} />
-                            </button>
-
-                            <AnimatePresence>
-                              {itinerary.activeMenu === day.dayNumber && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg w-48 z-10"
-                                >
-                                  <button
-                                    onClick={() => {
-                                      handleAddDayBefore(day.dayNumber);
-                                      setItinerary((prev) => ({ ...prev, activeMenu: null }));
-                                    }}
-                                    className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
-                                  >
-                                    <Plus size={16} />
-                                    <span>Thêm ngày trước</span>
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      handleAddDayAfter(day.dayNumber);
-                                      setItinerary((prev) => ({ ...prev, activeMenu: null }));
-                                    }}
-                                    className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
-                                  >
-                                    <Plus size={16} />
-                                    <span>Thêm ngày sau</span>
-                                  </button>
-                                  <hr />
-                                  <button
-                                    onClick={() => {
-                                      handleDeleteDay(day.dayNumber);
-                                      setItinerary((prev) => ({ ...prev, activeMenu: null }));
-                                    }}
-                                    className="flex items-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 text-left"
-                                  >
-                                    <Trash2 size={16} />
-                                    <span>Xóa ngày</span>
-                                  </button>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        )}
                       </div>
                     </div>
 
-                    {/* Warnings */}
-                    {warningsCount > 0 && (
-                      <div className="mt-2 bg-yellow-50 border border-yellow-100 rounded-md p-2 text-sm text-yellow-800">
-                        {dayWarnings.slice(0, 3).map((w, idx) => (
-                          <div key={idx} className="flex items-start gap-2">
-                            <AlertTriangle size={14} className="mt-1" />
-                            <div>
-                              <div className="font-medium">{w.type || "Cảnh báo"}</div>
-                              <div className="text-xs">{w.message}</div>
+                    {/* ===== WARNINGS PANEL ===== */}
+                    <AnimatePresence>
+                      {warningsCount > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.25 }}
+                          className="mx-4 mt-3 mb-2 rounded-2xl p-3 bg-gradient-to-br from-orange-50 to-white border border-orange-200 shadow-sm"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 text-orange-700 font-semibold">
+                              <AlertTriangle size={16} />
+                              <span>Cảnh báo trong ngày</span>
                             </div>
+                            <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2 py-0.5 rounded-full">
+                              {warningsCount} vấn đề
+                            </span>
                           </div>
-                        ))}
-                        {dayWarnings.length > 3 && (
-                          <div className="mt-1 text-xs text-yellow-800">
-                            ...{dayWarnings.length - 3} cảnh báo nữa
-                          </div>
-                        )}
-                      </div>
-                    )}
 
-                    {/* ⚠️ Scroll container fix */}
-                    <div className="flex-1 min-h-0 mt-2">
+                          <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                            {dayWarnings.map((w, idx) => {
+                              const typeStyle = {
+                                CLOSED: "bg-red-50 text-red-700 border-red-200",
+                                PARTIAL_OPEN: "bg-yellow-50 text-yellow-700 border-yellow-200",
+                                NOT_ENOUGH_TRAVEL: "bg-orange-50 text-orange-700 border-orange-200",
+                                SHORT_VISIT: "bg-purple-50 text-purple-700 border-purple-200",
+                                MISSING_DATA: "bg-gray-50 text-gray-700 border-gray-200",
+                              }[w.type] || "bg-blue-50 text-blue-700 border-blue-200";
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`border rounded-xl p-3 shadow-sm ${typeStyle}`}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <ShieldAlert size={16} className="mt-0.5" />
+                                    <div>
+                                      <div className="text-sm font-semibold tracking-wide">
+                                        {w.type}
+                                      </div>
+                                      <p className="text-xs leading-snug opacity-90">
+                                        {w.message}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* ===== ITEMS ===== */}
+                    <div className="flex-1 min-h-0 px-4 pb-4">
                       <Droppable
                         droppableId={String(day.dayNumber)}
                         type="ITEM"
@@ -1033,16 +973,17 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           <div
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            className={`space-y-3 overflow-y-auto min-h-[100px] ${snapshot.isDraggingOver
-                              ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
-                              : ""
+                            className={`space-y-3 overflow-y-auto min-h-[120px] rounded-lg p-2 transition ${snapshot.isDraggingOver
+                              ? "bg-blue-50 border-2 border-blue-300 border-dashed"
+                              : "bg-gray-50"
                               }`}
                             style={{ maxHeight: "100%" }}
                           >
                             {day.items.length === 0 && (
-                              <p className="text-gray-400 text-center py-8 text-sm">
-                                Chưa có địa điểm nào. Nhấn "Thêm" để bắt đầu.
-                              </p>
+                              <div className="flex flex-col items-center justify-center py-10 text-gray-400 text-sm">
+                                <AlertTriangle size={30} className="mb-2 opacity-40" />
+                                Chưa có địa điểm nào
+                              </div>
                             )}
 
                             {day.items.map((item, index) => (
@@ -1057,7 +998,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
-                                    className={`transition-transform ${snapshot.isDragging ? "scale-[1.02] shadow-lg" : ""
+                                    className={`rounded-xl transition-all ${snapshot.isDragging
+                                      ? "scale-[1.02] shadow-xl"
+                                      : "shadow-sm"
                                       }`}
                                   >
                                     <DayItemCard
@@ -1065,21 +1008,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                       readOnly={!itinerary?.canEdit}
                                       onRemove={removeItem}
                                       onUpdate={updateItem}
-                                      onClick={(clickedItem) =>
-                                        setSelectedPlaceForDetail({
-                                          id: clickedItem.placeId,
-                                          name: clickedItem.placeName,
-                                        })
-                                      }
-                                      onSuggest={(clickedItem) => {
-                                        if (!itinerary?.canEdit) return;
-                                        setLastAddedPlace({
-                                          id: clickedItem.placeId,
-                                          name: clickedItem.placeName,
-                                          dayNumber: clickedItem.dayNumber,
-                                        });
-                                        setShowSuggestionsModal(true);
-                                      }}
                                       itemWarnings={(warningsByDay?.[String(day.dayNumber)] || []).filter(
                                         (w) => w.itemId === item.id
                                       )}
@@ -1088,7 +1016,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                 )}
                               </Draggable>
                             ))}
-
                             {provided.placeholder}
                           </div>
                         )}
@@ -1100,6 +1027,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </DragDropContext>
           </div>
         </div>
+
 
         {/* Map Right Side */}
         <div
