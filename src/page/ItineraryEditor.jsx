@@ -205,7 +205,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       setWarningsByDay(warningsByDay);
 
       return warningsByDay;
-
     } catch (err) {
       console.error("refreshWarnings failed:", err);
       setWarningsByDay({});
@@ -214,12 +213,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       setLoadingWarnings(false);
     }
   };
-
-
-
-
-
-
 
   /* ----- FETCH ITINERARY + WARNINGS ----- */
   useEffect(() => {
@@ -655,9 +648,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         items: day.items.map((it) =>
           it.id === itemId
             ? {
-              ...it,
-              ...updates,
-            }
+                ...it,
+                ...updates,
+              }
             : it
         ),
       }));
@@ -944,7 +937,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             sharedUsers={sharedUsers}
             linkPermission={linkPermission}
             setLinkPermission={setLinkPermission}
-            copyPlannerLink={() => { navigator.clipboard.writeText(window.location.href); alert("Đã copy link!"); }}
+            copyPlannerLink={() => {
+              navigator.clipboard.writeText(window.location.href);
+              alert("Đã copy link!");
+            }}
             itineraryId={itinerary.id}
           />
         )}
@@ -975,10 +971,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               ) : (
                 <h1
                   onClick={handleTitleEdit}
-                  className={`text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${itinerary?.canEdit
-                    ? "cursor-pointer hover:opacity-70"
-                    : "cursor-default opacity-90"
-                    } transition relative group`}
+                  className={`text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${
+                    itinerary?.canEdit
+                      ? "cursor-pointer hover:opacity-70"
+                      : "cursor-default opacity-90"
+                  } transition relative group`}
                   title={itinerary?.canEdit ? "Click để sửa tên" : "Chỉ xem"}
                 >
                   {itinerary.title}
@@ -1002,10 +999,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <span className="text-gray-300 mx-1">•</span>
                 <button
                   onClick={handleDateClick}
-                  className={`text-gray-600 font-medium underline decoration-dotted transition ${itinerary?.canEdit
-                    ? "hover:text-blue-600 cursor-pointer"
-                    : "text-gray-400 cursor-not-allowed"
-                    }`}
+                  className={`text-gray-600 font-medium underline decoration-dotted transition ${
+                    itinerary?.canEdit
+                      ? "hover:text-blue-600 cursor-pointer"
+                      : "text-gray-400 cursor-not-allowed"
+                  }`}
                 >
                   {itinerary.startDate}{" "}
                   <span className="text-purple-500">→</span> {itinerary.endDate}
@@ -1105,20 +1103,39 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               <div className="flex gap-4 min-w-max h-full">
                 <DragDropContext onDragEnd={handleDragEnd}>
                   {itinerary.days.map((day) => {
-                    const daySubtotal = day.items.reduce(
-                      (s, i) => s + (Number(i.estimatedCost) || 0),
-                      0
-                    );
+                    const dayWarnings =
+                      warningsByDay?.[String(day.dayNumber)] || [];
+                    const warningsCount = Array.isArray(dayWarnings)
+                      ? dayWarnings.length
+                      : 0;
+
                     return (
                       <div
                         key={day.dayNumber}
                         className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl shadow w-96 flex-shrink-0 flex flex-col max-h-full"
                       >
+                        {/* Header */}
                         <div className="flex justify-between items-center flex-shrink-0">
                           <div className="flex items-center gap-3">
-                            <h3 className="font-semibold text-lg">
+                            <h3 className="font-semibold text-base">
                               Ngày {day.dayNumber} ({day.date})
                             </h3>
+
+                            {warningsCount > 0 && (
+                              <div
+                                onClick={() =>
+                                  setOpenWarningDay(
+                                    openWarningDay === day.dayNumber
+                                      ? null
+                                      : day.dayNumber
+                                  )
+                                }
+                                className="flex items-center gap-1.5 text-xs text-orange-600 cursor-pointer select-none hover:text-orange-700 bg-orange-50 px-2 py-1 rounded-full"
+                              >
+                                <ShieldAlert size={14} />
+                                <span>{warningsCount}</span>
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -1220,56 +1237,75 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                 </AnimatePresence>
                               </div>
                             )}
-                            
-                            {/* ===== WARNINGS PANEL ===== */}
-                      <AnimatePresence>
-                        {openWarningDay === day.dayNumber && warningsCount > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.25 }}
-                            className="mx-4 mt-3 mb-2 rounded-2xl p-3 bg-gradient-to-br from-orange-50 to-white border border-orange-200 shadow-sm"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2 text-orange-700 font-semibold">
-                                <AlertTriangle size={16} />
-                                <span>Cảnh báo trong ngày</span>
-                              </div>
-                              <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2 py-0.5 rounded-full">
-                                {warningsCount} vấn đề
-                              </span>
-                            </div>
-
-                            <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-                              {dayWarnings.map((w, idx) => {
-                                const typeStyle = {
-                                  CLOSED: "bg-red-50 text-red-700 border-red-200",
-                                  PARTIAL_OPEN: "bg-yellow-50 text-yellow-700 border-yellow-200",
-                                  NOT_ENOUGH_TRAVEL: "bg-orange-50 text-orange-700 border-orange-200",
-                                  SHORT_VISIT: "bg-purple-50 text-purple-700 border-purple-200",
-                                  MISSING_DATA: "bg-gray-50 text-gray-700 border-gray-200",
-                                }[w.type] || "bg-blue-50 text-blue-700 border-blue-200";
-
-                                return (
-                                  <div key={idx} className={`border rounded-xl p-3 shadow-sm ${typeStyle}`}>
-                                    <div className="flex items-start gap-2">
-                                      <ShieldAlert size={16} className="mt-0.5" />
-                                      <div>
-                                        <div className="text-sm font-semibold tracking-wide">{w.type}</div>
-                                        <p className="text-xs leading-snug opacity-90">{w.message}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>    
                           </div>
                         </div>
 
+                        {/* ===== WARNINGS PANEL ===== */}
+                        <AnimatePresence>
+                          {openWarningDay === day.dayNumber &&
+                            warningsCount > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="mt-3 mb-2 rounded-2xl p-3 bg-gradient-to-br from-orange-50 to-white border border-orange-200 shadow-sm overflow-hidden flex-shrink-0"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2 text-orange-700 font-semibold">
+                                    <AlertTriangle size={16} />
+                                    <span>Cảnh báo trong ngày</span>
+                                  </div>
+                                  <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2 py-0.5 rounded-full">
+                                    {warningsCount} vấn đề
+                                  </span>
+                                </div>
+
+                                <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                                  {dayWarnings.map((w, idx) => {
+                                    const typeStyle =
+                                      {
+                                        CLOSED:
+                                          "bg-red-50 text-red-700 border-red-200",
+                                        PARTIAL_OPEN:
+                                          "bg-yellow-50 text-yellow-700 border-yellow-200",
+                                        NOT_ENOUGH_TRAVEL:
+                                          "bg-orange-50 text-orange-700 border-orange-200",
+                                        SHORT_VISIT:
+                                          "bg-purple-50 text-purple-700 border-purple-200",
+                                        MISSING_DATA:
+                                          "bg-gray-50 text-gray-700 border-gray-200",
+                                      }[w.type] ||
+                                      "bg-blue-50 text-blue-700 border-blue-200";
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className={`border rounded-xl p-3 shadow-sm ${typeStyle}`}
+                                      >
+                                        <div className="flex items-start gap-2">
+                                          <ShieldAlert
+                                            size={16}
+                                            className="mt-0.5 flex-shrink-0"
+                                          />
+                                          <div>
+                                            <div className="text-xs font-semibold tracking-wide uppercase">
+                                              {w.type}
+                                            </div>
+                                            <p className="text-xs leading-snug opacity-90 mt-0.5">
+                                              {w.message}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Content Area */}
                         <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 mt-2">
                           {day.items.length === 0 && (
                             <p className="text-gray-400 text-center py-8 text-sm">
@@ -1280,7 +1316,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           <Droppable
                             droppableId={String(day.dayNumber)}
                             type="ITEM"
-                            isDropDisabled={!itinerary?.canEdit} // khóa drop
+                            isDropDisabled={!itinerary?.canEdit}
                           >
                             {(provided, snapshot) => (
                               <div
@@ -1297,7 +1333,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                     key={item.id}
                                     draggableId={String(item.id)}
                                     index={index}
-                                    isDragDisabled={!itinerary?.canEdit} // khóa drag
+                                    isDragDisabled={!itinerary?.canEdit}
                                   >
                                     {(provided, snapshot) => (
                                       <>
@@ -1319,7 +1355,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                         >
                                           <DayItemCard
                                             item={item}
-                                            readOnly={!itinerary?.canEdit} // truyền readOnly xuống
+                                            readOnly={!itinerary?.canEdit}
                                             onRemove={removeItem}
                                             onUpdate={updateItem}
                                             onClick={(clickedItem) => {
@@ -2134,12 +2170,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         )}
       </div>
-
 
       {/* PlaceSidebar modal */}
       {showPlaceModal && itinerary?.canEdit && (
@@ -2220,7 +2254,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       const days =
                         Math.ceil(
                           (selectedEndDate - selectedStartDate) /
-                          (1000 * 60 * 60 * 24)
+                            (1000 * 60 * 60 * 24)
                         ) + 1;
                       return `${start} - ${end} · ${days} days`;
                     })()}
@@ -2308,10 +2342,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 disabled={
                   !selectedStartDate || !selectedEndDate || !itinerary?.canEdit
                 }
-                className={`px-6 py-2.5 rounded-lg font-medium transition ${selectedStartDate && selectedEndDate && itinerary?.canEdit
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
+                className={`px-6 py-2.5 rounded-lg font-medium transition ${
+                  selectedStartDate && selectedEndDate && itinerary?.canEdit
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
               >
                 Update
               </button>
@@ -2864,23 +2899,27 @@ function CalendarMonth({
               disabled={!day.isCurrentMonth || isPast}
               className={`
                 aspect-square flex items-center justify-center rounded-lg text-sm transition-all duration-200
-                ${!day.isCurrentMonth || isPast
-                  ? "text-gray-300 cursor-not-allowed"
-                  : ""
+                ${
+                  !day.isCurrentMonth || isPast
+                    ? "text-gray-300 cursor-not-allowed"
+                    : ""
                 }
-                ${day.isCurrentMonth &&
+                ${
+                  day.isCurrentMonth &&
                   !isPast &&
                   !isStart &&
                   !isEnd &&
                   !inRange
-                  ? "hover:bg-gray-100 text-gray-700"
-                  : ""
+                    ? "hover:bg-gray-100 text-gray-700"
+                    : ""
                 }
-                ${isStart || isEnd ? "bg-blue-600 text-white font-semibold" : ""
+                ${
+                  isStart || isEnd ? "bg-blue-600 text-white font-semibold" : ""
                 }
-                ${inRange && !isStart && !isEnd
-                  ? "bg-blue-100 text-blue-700"
-                  : ""
+                ${
+                  inRange && !isStart && !isEnd
+                    ? "bg-blue-100 text-blue-700"
+                    : ""
                 }
               `}
             >
@@ -2892,4 +2931,3 @@ function CalendarMonth({
     </div>
   );
 }
-
