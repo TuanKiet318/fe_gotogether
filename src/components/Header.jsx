@@ -95,6 +95,7 @@ export default function Header({ setActiveSection }) {
             <div className="flex items-center gap-4 ml-6">
               {isAuthenticated() ? (
                 <>
+                
                   {/* Notification Bell */}
                   <button
                     onClick={() => navigate("/")}

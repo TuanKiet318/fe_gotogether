@@ -36,6 +36,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import PlaceDetailModalWrapper from "../components/PlaceDetailModalWrapper";
 import SuggestedPlacesModal from "../components/SuggestedPlacesModal";
+import {
+  uploadItineraryMedia,
+  saveMediaInfo,
+  getAllMedia,
+  getMediaByDay,
+  updateMedia,
+  deleteMedia,
+  getMediaStats,
+} from "../service/itineraryApi";
 
 /* ------------------- HELPER ------------------- */
 // ...existing helper functions...
@@ -144,6 +153,24 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [linkPermission, setLinkPermission] = useState("Can Edit");
   const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
   const [lastAddedPlace, setLastAddedPlace] = useState(null);
+  const [viewMode, setViewMode] = useState("editor");
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [selectedDayForMedia, setSelectedDayForMedia] = useState(null);
+  const [showBlogPreview, setShowBlogPreview] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [mediaCaption, setMediaCaption] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (itineraryId && viewMode === "media") {
+      fetchMediaFiles();
+    }
+  }, [itineraryId, viewMode]);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -255,6 +282,146 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Function fetch all media
+  const fetchMediaFiles = async () => {
+    try {
+      setLoadingMedia(true);
+      const data = await getAllMedia(itineraryId);
+
+      // Map data từ API sang format UI
+      const mappedData = data.map((item) => ({
+        id: item.id,
+        type: item.mediaType.toLowerCase(), // "IMAGE" -> "image"
+        url: item.mediaUrl,
+        thumbnail: item.thumbnailUrl,
+        caption: item.caption || "Không có mô tả",
+        dayNumber: item.dayNumber,
+        uploadedAt: item.createdAt,
+        uploadedBy: item.userName,
+        fileSize: item.fileSize,
+        duration: item.duration,
+        orderInDay: item.orderInDay,
+      }));
+
+      setMediaFiles(mappedData);
+    } catch (error) {
+      console.error("Error fetching media:", error);
+      alert("Không thể tải media. Vui lòng thử lại.");
+    } finally {
+      setLoadingMedia(false);
+    }
+  };
+
+  // Handler chọn file - CHỈ CHỌN, CHƯA UPLOAD
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file size (50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      alert("File quá lớn. Vui lòng chọn file dưới 50MB");
+      e.target.value = ""; // Reset input
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+      alert("Chỉ chấp nhận file ảnh hoặc video");
+      e.target.value = ""; // Reset input
+      return;
+    }
+
+    console.log("File selected:", file.name, file.type, file.size);
+
+    // Lưu file vào state
+    setSelectedFile(file);
+
+    // Tạo preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input để có thể chọn cùng file lại
+    e.target.value = "";
+  };
+
+  // Handler upload media - GỌI KHI NHẤN NÚT UPLOAD
+  const handleUploadMedia = async (file) => {
+    if (!file) {
+      alert("Vui lòng chọn file");
+      return;
+    }
+
+    if (!selectedDayForMedia) {
+      alert("Vui lòng chọn ngày cho media");
+      return;
+    }
+
+    try {
+      setUploadingFile(true);
+      console.log("Starting upload for:", file.name);
+      const uploadResponse = await uploadItineraryMedia(file);
+      const { url, thumbnail, type } = uploadResponse;
+      const mediaData = {
+        mediaUrl: url,
+        thumbnailUrl: thumbnail || null,
+        mediaType: type, // "IMAGE" hoặc "VIDEO"
+        dayNumber: selectedDayForMedia,
+        caption: mediaCaption || "Không có mô tả",
+        fileSize: file.size,
+        duration: null,
+        width: null,
+        height: null,
+      };
+
+      console.log("Media data:", mediaData);
+
+      await saveMediaInfo(itineraryId, mediaData);
+      await fetchMediaFiles();
+
+      // Reset form
+      setShowMediaModal(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setMediaCaption("");
+      setSelectedDayForMedia(null);
+
+      alert("Upload media thành công!");
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      console.error("Error details:", error.response?.data);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Không thể upload media";
+
+      alert(`Lỗi: ${errorMessage}`);
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  // Handler xóa media
+  const handleDeleteMedia = async (mediaId) => {
+    if (!window.confirm("Bạn có chắc muốn xóa media này?")) return;
+
+    try {
+      await deleteMedia(itineraryId, mediaId);
+
+      // Cập nhật UI
+      setMediaFiles((prev) => prev.filter((m) => m.id !== mediaId));
+
+      alert("Xóa media thành công!");
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      alert("Không thể xóa media. Vui lòng thử lại.");
+    }
+  };
 
   const handleDateClick = () => {
     if (!itinerary?.canEdit) return;
@@ -594,6 +761,28 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     0
   );
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      // Giả lập event cho handleFileSelect
+      const fakeEvent = {
+        target: {
+          files: [file],
+          value: "",
+        },
+      };
+      handleFileSelect(fakeEvent);
+    }
+  };
+
   // ----- DRAG AND DROP HANDLER -----
   const handleDragEnd = async (result) => {
     if (!itinerary?.canEdit) return; // chặn DnD khi viewer
@@ -762,6 +951,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-6">
+            {/* LOGO */}
+            <div className="flex items-center gap-2 group cursor-pointer select-none">
+              <div className="w-9 h-9 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+            </div>
             <div>
               {isEditingTitle ? (
                 <input
@@ -817,12 +1012,54 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 </button>
                 <span className="text-gray-300 mx-1">•</span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  💰 Tổng: <b className="ml-1">{formatVND(grandTotal)}</b>
+                  Tổng: <b className="ml-1">{formatVND(grandTotal)}</b>
                 </span>
               </p>
             </div>
           </div>
-
+          {/* Thanh chuyển mode*/}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode("editor")}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === "editor"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Editor
+            </button>
+            <button
+              onClick={() => setViewMode("calendar")}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === "calendar"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Calendar
+            </button>
+            <button
+              onClick={() => setViewMode("overview")}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === "overview"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setViewMode("media")}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === "media"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Media
+            </button>
+          </div>
           <div className="flex items-center gap-3">
             {itinerary?.canEdit && (
               <button
@@ -852,237 +1089,1055 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         />
       )}
 
-      <div className="flex gap-6 flex-1">
-        {/* Days List */}
-
-
-        {/* ================= DAYS LIST ================= */}
-        <div
-          className={`transition-all duration-300 p-6 flex-shrink-0`}
-          style={{
-            width:
-              mapSize === "full" ? "25%" : mapSize === "half" ? "50%" : "66.66%",
-          }}
-        >
-          <div className="flex gap-6 min-w-max h-full">
-            <DragDropContext onDragEnd={handleDragEnd}>
-              {itinerary.days.map((day) => {
-                const dayWarnings = warningsByDay?.[String(day.dayNumber)] || [];
-                const warningsCount = Array.isArray(dayWarnings)
-                  ? dayWarnings.length
-                  : 0;
-
-                return (
-                  <div
-                    key={day.dayNumber}
-                    className="bg-white border border-gray-200 rounded-2xl shadow-md w-96 flex-shrink-0 flex flex-col overflow-hidden"
-                  >
-                    {/* ===== HEADER ===== */}
-                    <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-white border-b flex justify-between items-center">
-                      <div className="flex flex-col">
-                        <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                          Ngày {day.dayNumber}
-                          <span className="text-sm text-gray-500">({day.date})</span>
-                        </h3>
-                        {warningsCount > 0 && (
-                          <div
-                            onClick={() =>
-                              setOpenWarningDay(openWarningDay === day.dayNumber ? null : day.dayNumber)
-                            }
-                            className="flex items-center gap-2 text-sm text-orange-600 mt-1 cursor-pointer select-none"
-                          >
-                            <ShieldAlert size={15} />
-                            <span>{warningsCount} cảnh báo cần kiểm tra</span>
-                          </div>
-                        )}
-
-
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            if (!itinerary?.canEdit) return;
-                            setSelectedDayNumber(day.dayNumber);
-                            setShowPlaceModal(true);
-                          }}
-                          disabled={!itinerary?.canEdit}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${itinerary?.canEdit
-                            ? "bg-blue-600 text-white hover:bg-blue-700"
-                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                            }`}
-                        >
-                          + Thêm
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* ===== WARNINGS PANEL ===== */}
-                    <AnimatePresence>
-                      {openWarningDay === day.dayNumber && warningsCount > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.25 }}
-                          className="mx-4 mt-3 mb-2 rounded-2xl p-3 bg-gradient-to-br from-orange-50 to-white border border-orange-200 shadow-sm"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 text-orange-700 font-semibold">
-                              <AlertTriangle size={16} />
-                              <span>Cảnh báo trong ngày</span>
-                            </div>
-                            <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2 py-0.5 rounded-full">
-                              {warningsCount} vấn đề
-                            </span>
-                          </div>
-
-                          <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-                            {dayWarnings.map((w, idx) => {
-                              const typeStyle = {
-                                CLOSED: "bg-red-50 text-red-700 border-red-200",
-                                PARTIAL_OPEN: "bg-yellow-50 text-yellow-700 border-yellow-200",
-                                NOT_ENOUGH_TRAVEL: "bg-orange-50 text-orange-700 border-orange-200",
-                                SHORT_VISIT: "bg-purple-50 text-purple-700 border-purple-200",
-                                MISSING_DATA: "bg-gray-50 text-gray-700 border-gray-200",
-                              }[w.type] || "bg-blue-50 text-blue-700 border-blue-200";
-
-                              return (
-                                <div key={idx} className={`border rounded-xl p-3 shadow-sm ${typeStyle}`}>
-                                  <div className="flex items-start gap-2">
-                                    <ShieldAlert size={16} className="mt-0.5" />
-                                    <div>
-                                      <div className="text-sm font-semibold tracking-wide">{w.type}</div>
-                                      <p className="text-xs leading-snug opacity-90">{w.message}</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-
-                    {/* ===== ITEMS ===== */}
-                    <div className="flex-1 min-h-0 px-4 pb-4">
-                      <Droppable
-                        droppableId={String(day.dayNumber)}
-                        type="ITEM"
-                        isDropDisabled={!itinerary?.canEdit}
+      <div className="flex gap-6 flex-1 overflow-hidden">
+        {viewMode === "editor" ? (
+          <>
+            {/* Days List - Editor Mode */}
+            <div
+              className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${
+                mapSize === "full"
+                  ? "w-1/4"
+                  : mapSize === "half"
+                  ? "w-1/2"
+                  : "w-3/4"
+              }`}
+            >
+              <div className="flex gap-4 min-w-max h-full">
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  {itinerary.days.map((day) => {
+                    const daySubtotal = day.items.reduce(
+                      (s, i) => s + (Number(i.estimatedCost) || 0),
+                      0
+                    );
+                    return (
+                      <div
+                        key={day.dayNumber}
+                        className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl shadow w-96 flex-shrink-0 flex flex-col max-h-full"
                       >
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className={`space-y-3 overflow-y-auto min-h-[120px] rounded-lg p-2 transition ${snapshot.isDraggingOver
-                              ? "bg-blue-50 border-2 border-blue-300 border-dashed"
-                              : "bg-gray-50"
+                        <div className="flex justify-between items-center flex-shrink-0">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-semibold text-lg">
+                              Ngày {day.dayNumber} ({day.date})
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {/* Nút thêm địa điểm */}
+                            <button
+                              onClick={() => {
+                                if (!itinerary?.canEdit) return;
+                                setSelectedDayNumber(day.dayNumber);
+                                setShowPlaceModal(true);
+                              }}
+                              disabled={!itinerary?.canEdit}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${
+                                itinerary?.canEdit
+                                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
                               }`}
-                            style={{ maxHeight: "100%" }}
-                          >
-                            {day.items.length === 0 && (
-                              <div className="flex flex-col items-center justify-center py-10 text-gray-400 text-sm">
-                                <AlertTriangle size={30} className="mb-2 opacity-40" />
-                                Chưa có địa điểm nào
+                            >
+                              <Plus size={16} />
+                              <span>Thêm</span>
+                            </button>
+
+                            {/* Menu 3 chấm chỉ khi có quyền */}
+                            {itinerary?.canEdit && (
+                              <div className="relative" ref={menuRef}>
+                                <button
+                                  onClick={() => {
+                                    setItinerary((prev) => ({
+                                      ...prev,
+                                      activeMenu:
+                                        prev.activeMenu === day.dayNumber
+                                          ? null
+                                          : day.dayNumber,
+                                    }));
+                                  }}
+                                  className="p-2 rounded-full hover:bg-gray-100 transition"
+                                >
+                                  <MoreVertical size={18} />
+                                </button>
+
+                                <AnimatePresence>
+                                  {itinerary.activeMenu === day.dayNumber && (
+                                    <motion.div
+                                      initial={{
+                                        opacity: 0,
+                                        scale: 0.95,
+                                        y: -5,
+                                      }}
+                                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                                      exit={{
+                                        opacity: 0,
+                                        scale: 0.95,
+                                        y: -5,
+                                      }}
+                                      transition={{ duration: 0.15 }}
+                                      className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg w-48 z-10"
+                                    >
+                                      <button
+                                        onClick={() => {
+                                          handleAddDayBefore(day.dayNumber);
+                                          setItinerary((prev) => ({
+                                            ...prev,
+                                            activeMenu: null,
+                                          }));
+                                        }}
+                                        className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
+                                      >
+                                        <Plus size={16} />
+                                        <span>Thêm ngày trước</span>
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleAddDayAfter(day.dayNumber);
+                                          setItinerary((prev) => ({
+                                            ...prev,
+                                            activeMenu: null,
+                                          }));
+                                        }}
+                                        className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-50 text-left"
+                                      >
+                                        <Plus size={16} />
+                                        <span>Thêm ngày sau</span>
+                                      </button>
+                                      <hr />
+                                      <button
+                                        onClick={() => {
+                                          handleDeleteDay(day.dayNumber);
+                                          setItinerary((prev) => ({
+                                            ...prev,
+                                            activeMenu: null,
+                                          }));
+                                        }}
+                                        className="flex items-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 text-left"
+                                      >
+                                        <Trash2 size={16} />
+                                        <span>Xóa ngày</span>
+                                      </button>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
                               </div>
                             )}
+                            
+                            {/* ===== WARNINGS PANEL ===== */}
+                      <AnimatePresence>
+                        {openWarningDay === day.dayNumber && warningsCount > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.25 }}
+                            className="mx-4 mt-3 mb-2 rounded-2xl p-3 bg-gradient-to-br from-orange-50 to-white border border-orange-200 shadow-sm"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2 text-orange-700 font-semibold">
+                                <AlertTriangle size={16} />
+                                <span>Cảnh báo trong ngày</span>
+                              </div>
+                              <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2 py-0.5 rounded-full">
+                                {warningsCount} vấn đề
+                              </span>
+                            </div>
 
-                            {day.items.map((item, index) => (
-                              <Draggable
-                                key={item.id}
-                                draggableId={String(item.id)}
-                                index={index}
-                                isDragDisabled={!itinerary?.canEdit}
-                              >
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={`rounded-xl transition-all ${snapshot.isDragging
-                                      ? "scale-[1.02] shadow-xl"
-                                      : "shadow-sm"
-                                      }`}
-                                  >
-                                    <DayItemCard
-                                      item={item}
-                                      readOnly={!itinerary?.canEdit}
-                                      onRemove={removeItem}
-                                      onUpdate={updateItem}
-                                      itemWarnings={(warningsByDay?.[String(day.dayNumber)] || []).filter(
-                                        (w) => w.itemId === item.id
-                                      )}
-                                    />
+                            <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                              {dayWarnings.map((w, idx) => {
+                                const typeStyle = {
+                                  CLOSED: "bg-red-50 text-red-700 border-red-200",
+                                  PARTIAL_OPEN: "bg-yellow-50 text-yellow-700 border-yellow-200",
+                                  NOT_ENOUGH_TRAVEL: "bg-orange-50 text-orange-700 border-orange-200",
+                                  SHORT_VISIT: "bg-purple-50 text-purple-700 border-purple-200",
+                                  MISSING_DATA: "bg-gray-50 text-gray-700 border-gray-200",
+                                }[w.type] || "bg-blue-50 text-blue-700 border-blue-200";
+
+                                return (
+                                  <div key={idx} className={`border rounded-xl p-3 shadow-sm ${typeStyle}`}>
+                                    <div className="flex items-start gap-2">
+                                      <ShieldAlert size={16} className="mt-0.5" />
+                                      <div>
+                                        <div className="text-sm font-semibold tracking-wide">{w.type}</div>
+                                        <p className="text-xs leading-snug opacity-90">{w.message}</p>
+                                      </div>
+                                    </div>
                                   </div>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </div>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
                         )}
-                      </Droppable>
-                    </div>
-                  </div>
-                );
-              })}
-            </DragDropContext>
-          </div>
-        </div>
+                      </AnimatePresence>    
+                          </div>
+                        </div>
 
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 mt-2">
+                          {day.items.length === 0 && (
+                            <p className="text-gray-400 text-center py-8 text-sm">
+                              Chưa có địa điểm nào. Nhấn "Thêm" để bắt đầu.
+                            </p>
+                          )}
 
-        {/* Map Right Side */}
-        <div
-          className={`transition-all duration-300 flex-shrink-0`}
-          style={{
-            width: mapSize === "full" ? "75%" : mapSize === "half" ? "50%" : "33.33%",
-          }}
-        >
-          <div className="h-full relative">
-            {/* Map Controls */}
-            <div className="absolute top-4 left-4 z-[1000]">
-              <div className="relative">
-                <button
-                  onClick={() =>
-                    setItinerary((prev) => ({ ...prev, showMapMenu: !prev.showMapMenu }))
-                  }
-                  className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition text-sm font-medium"
-                >
-                  <Eye size={16} />
-                  <span>Expand Map</span>
-                </button>
+                          <Droppable
+                            droppableId={String(day.dayNumber)}
+                            type="ITEM"
+                            isDropDisabled={!itinerary?.canEdit} // khóa drop
+                          >
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={`space-y-3 min-h-[100px] ${
+                                  snapshot.isDraggingOver
+                                    ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
+                                    : ""
+                                }`}
+                              >
+                                {day.items.map((item, index) => (
+                                  <Draggable
+                                    key={item.id}
+                                    draggableId={String(item.id)}
+                                    index={index}
+                                    isDragDisabled={!itinerary?.canEdit} // khóa drag
+                                  >
+                                    {(provided, snapshot) => (
+                                      <>
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          onMouseEnter={() =>
+                                            setHoveredItemId(item.id)
+                                          }
+                                          onMouseLeave={() =>
+                                            setHoveredItemId(null)
+                                          }
+                                          className={`transition-transform ${
+                                            snapshot.isDragging
+                                              ? "scale-[1.02] shadow-lg"
+                                              : ""
+                                          }`}
+                                        >
+                                          <DayItemCard
+                                            item={item}
+                                            readOnly={!itinerary?.canEdit} // truyền readOnly xuống
+                                            onRemove={removeItem}
+                                            onUpdate={updateItem}
+                                            onClick={(clickedItem) => {
+                                              setSelectedPlaceForDetail({
+                                                id: clickedItem.placeId,
+                                                name: clickedItem.placeName,
+                                              });
+                                            }}
+                                            onSuggest={(clickedItem) => {
+                                              if (!itinerary?.canEdit) return;
+                                              setLastAddedPlace({
+                                                id: clickedItem.placeId,
+                                                name: clickedItem.placeName,
+                                                dayNumber:
+                                                  clickedItem.dayNumber,
+                                              });
+                                              setShowSuggestionsModal(true);
+                                            }}
+                                          />
+                                        </div>
 
-                {itinerary.showMapMenu && (
-                  <div className="absolute top-12 left-0 bg-white rounded-lg shadow-xl border border-gray-200 min-w-[160px] overflow-hidden">
-                    {["default", "half", "full"].map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => {
-                          setMapSize(size);
-                          setItinerary((prev) => ({ ...prev, showMapMenu: false }));
-                        }}
-                        className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === size ? "bg-blue-50 text-blue-600 font-medium" : ""
-                          }`}
-                      >
-                        {mapSize === size && "✓ "} {size.charAt(0).toUpperCase() + size.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                                        {/* Khoảng cách đến điểm tiếp theo */}
+                                        {index < day.items.length - 1 &&
+                                          (() => {
+                                            const next = day.items[index + 1];
+                                            const dist = formatDistance(
+                                              item,
+                                              next
+                                            );
+                                            return (
+                                              <div className="flex items-center gap-2 text-xs text-gray-600 pl-3 pr-2 py-1">
+                                                <div className="flex-1 h-px bg-gray-200" />
+                                                <div className="flex items-center gap-1 whitespace-nowrap">
+                                                  <Navigation
+                                                    size={14}
+                                                    className="text-gray-400"
+                                                  />
+                                                  <span>
+                                                    {dist
+                                                      ? `~ ${dist}`
+                                                      : "Khoảng cách: N/A"}
+                                                  </span>
+                                                </div>
+                                                <div className="flex-1 h-px bg-gray-200" />
+                                              </div>
+                                            );
+                                          })()}
+                                      </>
+                                    )}
+                                  </Draggable>
+                                ))}
+
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </DragDropContext>
               </div>
             </div>
 
-            <div className="bg-gray-100 overflow-hidden h-full">
-              <LeafletMap
-                places={getRouteItems()}
-                image={itinerary.destinationImage}
-                hoveredPlaceId={hoveredItemId}
-                provider="google-roadmap"
-              />
+            {/* Map - Editor Mode */}
+            <div
+              className={`transition-all duration-300 flex-shrink-0 ${
+                mapSize === "full"
+                  ? "w-3/4"
+                  : mapSize === "half"
+                  ? "w-1/2"
+                  : "w-1/4"
+              }`}
+            >
+              <div className="h-full relative">
+                <div className="absolute top-4 left-4 z-[1000]">
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setItinerary((prev) => ({
+                          ...prev,
+                          showMapMenu: !prev.showMapMenu,
+                        }))
+                      }
+                      className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition text-sm font-medium"
+                    >
+                      <Eye size={16} />
+                      <span>Expand Map</span>
+                    </button>
+
+                    {itinerary.showMapMenu && (
+                      <div className="absolute top-12 left-0 bg-white rounded-lg shadow-xl border border-gray-200 min-w-[160px] overflow-hidden">
+                        <button
+                          onClick={() => {
+                            setMapSize("default");
+                            setItinerary((prev) => ({
+                              ...prev,
+                              showMapMenu: false,
+                            }));
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                            mapSize === "default"
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
+                          }`}
+                        >
+                          {mapSize === "default" && "✓ "}Default
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMapSize("half");
+                            setItinerary((prev) => ({
+                              ...prev,
+                              showMapMenu: false,
+                            }));
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                            mapSize === "half"
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
+                          }`}
+                        >
+                          {mapSize === "half" && "✓ "}Half
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMapSize("full");
+                            setItinerary((prev) => ({
+                              ...prev,
+                              showMapMenu: false,
+                            }));
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                            mapSize === "full"
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
+                          }`}
+                        >
+                          {mapSize === "full" && "✓ "}Full
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-gray-100 overflow-hidden h-full">
+                  <LeafletMap
+                    places={getRouteItems()}
+                    image={itinerary.destinationImage}
+                    hoveredPlaceId={hoveredItemId}
+                    provider="google-roadmap"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        ) : viewMode === "calendar" ? (
+          /* Calendar Mode */
+          <div className="flex-1 overflow-hidden flex">
+            {/* Calendar Timeline */}
+            <div className="flex-1 overflow-x-auto overflow-y-auto bg-white">
+              <div className="min-w-max">
+                {/* Header với các ngày */}
+                <div className="sticky top-0 z-10 bg-white border-b-2 border-gray-300 flex">
+                  {/* Cột giờ */}
+                  <div className="w-20 flex-shrink-0 border-r border-gray-300 bg-gray-50">
+                    <div className="h-24 flex items-center justify-center">
+                      <span className="text-xs text-gray-500 font-medium">
+                        All day
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Các cột ngày */}
+                  {itinerary.days.map((day) => (
+                    <div
+                      key={day.dayNumber}
+                      className="w-64 flex-shrink-0 border-r border-gray-300"
+                    >
+                      <div className="p-4 text-center flex items-center justify-center h-full">
+                        <div className="text-xs text-gray-500 font-medium mb-1">
+                          Day {day.dayNumber}:{" "}
+                          {new Date(day.date).toLocaleDateString("en-US", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Grid giờ và sự kiện */}
+                <div className="relative">
+                  {/* Grid nền */}
+                  <div className="flex">
+                    {/* Cột giờ */}
+                    <div className="w-20 flex-shrink-0 border-r border-gray-200">
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <div
+                          key={i}
+                          className="h-16 border-b border-gray-200 text-right pr-2 pt-1"
+                        >
+                          <span className="text-xs text-gray-500">
+                            {i.toString().padStart(2, "0")}:00
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Các cột ngày với grid */}
+                    {itinerary.days.map((day) => (
+                      <div
+                        key={day.dayNumber}
+                        className="w-64 flex-shrink-0 border-r border-gray-200 relative"
+                      >
+                        {Array.from({ length: 24 }, (_, i) => (
+                          <div
+                            key={i}
+                            className="h-16 border-b border-gray-200"
+                          />
+                        ))}
+
+                        {/* Các sự kiện trong ngày */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          {day.items.map((item, idx) => {
+                            const [startHour, startMin] = (
+                              item.startTime || "09:00"
+                            )
+                              .split(":")
+                              .map(Number);
+                            const [endHour, endMin] = (item.endTime || "11:00")
+                              .split(":")
+                              .map(Number);
+
+                            const startMinutes = startHour * 60 + startMin;
+                            const endMinutes = endHour * 60 + endMin;
+                            const duration = endMinutes - startMinutes;
+
+                            const top = (startMinutes / 60) * 64; // 64px per hour
+                            const height = (duration / 60) * 64;
+
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  setSelectedPlaceForDetail({
+                                    id: item.placeId,
+                                    name: item.placeName,
+                                  });
+                                }}
+                                className="absolute left-1 right-1 rounded-lg p-2 shadow-sm pointer-events-auto cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                                style={{
+                                  top: `${top}px`,
+                                  height: `${Math.max(height, 40)}px`,
+                                  backgroundColor: "#86efac",
+                                  borderLeft: "3px solid #22c55e",
+                                }}
+                              >
+                                <div className="text-xs font-semibold text-gray-800 truncate">
+                                  {item.startTime} - {item.endTime}
+                                </div>
+                                <div className="text-xs text-gray-700 font-medium truncate mt-0.5 flex items-center gap-1">
+                                  📍 {item.placeName}
+                                </div>
+                                {item.estimatedCost > 0 && (
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    💰 {formatVND(item.estimatedCost)}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Map - Editor Mode */}
+            <div
+              className={`transition-all duration-300 flex-shrink-0 ${
+                mapSize === "full"
+                  ? "w-3/4"
+                  : mapSize === "half"
+                  ? "w-1/2"
+                  : "w-1/4"
+              }`}
+            >
+              <div className="h-full relative">
+                <div className="absolute top-4 left-4 z-[1000]">
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setItinerary((prev) => ({
+                          ...prev,
+                          showMapMenu: !prev.showMapMenu,
+                        }))
+                      }
+                      className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition text-sm font-medium"
+                    >
+                      <Eye size={16} />
+                      <span>Expand Map</span>
+                    </button>
+
+                    {itinerary.showMapMenu && (
+                      <div className="absolute top-12 left-0 bg-white rounded-lg shadow-xl border border-gray-200 min-w-[160px] overflow-hidden">
+                        <button
+                          onClick={() => {
+                            setMapSize("default");
+                            setItinerary((prev) => ({
+                              ...prev,
+                              showMapMenu: false,
+                            }));
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                            mapSize === "default"
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
+                          }`}
+                        >
+                          {mapSize === "default" && "✓ "}Default
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMapSize("half");
+                            setItinerary((prev) => ({
+                              ...prev,
+                              showMapMenu: false,
+                            }));
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                            mapSize === "half"
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
+                          }`}
+                        >
+                          {mapSize === "half" && "✓ "}Half
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMapSize("full");
+                            setItinerary((prev) => ({
+                              ...prev,
+                              showMapMenu: false,
+                            }));
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
+                            mapSize === "full"
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
+                          }`}
+                        >
+                          {mapSize === "full" && "✓ "}Full
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-gray-100 overflow-hidden h-full">
+                  <LeafletMap
+                    places={getRouteItems()}
+                    image={itinerary.destinationImage}
+                    hoveredPlaceId={hoveredItemId}
+                    provider="google-roadmap"
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : viewMode === "media" ? (
+          <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Header */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                      📸 Thư viện Media
+                    </h2>
+                    <p className="text-gray-600">
+                      Upload và quản lý ảnh, video cho lịch trình của bạn
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowBlogPreview(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                    >
+                      <Eye size={18} />
+                      Xem bài Blog
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!itinerary?.canEdit) return;
+                        setSelectedDayForMedia(null);
+                        setMediaCaption("");
+                        setShowMediaModal(true);
+                      }}
+                      disabled={!itinerary?.canEdit}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                        itinerary?.canEdit
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      <Plus size={18} />
+                      Upload Media
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-4 gap-4 mt-6">
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                    <div className="text-sm text-blue-600 font-medium mb-1">
+                      Tổng media
+                    </div>
+                    <div className="text-2xl font-bold text-blue-700">
+                      {mediaFiles.length}
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                    <div className="text-sm text-purple-600 font-medium mb-1">
+                      Hình ảnh
+                    </div>
+                    <div className="text-2xl font-bold text-purple-700">
+                      {mediaFiles.filter((m) => m.type === "image").length}
+                    </div>
+                  </div>
+                  <div className="bg-pink-50 rounded-lg p-4 border border-pink-100">
+                    <div className="text-sm text-pink-600 font-medium mb-1">
+                      Video
+                    </div>
+                    <div className="text-2xl font-bold text-pink-700">
+                      {mediaFiles.filter((m) => m.type === "video").length}
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                    <div className="text-sm text-emerald-600 font-medium mb-1">
+                      Ngày có media
+                    </div>
+                    <div className="text-2xl font-bold text-emerald-700">
+                      {new Set(mediaFiles.map((m) => m.dayNumber)).size}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {loadingMedia && (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <p className="mt-4 text-gray-600">Đang tải media...</p>
+                </div>
+              )}
+
+              {/* Media by Days */}
+              {!loadingMedia &&
+                itinerary.days.map((day) => {
+                  const dayMedia = mediaFiles.filter(
+                    (m) => m.dayNumber === day.dayNumber
+                  );
+
+                  if (dayMedia.length === 0) return null;
+
+                  return (
+                    <div key={day.dayNumber} className="mb-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-bold text-gray-900">
+                          Ngày {day.dayNumber} - {day.date}
+                        </h3>
+                        <button
+                          onClick={() => {
+                            if (!itinerary?.canEdit) return;
+                            setSelectedDayForMedia(day.dayNumber);
+                            setMediaCaption("");
+                            setShowMediaModal(true);
+                          }}
+                          disabled={!itinerary?.canEdit}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            itinerary?.canEdit
+                              ? "bg-gray-900 text-white hover:bg-gray-800"
+                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          }`}
+                        >
+                          <Plus size={16} />
+                          Thêm media
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-4">
+                        {dayMedia.map((media) => (
+                          <div
+                            key={media.id}
+                            onClick={() => setSelectedMedia(media)}
+                            className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+                          >
+                            <div className="relative aspect-square overflow-hidden bg-gray-100">
+                              {media.type === "image" ? (
+                                <img
+                                  src={media.url}
+                                  alt={media.caption}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="relative w-full h-full">
+                                  <img
+                                    src={media.thumbnail || media.url}
+                                    alt={media.caption}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                    <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
+                                      <svg
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                      >
+                                        <path
+                                          d="M8 5v14l11-7L8 5z"
+                                          fill="#1f2937"
+                                        />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              {itinerary?.canEdit && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteMedia(media.id);
+                                  }}
+                                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
+                            </div>
+                            <div className="p-3">
+                              <p className="text-sm text-gray-900 font-medium line-clamp-2 mb-1">
+                                {media.caption}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {media.uploadedBy} •{" "}
+                                {new Date(media.uploadedAt).toLocaleDateString(
+                                  "vi-VN"
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+              {/* Empty State */}
+              {!loadingMedia && mediaFiles.length === 0 && (
+                <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
+                  <div className="text-6xl mb-4">📸</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Chưa có media nào
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Bắt đầu upload ảnh và video để lưu lại những khoảnh khắc đẹp
+                    trong chuyến đi
+                  </p>
+                  <button
+                    onClick={() => {
+                      setMediaCaption("");
+                      setShowMediaModal(true);
+                    }}
+                    disabled={!itinerary?.canEdit}
+                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                      itinerary?.canEdit
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    Upload Media đầu tiên
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Overview Mode */
+          <div className="flex-1 overflow-hidden flex gap-6 p-6 bg-gray-50">
+            {/* Left side - Timeline */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                    Tổng quan lịch trình
+                  </h2>
+                  <p className="text-gray-600">
+                    Xem toàn bộ hành trình của bạn trong {itinerary.days.length}{" "}
+                    ngày
+                  </p>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-4 mt-6">
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                      <div className="text-sm text-blue-600 font-medium mb-1">
+                        Tổng số ngày
+                      </div>
+                      <div className="text-2xl font-bold text-blue-700">
+                        {itinerary.days.length}
+                      </div>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                      <div className="text-sm text-purple-600 font-medium mb-1">
+                        Tổng địa điểm
+                      </div>
+                      <div className="text-2xl font-bold text-purple-700">
+                        {itinerary.days.reduce(
+                          (sum, d) => sum + d.items.length,
+                          0
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                      <div className="text-sm text-emerald-600 font-medium mb-1">
+                        Tổng chi phí
+                      </div>
+                      <div className="text-xl font-bold text-emerald-700">
+                        {formatVND(grandTotal)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div className="space-y-6">
+                  {itinerary.days.map((day, dayIndex) => {
+                    const daySubtotal = day.items.reduce(
+                      (s, i) => s + (Number(i.estimatedCost) || 0),
+                      0
+                    );
+
+                    return (
+                      <div
+                        key={day.dayNumber}
+                        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                      >
+                        {/* Day Header */}
+                        <div className="bg-gray-900 text-white p-5">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-full bg-white text-gray-900 flex items-center justify-center font-bold text-lg">
+                                {day.dayNumber}
+                              </div>
+                              <div>
+                                <h3 className="text-xl font-bold">
+                                  Ngày {day.dayNumber}
+                                </h3>
+                                <p className="text-gray-300 text-sm mt-0.5">
+                                  {day.date}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-300">Chi phí</p>
+                              <p className="text-xl font-bold">
+                                {formatVND(daySubtotal)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Day Items */}
+                        <div className="p-5">
+                          {day.items.length === 0 ? (
+                            <p className="text-gray-400 text-center py-8 text-sm">
+                              Chưa có địa điểm nào trong ngày này
+                            </p>
+                          ) : (
+                            <div className="space-y-3">
+                              {day.items.map((item, itemIndex) => (
+                                <div key={item.id}>
+                                  <div
+                                    className="flex gap-4 p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all cursor-pointer"
+                                    onClick={() => {
+                                      setSelectedPlaceForDetail({
+                                        id: item.placeId,
+                                        name: item.placeName,
+                                      });
+                                    }}
+                                  >
+                                    {/* Order Number */}
+                                    <div className="flex-shrink-0">
+                                      <div className="w-10 h-10 rounded-lg bg-gray-900 text-white flex items-center justify-center font-bold text-sm">
+                                        {itemIndex + 1}
+                                      </div>
+                                    </div>
+
+                                    {/* Image */}
+                                    <div className="flex-shrink-0">
+                                      <img
+                                        src={item.placeImage}
+                                        alt={item.placeName}
+                                        className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                                      />
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-bold text-gray-900 truncate text-base">
+                                        {item.placeName}
+                                      </h4>
+                                      <p className="text-sm text-gray-500 truncate mt-1">
+                                        📍 {item.placeAddress}
+                                      </p>
+                                      <div className="flex flex-wrap gap-3 mt-2">
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs font-medium text-gray-700">
+                                          ⏰ {item.startTime} - {item.endTime}
+                                        </span>
+                                        {item.estimatedCost > 0 && (
+                                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 rounded-md text-xs font-medium text-emerald-700">
+                                            💰 {formatVND(item.estimatedCost)}
+                                          </span>
+                                        )}
+                                        {item.transportMode && (
+                                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 rounded-md text-xs font-medium text-blue-700">
+                                            🚗 {item.transportMode}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {item.description && (
+                                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                                          {item.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Distance to next */}
+                                  {itemIndex < day.items.length - 1 &&
+                                    (() => {
+                                      const next = day.items[itemIndex + 1];
+                                      const dist = formatDistance(item, next);
+                                      return (
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 pl-14 py-2">
+                                          <div className="w-px h-6 bg-gray-300" />
+                                          <Navigation
+                                            size={14}
+                                            className="text-gray-400"
+                                          />
+                                          <span className="font-medium">
+                                            {dist
+                                              ? `${dist}`
+                                              : "Khoảng cách: N/A"}
+                                          </span>
+                                          <div className="flex-1 h-px bg-gray-200" />
+                                        </div>
+                                      );
+                                    })()}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - Map */}
+            <div className="w-[500px] flex-shrink-0">
+              <div className="sticky top-0 h-[calc(100vh-120px)]">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
+                  {/* Map Header */}
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                      <MapPin size={18} className="text-gray-700" />
+                      Bản đồ tổng quan
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Xem vị trí tất cả các địa điểm trong hành trình
+                    </p>
+                  </div>
+
+                  {/* Map */}
+                  <div className="flex-1 relative">
+                    <LeafletMap
+                      places={getRouteItems()}
+                      image={itinerary.destinationImage}
+                      hoveredPlaceId={hoveredItemId}
+                      provider="google-roadmap"
+                    />
+                  </div>
+
+                  {/* Map Legend */}
+                  <div className="p-4 border-t border-gray-200 bg-gray-50">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                        <span className="text-gray-600">Điểm đến</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-0.5 bg-blue-600"></div>
+                        <span className="text-gray-600">Tuyến đường</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
       </div>
 
 
@@ -1278,6 +2333,430 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             handleAddPlaceToDay(lastAddedPlace.dayNumber, place);
           }}
         />
+      )}
+
+      {/* Modal Upload Media */}
+      {showMediaModal && itinerary?.canEdit && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
+            onClick={() => {
+              if (!uploadingFile) {
+                setShowMediaModal(false);
+                setSelectedFile(null);
+                setPreviewUrl(null);
+                setMediaCaption("");
+              }
+            }}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-white rounded-2xl shadow-2xl w-[600px] max-h-[80vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900">
+                  Upload Media
+                </h3>
+                <button
+                  onClick={() => {
+                    if (!uploadingFile) {
+                      setShowMediaModal(false);
+                      setSelectedFile(null);
+                      setPreviewUrl(null);
+                      setMediaCaption("");
+                    }
+                  }}
+                  disabled={uploadingFile}
+                  className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Preview nếu đã chọn file */}
+              {previewUrl && selectedFile && (
+                <div className="mb-4 rounded-lg overflow-hidden border-2 border-gray-200">
+                  {selectedFile.type.startsWith("image/") ? (
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="w-full h-64 object-cover"
+                    />
+                  ) : (
+                    <video
+                      src={previewUrl}
+                      className="w-full h-64 object-cover"
+                      controls
+                    />
+                  )}
+                  <div className="bg-gray-50 p-3 text-sm">
+                    <p className="font-medium text-gray-900">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-gray-500">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Area */}
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-500 transition-colors bg-gray-50 hover:bg-blue-50 cursor-pointer"
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  id="mediaFileInput"
+                  accept="image/*,video/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={uploadingFile}
+                />
+
+                <label
+                  htmlFor="mediaFileInput"
+                  className="cursor-pointer block"
+                >
+                  <div className="text-5xl mb-4">
+                    {uploadingFile ? "⏳" : "📤"}
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    {uploadingFile
+                      ? "Đang upload..."
+                      : "Kéo thả file hoặc click để chọn"}
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Hỗ trợ: JPG, PNG, GIF, MP4, MOV (Max 50MB)
+                  </p>
+                  {!uploadingFile && (
+                    <span className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                      Chọn file
+                    </span>
+                  )}
+                </label>
+
+                {/* Progress bar khi đang upload */}
+                {uploadingFile && (
+                  <div className="mt-4 max-w-md mx-auto">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full animate-pulse"
+                        style={{ width: "70%" }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Form chỉ hiện khi đã chọn file */}
+              {selectedFile && !uploadingFile && (
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Chọn ngày <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedDayForMedia || ""}
+                      onChange={(e) =>
+                        setSelectedDayForMedia(Number(e.target.value))
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    >
+                      <option value="">-- Chọn ngày --</option>
+                      {itinerary.days.map((day) => (
+                        <option key={day.dayNumber} value={day.dayNumber}>
+                          Ngày {day.dayNumber} - {day.date}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mô tả
+                    </label>
+                    <textarea
+                      value={mediaCaption}
+                      onChange={(e) => setMediaCaption(e.target.value)}
+                      placeholder="Thêm mô tả cho media..."
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => {
+                        setShowMediaModal(false);
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                        setMediaCaption("");
+                        setSelectedDayForMedia(null);
+                      }}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={() => handleUploadMedia(selectedFile)}
+                      disabled={!selectedDayForMedia}
+                      className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                        selectedDayForMedia
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      Upload
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal View Media Detail */}
+      {selectedMedia && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
+            onClick={() => setSelectedMedia(null)}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[90vw] max-w-4xl">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-2xl">
+              <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                <h3 className="font-bold text-gray-900">
+                  {selectedMedia.caption}
+                </h3>
+                <button
+                  onClick={() => setSelectedMedia(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="bg-black">
+                {selectedMedia.type === "image" ? (
+                  <img
+                    src={selectedMedia.url}
+                    alt={selectedMedia.caption}
+                    className="w-full max-h-[70vh] object-contain"
+                  />
+                ) : (
+                  <video
+                    src={selectedMedia.url}
+                    controls
+                    autoPlay
+                    className="w-full max-h-[70vh]"
+                  />
+                )}
+              </div>
+              <div className="p-4 bg-gray-50">
+                <p className="text-sm text-gray-600">
+                  Uploaded by {selectedMedia.uploadedBy} •{" "}
+                  {new Date(selectedMedia.uploadedAt).toLocaleString("vi-VN")}
+                </p>
+                {selectedMedia.fileSize && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Kích thước:{" "}
+                    {(selectedMedia.fileSize / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      {/* Modal Blog Preview */}
+      {showBlogPreview && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
+            onClick={() => setShowBlogPreview(false)}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-white rounded-2xl shadow-2xl w-[900px] max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900">
+                  Preview Blog Post
+                </h3>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => alert("Đã chia sẻ lên blog! (Mock)")}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    Chia sẻ lên Blog
+                  </button>
+                  <button
+                    onClick={() => setShowBlogPreview(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8">
+              {/* Blog Header */}
+              <div className="mb-8">
+                <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                  {itinerary.title}
+                </h1>
+                <div className="flex items-center gap-4 text-gray-600">
+                  <span className="flex items-center gap-2">
+                    <MapPin size={18} />
+                    {itinerary.destination}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {itinerary.startDate} → {itinerary.endDate}
+                  </span>
+                  <span>•</span>
+                  <span>{itinerary.days.length} ngày</span>
+                </div>
+              </div>
+
+              {/* Blog Content */}
+              {itinerary.days.map((day) => {
+                const dayMedia = mediaFiles.filter(
+                  (m) => m.dayNumber === day.dayNumber
+                );
+
+                return (
+                  <div key={day.dayNumber} className="mb-12">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                      Ngày {day.dayNumber}: {day.date}
+                    </h2>
+
+                    {/* Day description */}
+                    <p className="text-gray-700 mb-6 leading-relaxed">
+                      Hôm nay chúng tôi đã khám phá {day.items.length} địa điểm
+                      tuyệt vời. Hành trình bắt đầu từ{" "}
+                      {day.items[0]?.placeName || "..."} và kết thúc tại{" "}
+                      {day.items[day.items.length - 1]?.placeName || "..."}.
+                    </p>
+
+                    {/* Media Gallery */}
+                    {dayMedia.length > 0 && (
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        {dayMedia.map((media) => (
+                          <div
+                            key={media.id}
+                            className="rounded-lg overflow-hidden"
+                          >
+                            {media.type === "image" ? (
+                              <img
+                                src={media.url}
+                                alt={media.caption}
+                                className="w-full h-64 object-cover"
+                              />
+                            ) : (
+                              <div className="relative">
+                                <img
+                                  src={media.thumbnail}
+                                  alt={media.caption}
+                                  className="w-full h-64 object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                    >
+                                      <path
+                                        d="M8 5v14l11-7L8 5z"
+                                        fill="#1f2937"
+                                      />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            <p className="text-sm text-gray-600 mt-2 italic">
+                              {media.caption}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Places */}
+                    <div className="space-y-4">
+                      {day.items.map((item, idx) => (
+                        <div
+                          key={item.id}
+                          className="flex gap-4 p-4 bg-gray-50 rounded-lg"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center font-bold flex-shrink-0">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">
+                              {item.placeName}
+                            </h4>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {item.description ||
+                                "Một địa điểm tuyệt vời đáng để ghé thăm."}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Blog Footer */}
+              <div className="border-t border-gray-200 pt-8 mt-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  Tổng kết chuyến đi
+                </h3>
+                <p className="text-gray-700 leading-relaxed">
+                  Đây thực sự là một chuyến đi đáng nhớ với tổng cộng{" "}
+                  {itinerary.days.length} ngày khám phá{" "}
+                  {itinerary.days.reduce((sum, d) => sum + d.items.length, 0)}{" "}
+                  địa điểm tuyệt vời. Tổng chi phí ước tính cho chuyến đi là{" "}
+                  {formatVND(grandTotal)}.
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
