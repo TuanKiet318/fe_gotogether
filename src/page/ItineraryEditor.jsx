@@ -118,6 +118,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const params = useParams();
   const itineraryId = propItineraryId || params.id;
   const [selectedPlace, setSelectedPlace] = useState(null);
+  const [openWarningDay, setOpenWarningDay] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [itinerary, setItinerary] = useState(null);
   const [warningsByDay, setWarningsByDay] = useState({});
@@ -883,11 +885,18 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           <span className="text-sm text-gray-500">({day.date})</span>
                         </h3>
                         {warningsCount > 0 && (
-                          <div className="flex items-center gap-2 text-sm text-orange-600 mt-1">
+                          <div
+                            onClick={() =>
+                              setOpenWarningDay(openWarningDay === day.dayNumber ? null : day.dayNumber)
+                            }
+                            className="flex items-center gap-2 text-sm text-orange-600 mt-1 cursor-pointer select-none"
+                          >
                             <ShieldAlert size={15} />
                             <span>{warningsCount} cảnh báo cần kiểm tra</span>
                           </div>
                         )}
+
+
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -910,7 +919,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
                     {/* ===== WARNINGS PANEL ===== */}
                     <AnimatePresence>
-                      {warningsCount > 0 && (
+                      {openWarningDay === day.dayNumber && warningsCount > 0 && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -939,19 +948,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               }[w.type] || "bg-blue-50 text-blue-700 border-blue-200";
 
                               return (
-                                <div
-                                  key={idx}
-                                  className={`border rounded-xl p-3 shadow-sm ${typeStyle}`}
-                                >
+                                <div key={idx} className={`border rounded-xl p-3 shadow-sm ${typeStyle}`}>
                                   <div className="flex items-start gap-2">
                                     <ShieldAlert size={16} className="mt-0.5" />
                                     <div>
-                                      <div className="text-sm font-semibold tracking-wide">
-                                        {w.type}
-                                      </div>
-                                      <p className="text-xs leading-snug opacity-90">
-                                        {w.message}
-                                      </p>
+                                      <div className="text-sm font-semibold tracking-wide">{w.type}</div>
+                                      <p className="text-xs leading-snug opacity-90">{w.message}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -961,6 +963,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                         </motion.div>
                       )}
                     </AnimatePresence>
+
 
                     {/* ===== ITEMS ===== */}
                     <div className="flex-1 min-h-0 px-4 pb-4">
