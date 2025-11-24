@@ -145,22 +145,27 @@ function BlogPage() {
       const res = await blogApi.toggleLike(blogId);
       const liked = res.data?.liked ?? res.liked;
 
-      // update list
       setBlogs((prev) =>
         prev.map((b) =>
           b.id === blogId
-            ? { ...b, likes: (b.likes || 0) + (liked ? 1 : -1), isLiked: liked }
+            ? {
+                ...b,
+                likeCount: Math.max((b.likeCount ?? 0) + (liked ? 1 : -1), 0),
+                isLiked: liked,
+              }
             : b
         )
       );
 
-      // nếu đang mở detail thì update luôn
       if (selectedBlog && selectedBlog.id === blogId) {
         setSelectedBlog((prev) =>
           prev
             ? {
                 ...prev,
-                likes: (prev.likes || 0) + (liked ? 1 : -1),
+                likeCount: Math.max(
+                  (prev.likeCount ?? 0) + (liked ? 1 : -1),
+                  0
+                ),
                 isLiked: liked,
               }
             : prev
@@ -240,12 +245,12 @@ function BlogPage() {
             >
               <div className="flex items-center space-x-2">
                 <img
-                  src={blog.userAvatar || "/imgs/image.png"}
+                  src={blog.authorAvatar || "/imgs/image.png"}
                   alt="avatar"
                   className="w-10 h-10 rounded-full object-cover"
                 />
                 <div className="flex flex-col">
-                  <div className="font-semibold">{blog.userName}</div>
+                  <div className="font-semibold">{blog.authorName}</div>
                   <div className="text-xs text-gray-400">
                     {blog.createdAt?.slice(0, 16).replace("T", " ")}
                   </div>
@@ -264,7 +269,7 @@ function BlogPage() {
               {/* Reaction summary */}
               <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
                 <div className="flex items-center space-x-1">
-                  {blog.likes > 0 && (
+                  {blog.likeCount > 0 && (
                     <>
                       <div className="flex -space-x-1 items-center">
                         <span className="w-5 h-5">
@@ -283,14 +288,14 @@ function BlogPage() {
                           </svg>
                         </span>
                         <span className="ml-2 text-sm text-slate-700">
-                          {blog.likes}
+                          {blog.likeCount}
                         </span>
                       </div>
                     </>
                   )}
                 </div>
                 <div className="flex items-center space-x-3">
-                  <span>{blog.comments} bình luận</span>
+                  <span>{blog.commentCount} bình luận</span>
                   <span>{blog.shares}0 lượt chia sẻ</span>
                 </div>
               </div>
@@ -874,14 +879,14 @@ function BlogDetailModal({ blog, loading, onClose, onToggleLike }) {
       {/* Right side - Post details and comments */}
       <div className="w-96 bg-white flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b flex items-center space-x-3">
+        <div className="pt-4 pr-4 pl-4 flex items-center space-x-3">
           <img
-            src={blog.userAvatar || "/imgs/image.png"}
+            src={blog.authorAvatar || "/imgs/image.png"}
             alt="avatar"
             className="w-10 h-10 rounded-full object-cover"
           />
           <div className="flex-1">
-            <div className="font-semibold">{blog.userName}</div>
+            <div className="font-semibold">{blog.authorName}</div>
             <div className="text-xs text-gray-400">
               {blog.createdAt?.slice(0, 16).replace("T", " ")}
             </div>
@@ -900,38 +905,7 @@ function BlogDetailModal({ blog, loading, onClose, onToggleLike }) {
           <div className="p-4 border-b">
             <p className="whitespace-pre-line text-sm">{blog.content}</p>
           </div>
-
-          {/* Comments section */}
-          <div className="p-4">
-            {/* Sample comments - replace with actual comments data */}
-            <div className="space-y-4">
-              <div className="flex items-start space-x-2">
-                <img
-                  src="/imgs/image.png"
-                  alt=""
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <div className="bg-gray-100 rounded-2xl px-3 py-2">
-                    <div className="font-semibold text-sm">User Name</div>
-                    <p className="text-sm">Bình luận mẫu...</p>
-                  </div>
-                  <div className="flex items-center space-x-3 mt-1 ml-3 text-xs text-gray-500">
-                    <button className="hover:underline font-semibold">
-                      Thích
-                    </button>
-                    <button className="hover:underline">Trả lời</button>
-                    <span>1 ngày</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions bar */}
-        <div className="border-t p-3">
-          <div className="flex items-center justify-between mb-3 text-sm">
+          <div className="p-2 flex items-center justify-between mb-3 text-sm border-b">
             <button
               onClick={() => onToggleLike(blog.id)}
               className="flex items-center space-x-1"
@@ -948,7 +922,7 @@ function BlogDetailModal({ blog, loading, onClose, onToggleLike }) {
               >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
-              <span>{blog.likes || 0}</span>
+              <span>{blog.likeCount || 0}</span>
             </button>
             <div className="flex items-center space-x-3">
               <button className="flex items-center space-x-1 text-gray-600 hover:text-gray-800">
@@ -965,7 +939,7 @@ function BlogDetailModal({ blog, loading, onClose, onToggleLike }) {
                     d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                   />
                 </svg>
-                <span>{blog.comments || 0}</span>
+                <span>{blog.commentCount || 0}</span>
               </button>
               <button className="flex items-center space-x-1 text-gray-600 hover:text-gray-800">
                 <svg
@@ -984,7 +958,45 @@ function BlogDetailModal({ blog, loading, onClose, onToggleLike }) {
               </button>
             </div>
           </div>
+          {/*Comments section*/}
+          <div className="p-4">
+            <div className="space-y-4">
+              {blog.comments?.length > 0 ? (
+                blog.comments.map((comment) => (
+                  <div key={comment.id} className="flex items-start space-x-2">
+                    <img
+                      src={comment.userAvatar || "/imgs/image.png"}
+                      alt={comment.userName || "User"}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <div className="bg-gray-100 rounded-2xl px-3 py-2">
+                        <div className="font-semibold text-sm">
+                          {comment.userName}
+                        </div>
+                        <p className="text-sm">{comment.comment}</p>
+                      </div>
+                      <div className="flex items-center space-x-3 mt-1 ml-3 text-xs text-gray-500">
+                        <button className="hover:underline font-semibold">
+                          Thích
+                        </button>
+                        <button className="hover:underline">Trả lời</button>
+                        <span>
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400 text-sm">Chưa có bình luận nào.</p>
+              )}
+            </div>
+          </div>
+        </div>
 
+        {/* Actions bar */}
+        <div className="border-t p-3">
           {/* Comment input */}
           <div className="flex items-center space-x-2">
             <img
