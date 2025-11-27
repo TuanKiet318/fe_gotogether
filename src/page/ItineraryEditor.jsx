@@ -45,6 +45,7 @@ import {
   deleteMedia,
   getMediaStats,
 } from "../service/itineraryApi";
+import blogApi from "../service/blogApi";
 
 /* ------------------- HELPER ------------------- */
 // ...existing helper functions...
@@ -161,6 +162,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedDayForMedia, setSelectedDayForMedia] = useState(null);
   const [showBlogPreview, setShowBlogPreview] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaCaption, setMediaCaption] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
@@ -306,6 +308,102 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     }
   };
 
+  const handleShareToBlog = async () => {
+    if (!itinerary.id) {
+      alert("Vui lòng lưu lịch trình trước khi chia sẻ lên blog!");
+      return;
+    }
+
+    setIsSharing(true);
+    try {
+      // Generate blog content from itinerary
+      const blogContent = generateBlogContent();
+
+      const blogData = {
+        title: itinerary.title,
+        excerpt: `Khám phá ${itinerary.destination} trong ${
+          itinerary.days.length
+        } ngày với ${itinerary.days.reduce(
+          (sum, d) => sum + d.items.length,
+          0
+        )} địa điểm tuyệt vời`,
+        content: blogContent,
+        includeMedia: true,
+        autoPublish: false,
+      };
+
+      const response = await blogApi.createBlogFromItinerary(
+        itinerary.id,
+        blogData
+      );
+
+      if (response) {
+        alert("Đã chia sẻ lên blog thành công!");
+        setShowBlogPreview(false);
+      }
+    } catch (error) {
+      console.error("Lỗi khi chia sẻ lên blog:", error);
+      alert(
+        error.response?.data?.message ||
+          "Có lỗi xảy ra khi chia sẻ lên blog. Vui lòng thử lại!"
+      );
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const generateBlogContent = () => {
+    let content = `# ${itinerary.title}\n\n`;
+    content += `**Điểm đến:** ${itinerary.destination}\n`;
+    content += `**Thời gian:** ${itinerary.startDate} → ${itinerary.endDate}\n`;
+    content += `**Tổng số ngày:** ${itinerary.days.length} ngày\n\n`;
+    content += `---\n\n`;
+
+    itinerary.days.forEach((day) => {
+      content += `## Ngày ${day.dayNumber}: ${day.date}\n\n`;
+
+      const dayMedia = mediaFiles.filter((m) => m.dayNumber === day.dayNumber);
+
+      content += `Hôm nay chúng tôi đã khám phá ${day.items.length} địa điểm tuyệt vời. `;
+      content += `Hành trình bắt đầu từ ${day.items[0]?.placeName || "..."} `;
+      content += `và kết thúc tại ${
+        day.items[day.items.length - 1]?.placeName || "..."
+      }.\n\n`;
+
+      if (dayMedia.length > 0) {
+        content += `### Hình ảnh\n\n`;
+        dayMedia.forEach((media) => {
+          if (media.caption) {
+            content += `*${media.caption}*\n\n`;
+          }
+        });
+      }
+
+      content += `### Các địa điểm đã ghé thăm:\n\n`;
+      day.items.forEach((item, idx) => {
+        content += `**${idx + 1}. ${item.placeName}**\n`;
+        if (item.description) {
+          content += `${item.description}\n\n`;
+        } else {
+          content += `Một địa điểm tuyệt vời đáng để ghé thăm.\n\n`;
+        }
+      });
+
+      content += `---\n\n`;
+    });
+
+    content += `## Tổng kết chuyến đi\n\n`;
+    content += `Đây thực sự là một chuyến đi đáng nhớ với tổng cộng ${itinerary.days.length} ngày `;
+    content += `khám phá ${itinerary.days.reduce(
+      (sum, d) => sum + d.items.length,
+      0
+    )} địa điểm tuyệt vời. `;
+    content += `Tổng chi phí ước tính cho chuyến đi là ${formatVND(
+      grandTotal
+    )}.\n\n`;
+
+    return content;
+  };
   // Handler chọn file - CHỈ CHỌN, CHƯA UPLOAD
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -2640,10 +2738,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 </h3>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => alert("Đã chia sẻ lên blog! (Mock)")}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                    onClick={handleShareToBlog}
+                    disabled={isSharing}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Chia sẻ lên Blog
+                    {isSharing ? "Đang chia sẻ..." : "Chia sẻ lên Blog"}
                   </button>
                   <button
                     onClick={() => setShowBlogPreview(false)}

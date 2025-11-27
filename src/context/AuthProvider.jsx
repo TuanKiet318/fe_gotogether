@@ -1,51 +1,79 @@
-import { useState, useEffect } from "react";
+// src/context/AuthProvider.jsx
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { APILogout } from "../service/api.auth.service";
 import { AuthContext } from "./AuthContext";
 import { APIGetMe } from "../service/api.user.service";
 
+// THÊM useAuth hook
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return context;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Đổi thành state boolean
+  const [authLoaded, setAuthLoaded] = useState(false); // Sử dụng để track loading
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedDeviceId = localStorage.getItem("deviceId");
+  // Check token validity
+  const checkTokenValid = (token) => {
+    if (!token) return false;
+    try {
+      const decoded = jwtDecode(token);
+      return decoded.exp * 1000 > Date.now();
+    } catch {
+      return false;
+    }
+  };
 
-    if (token && storedDeviceId) {
-      try {
-        const decoded = jwtDecode(token);
-        if (decoded.exp * 1000 > Date.now()) {
-          setDeviceId(storedDeviceId);
-          // ✅ gọi API để lấy thông tin user đầy đủ
-          APIGetMe()
-            .then((res) => {
-              setUser(res.data.data); // UserResponse có avatar, name, email...
-            })
-            .catch(() => logout());
-        } else {
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem("token");
+      const storedDeviceId = localStorage.getItem("deviceId");
+
+      if (token && storedDeviceId && checkTokenValid(token)) {
+        setDeviceId(storedDeviceId);
+
+        try {
+          const res = await APIGetMe();
+          setUser(res.data.data);
+          setIsAuthenticated(true); // Set true khi có user
+        } catch (error) {
+          console.error("Failed to fetch user:", error);
           logout();
         }
-      } catch {
+      } else if (token) {
+        // Token expired
         logout();
       }
-    }
-  }, []);
 
-  const login = (token, deviceId) => {
+      setAuthLoaded(true); // Đánh dấu đã load xong
+    };
+
+    initAuth();
+  }, []); // Empty dependency array
+
+  const login = async (token, deviceId) => {
     localStorage.setItem("token", token);
     localStorage.setItem("deviceId", deviceId);
-
     setDeviceId(deviceId);
 
-    APIGetMe()
-      .then((res) => {
-        console.log("Me API:", res.data);
-        setUser(res.data.data);
-      })
-      .catch(() => logout());
+    try {
+      const res = await APIGetMe();
+      setUser(res.data.data);
+      setIsAuthenticated(true); // Set true
+    } catch (error) {
+      console.error("Failed to fetch user after login:", error);
+      logout();
+    }
   };
 
   const logout = async () => {
@@ -57,26 +85,19 @@ export const AuthProvider = ({ children }) => {
       localStorage.clear();
       setUser(null);
       setDeviceId(null);
-      navigate("/"); // optional
+      setIsAuthenticated(false); // Set false
+      navigate("/");
     }
   };
 
-  const isAuthenticated = () => {
-    const token = localStorage.getItem("token");
-    if (!token) return false;
-    try {
-      const decoded = jwtDecode(token);
-      return decoded.exp * 1000 > Date.now();
-    } catch {
-      return false;
-    }
+  const value = {
+    user,
+    isAuthenticated, // Boolean state, không phải function
+    authLoaded, // Export để components biết khi nào auth đã load xong
+    deviceId,
+    login,
+    logout,
   };
 
-  return (
-    <AuthContext.Provider
-      value={{ user, login, logout, isAuthenticated, deviceId }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

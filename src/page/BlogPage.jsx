@@ -1,10 +1,10 @@
 import { useRef, useEffect, useState, useCallback, useContext } from "react";
 import blogApi from "../service/blogApi";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthProvider";
 import { Heart } from "lucide-react";
 
 function BlogPage() {
-  const { user, isAuthenticated } = useContext(AuthContext);
+  const { user } = useAuth();
   const [blogs, setBlogs] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -118,6 +118,34 @@ function BlogPage() {
       alert("Đăng bài thất bại: " + (e.message || "Lỗi không xác định"));
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleRefreshBlog = async (blogId) => {
+    try {
+      setLoadingDetail(true);
+      const res = await blogApi.getBlogById(blogId);
+
+      // Cập nhật selectedBlog (cho modal)
+      setSelectedBlog(res);
+
+      // Cập nhật blog trong danh sách blogs
+      setBlogs((prev) =>
+        prev.map((b) =>
+          b.id === blogId
+            ? {
+                ...b,
+                commentCount: res.commentCount,
+                comments: res.comments,
+                // Giữ nguyên các field khác
+              }
+            : b
+        )
+      );
+    } catch (e) {
+      console.error("Refresh blog failed", e);
+    } finally {
+      setLoadingDetail(false);
     }
   };
 
@@ -243,20 +271,34 @@ function BlogPage() {
               onClick={() => openBlogDetail(blog.id)}
               className="cursor-pointer"
             >
-              <div className="flex items-center space-x-2">
-                <img
-                  src={blog.authorAvatar || "/imgs/image.png"}
-                  alt="avatar"
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div className="flex flex-col">
-                  <div className="font-semibold">{blog.authorName}</div>
-                  <div className="text-xs text-gray-400">
-                    {blog.createdAt?.slice(0, 16).replace("T", " ")}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <img
+                    src={blog.authorAvatar || "/imgs/image.png"}
+                    alt="avatar"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div className="flex flex-col">
+                    <div className="font-semibold">{blog.authorName}</div>
+                    <div className="text-xs text-gray-400">
+                      {blog.createdAt?.slice(0, 16).replace("T", " ")}
+                    </div>
                   </div>
                 </div>
+
+                {/* Badge Hành trình ở góc phải */}
+                {blog.title && (
+                  <span className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full font-medium">
+                    Hành trình
+                  </span>
+                )}
               </div>
-              <p className="text-sm whitespace-pre-line mt-2">{blog.content}</p>
+
+              {/* Content với rút gọn */}
+              <BlogContentDisplay
+                blog={blog}
+                onSeeMore={() => openBlogDetail(blog.id)}
+              />
 
               {blog.media && blog.media.length > 0 && (
                 <div onClick={() => openBlogDetail(blog.id)}>
@@ -398,7 +440,90 @@ function BlogPage() {
           loading={loadingDetail}
           onClose={closeBlogDetail}
           onToggleLike={handleToggleLike}
+          onRefreshBlog={handleRefreshBlog}
         />
+      )}
+    </div>
+  );
+}
+
+// Component hiển thị content với tính năng rút gọn
+function BlogContentDisplay({ blog, onSeeMore }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (blog.title) {
+    // Blog từ itinerary - hiển thị preview ngắn
+    const previewLines = blog.content.split("\n").slice(0, 8).join("\n");
+    const hasMore = blog.content.split("\n").length > 8;
+
+    return (
+      <div className="mt-2">
+        <div className="prose prose-sm max-w-none">
+          <div
+            className={`text-sm leading-relaxed ${
+              !isExpanded && hasMore ? "line-clamp-4" : ""
+            }`}
+            dangerouslySetInnerHTML={{
+              __html: (isExpanded ? blog.content : previewLines)
+                .replace(
+                  /^# (.*$)/gim,
+                  '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>'
+                )
+                .replace(
+                  /^## (.*$)/gim,
+                  '<h2 class="text-xl font-semibold mt-3 mb-2">$1</h2>'
+                )
+                .replace(
+                  /^### (.*$)/gim,
+                  '<h3 class="text-lg font-medium mt-2 mb-1">$1</h3>'
+                )
+                .replace(/^\*\*(.*)\*\*/gim, "<strong>$1</strong>")
+                .replace(/^\*(.*)\*$/gim, "<em>$1</em>")
+                .replace(/^---$/gim, '<hr class="my-3 border-gray-300"/>')
+                .replace(/\n/g, "<br/>"),
+            }}
+          />
+        </div>
+        {hasMore && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isExpanded) {
+                setIsExpanded(false);
+              } else {
+                onSeeMore();
+              }
+            }}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2"
+          >
+            Xem chi tiết hành trình →
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Blog thường - rút gọn nếu > 200 ký tự
+  const MAX_LENGTH = 200;
+  const needTruncate = blog.content.length > MAX_LENGTH;
+  const displayContent =
+    isExpanded || !needTruncate
+      ? blog.content
+      : blog.content.slice(0, MAX_LENGTH) + "...";
+
+  return (
+    <div className="mt-2">
+      <p className="text-sm whitespace-pre-line">{displayContent}</p>
+      {needTruncate && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+          className="text-gray-600 hover:text-gray-800 text-sm font-medium mt-1"
+        >
+          {isExpanded ? "Thu gọn" : "Xem thêm"}
+        </button>
       )}
     </div>
   );
@@ -568,7 +693,7 @@ function CreateBlogModal({
   onClose,
   onSubmit,
 }) {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
@@ -731,8 +856,16 @@ function CreateBlogModal({
   );
 }
 
-function BlogDetailModal({ blog, loading, onClose, onToggleLike }) {
+function BlogDetailModal({
+  blog,
+  loading,
+  onClose,
+  onToggleLike,
+  onRefreshBlog,
+}) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [commentText, setCommentText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (loading || !blog) {
     return (
@@ -754,6 +887,36 @@ function BlogDetailModal({ blog, loading, onClose, onToggleLike }) {
     setCurrentImageIndex((prev) =>
       prev === blog.media.length - 1 ? 0 : prev + 1
     );
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!commentText.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      // Gọi API comment từ blogApi
+      await blogApi.commentBlog(blog.id, commentText.trim());
+
+      // Reset input sau khi comment thành công
+      setCommentText("");
+
+      // Gọi callback để refresh blog với comments mới
+      if (onRefreshBlog) {
+        await onRefreshBlog(blog.id);
+      }
+    } catch (error) {
+      console.error("Lỗi khi gửi comment:", error);
+      alert("Không thể gửi bình luận. Vui lòng thử lại.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleCommentSubmit();
+    }
   };
 
   return (
@@ -1007,8 +1170,21 @@ function BlogDetailModal({ blog, loading, onClose, onToggleLike }) {
             <input
               type="text"
               placeholder="Viết bình luận..."
-              className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={isSubmitting}
+              className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             />
+            {commentText.trim() && (
+              <button
+                onClick={handleCommentSubmit}
+                disabled={isSubmitting}
+                className="text-blue-500 hover:text-blue-600 font-semibold text-sm disabled:opacity-50"
+              >
+                {isSubmitting ? "Đang gửi..." : "Gửi"}
+              </button>
+            )}
           </div>
         </div>
       </div>

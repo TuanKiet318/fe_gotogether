@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/AuthProvider.jsx";
 import {
   Search,
   MapPin,
@@ -32,8 +32,8 @@ const TourListPage = () => {
   const [startDateFrom, setStartDateFrom] = useState("");
   const [startDateTo, setStartDateTo] = useState("");
 
-  const { user, isAuthenticated } = useContext(AuthContext);
-  const currentUserId = isAuthenticated() ? user?.id : null;
+  const { user, isAuthenticated } = useAuth();
+  const currentUserId = isAuthenticated ? user?.id : null;
   // Fetch tours from API
   useEffect(() => {
     fetchTours();

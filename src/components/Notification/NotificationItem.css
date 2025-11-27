@@ -1,0 +1,132 @@
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.notification-item:hover {
+  background-color: #f5f5f5;
+}
+
+.notification-item.unread {
+  background-color: #e6f7ff;
+}
+
+.notification-item.unread:hover {
+  background-color: #d9f0ff;
+}
+
+.notification-avatar {
+  position: relative;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.notification-type-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.notification-type-icon {
+  font-size: 12px !important;
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.notification-text {
+  font-size: 14px;
+  color: #262626;
+  line-height: 1.5;
+  margin-bottom: 4px;
+  word-wrap: break-word;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.notification-actions {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.notification-item:hover .notification-actions {
+  display: flex;
+}
+
+.notification-action-btn {
+  padding: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.notification-unread-dot {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background-color: #1890ff;
+  border-radius: 50%;
+}
+
+.notification-item:hover .notification-unread-dot {
+  display: none;
+}
+
+/* Tabs styling */
+.notification-dropdown .ant-tabs {
+  padding: 0 20px;
+}
+
+.notification-dropdown .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.notification-dropdown .ant-tabs-tab {
+  padding: 8px 0;
+  margin-right: 24px;
+}
+
+/* Empty state */
+.notification-list-wrapper .ant-empty {
+  padding: 40px 20px;
+}
+
+/* Animation for new notification */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-item-new {
+  animation: slideIn 0.3s ease-out;
+}

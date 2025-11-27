@@ -1,0 +1,40 @@
+/* Đảm bảo dropdown không bị rung khi scroll */
+.notification-dropdown-overlay {
+  max-width: 420px !important;
+}
+
+.notification-dropdown-overlay .ant-dropdown {
+  position: fixed !important;
+}
+
+/* Animation mượt mà khi mở */
+.notification-dropdown-overlay .ant-dropdown {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation cho notification mới */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-item-new {
+  animation: slideIn 0.3s ease-out;
+}

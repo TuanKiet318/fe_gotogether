@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import TripPlannerDrawer from "../components/TripPlannerDrawer";
+import { NotificationProvider } from "../context/NotificationContext";
 
 export default function MainLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -29,7 +29,11 @@ export default function MainLayout() {
   return (
     <div className="relative min-h-screen flex flex-col">
       {/* Header */}
-      {!hideHeader && <Header />}
+      {!hideHeader && (
+        <NotificationProvider>
+          <Header />
+        </NotificationProvider>
+      )}
 
       {/* Nội dung */}
       <main className="flex-1">
@@ -38,23 +42,6 @@ export default function MainLayout() {
 
       {/* Footer */}
       {!hideFooter && <Footer />}
-
-      {/* Drawer chỉ hiển thị khi không ẩn cả hai */}
-      {!hideHeader && !hideFooter && (
-        <>
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="fixed bottom-6 right-6 z-50 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700"
-          >
-            📅
-          </button>
-
-          <TripPlannerDrawer
-            isOpen={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-          />
-        </>
-      )}
     </div>
   );
 }
