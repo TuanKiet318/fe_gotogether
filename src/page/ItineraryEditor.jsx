@@ -648,9 +648,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
         items: day.items.map((it) =>
           it.id === itemId
             ? {
-                ...it,
-                ...updates,
-              }
+              ...it,
+              ...updates,
+            }
             : it
         ),
       }));
@@ -971,11 +971,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               ) : (
                 <h1
                   onClick={handleTitleEdit}
-                  className={`text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${
-                    itinerary?.canEdit
-                      ? "cursor-pointer hover:opacity-70"
-                      : "cursor-default opacity-90"
-                  } transition relative group`}
+                  className={`text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${itinerary?.canEdit
+                    ? "cursor-pointer hover:opacity-70"
+                    : "cursor-default opacity-90"
+                    } transition relative group`}
                   title={itinerary?.canEdit ? "Click để sửa tên" : "Chỉ xem"}
                 >
                   {itinerary.title}
@@ -999,11 +998,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <span className="text-gray-300 mx-1">•</span>
                 <button
                   onClick={handleDateClick}
-                  className={`text-gray-600 font-medium underline decoration-dotted transition ${
-                    itinerary?.canEdit
-                      ? "hover:text-blue-600 cursor-pointer"
-                      : "text-gray-400 cursor-not-allowed"
-                  }`}
+                  className={`text-gray-600 font-medium underline decoration-dotted transition ${itinerary?.canEdit
+                    ? "hover:text-blue-600 cursor-pointer"
+                    : "text-gray-400 cursor-not-allowed"
+                    }`}
                 >
                   {itinerary.startDate}{" "}
                   <span className="text-purple-500">→</span> {itinerary.endDate}
@@ -1019,41 +1017,37 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
             <button
               onClick={() => setViewMode("editor")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                viewMode === "editor"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === "editor"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+                }`}
             >
               Editor
             </button>
             <button
               onClick={() => setViewMode("calendar")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                viewMode === "calendar"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === "calendar"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+                }`}
             >
               Calendar
             </button>
             <button
               onClick={() => setViewMode("overview")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                viewMode === "overview"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === "overview"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+                }`}
             >
               Overview
             </button>
             <button
               onClick={() => setViewMode("media")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                viewMode === "media"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === "media"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+                }`}
             >
               Media
             </button>
@@ -1092,13 +1086,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
           <>
             {/* Days List - Editor Mode */}
             <div
-              className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${
-                mapSize === "full"
-                  ? "w-1/4"
-                  : mapSize === "half"
+              className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${mapSize === "full"
+                ? "w-1/4"
+                : mapSize === "half"
                   ? "w-1/2"
                   : "w-3/4"
-              }`}
+                }`}
             >
               <div className="flex gap-4 min-w-max h-full">
                 <DragDropContext onDragEnd={handleDragEnd}>
@@ -1147,11 +1140,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                 setShowPlaceModal(true);
                               }}
                               disabled={!itinerary?.canEdit}
-                              className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${
-                                itinerary?.canEdit
-                                  ? "bg-blue-500 text-white hover:bg-blue-600"
-                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                              }`}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${itinerary?.canEdit
+                                ? "bg-blue-500 text-white hover:bg-blue-600"
+                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                }`}
                             >
                               <Plus size={16} />
                               <span>Thêm</span>
@@ -1289,9 +1281,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                             className="mt-0.5 flex-shrink-0"
                                           />
                                           <div>
-                                            <div className="text-xs font-semibold tracking-wide uppercase">
+                                            {/* <div className="text-xs font-semibold tracking-wide uppercase">
                                               {w.type}
-                                            </div>
+                                            </div> */}
                                             <p className="text-xs leading-snug opacity-90 mt-0.5">
                                               {w.message}
                                             </p>
@@ -1322,11 +1314,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
-                                className={`space-y-3 min-h-[100px] ${
-                                  snapshot.isDraggingOver
-                                    ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
-                                    : ""
-                                }`}
+                                className={`space-y-3 min-h-[100px] ${snapshot.isDraggingOver
+                                  ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
+                                  : ""
+                                  }`}
                               >
                                 {day.items.map((item, index) => (
                                   <Draggable
@@ -1347,11 +1338,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                           onMouseLeave={() =>
                                             setHoveredItemId(null)
                                           }
-                                          className={`transition-transform ${
-                                            snapshot.isDragging
-                                              ? "scale-[1.02] shadow-lg"
-                                              : ""
-                                          }`}
+                                          className={`transition-transform ${snapshot.isDragging
+                                            ? "scale-[1.02] shadow-lg"
+                                            : ""
+                                            }`}
                                         >
                                           <DayItemCard
                                             item={item}
@@ -1422,13 +1412,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
             {/* Map - Editor Mode */}
             <div
-              className={`transition-all duration-300 flex-shrink-0 ${
-                mapSize === "full"
-                  ? "w-3/4"
-                  : mapSize === "half"
+              className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
+                ? "w-3/4"
+                : mapSize === "half"
                   ? "w-1/2"
                   : "w-1/4"
-              }`}
+                }`}
             >
               <div className="h-full relative">
                 <div className="absolute top-4 left-4 z-[1000]">
@@ -1456,11 +1445,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               showMapMenu: false,
                             }));
                           }}
-                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                            mapSize === "default"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
-                          }`}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
+                            }`}
                         >
                           {mapSize === "default" && "✓ "}Default
                         </button>
@@ -1472,11 +1460,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               showMapMenu: false,
                             }));
                           }}
-                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                            mapSize === "half"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
-                          }`}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
+                            }`}
                         >
                           {mapSize === "half" && "✓ "}Half
                         </button>
@@ -1488,11 +1475,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               showMapMenu: false,
                             }));
                           }}
-                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                            mapSize === "full"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
-                          }`}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
+                            }`}
                         >
                           {mapSize === "full" && "✓ "}Full
                         </button>
@@ -1638,13 +1624,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
             {/* Map - Editor Mode */}
             <div
-              className={`transition-all duration-300 flex-shrink-0 ${
-                mapSize === "full"
-                  ? "w-3/4"
-                  : mapSize === "half"
+              className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
+                ? "w-3/4"
+                : mapSize === "half"
                   ? "w-1/2"
                   : "w-1/4"
-              }`}
+                }`}
             >
               <div className="h-full relative">
                 <div className="absolute top-4 left-4 z-[1000]">
@@ -1672,11 +1657,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               showMapMenu: false,
                             }));
                           }}
-                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                            mapSize === "default"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
-                          }`}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
+                            }`}
                         >
                           {mapSize === "default" && "✓ "}Default
                         </button>
@@ -1688,11 +1672,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               showMapMenu: false,
                             }));
                           }}
-                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                            mapSize === "half"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
-                          }`}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
+                            }`}
                         >
                           {mapSize === "half" && "✓ "}Half
                         </button>
@@ -1704,11 +1687,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               showMapMenu: false,
                             }));
                           }}
-                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${
-                            mapSize === "full"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
-                          }`}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
+                            }`}
                         >
                           {mapSize === "full" && "✓ "}Full
                         </button>
@@ -1757,11 +1739,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                         setShowMediaModal(true);
                       }}
                       disabled={!itinerary?.canEdit}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                        itinerary?.canEdit
-                          ? "bg-blue-600 text-white hover:bg-blue-700"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      }`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${itinerary?.canEdit
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        }`}
                     >
                       <Plus size={18} />
                       Upload Media
@@ -1837,11 +1818,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             setShowMediaModal(true);
                           }}
                           disabled={!itinerary?.canEdit}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                            itinerary?.canEdit
-                              ? "bg-gray-900 text-white hover:bg-gray-800"
-                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                          }`}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${itinerary?.canEdit
+                            ? "bg-gray-900 text-white hover:bg-gray-800"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            }`}
                         >
                           <Plus size={16} />
                           Thêm media
@@ -1933,11 +1913,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       setShowMediaModal(true);
                     }}
                     disabled={!itinerary?.canEdit}
-                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                      itinerary?.canEdit
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    }`}
+                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${itinerary?.canEdit
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
                   >
                     Upload Media đầu tiên
                   </button>
@@ -2254,7 +2233,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       const days =
                         Math.ceil(
                           (selectedEndDate - selectedStartDate) /
-                            (1000 * 60 * 60 * 24)
+                          (1000 * 60 * 60 * 24)
                         ) + 1;
                       return `${start} - ${end} · ${days} days`;
                     })()}
@@ -2342,11 +2321,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 disabled={
                   !selectedStartDate || !selectedEndDate || !itinerary?.canEdit
                 }
-                className={`px-6 py-2.5 rounded-lg font-medium transition ${
-                  selectedStartDate && selectedEndDate && itinerary?.canEdit
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
+                className={`px-6 py-2.5 rounded-lg font-medium transition ${selectedStartDate && selectedEndDate && itinerary?.canEdit
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
               >
                 Update
               </button>
@@ -2548,11 +2526,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                     <button
                       onClick={() => handleUploadMedia(selectedFile)}
                       disabled={!selectedDayForMedia}
-                      className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                        selectedDayForMedia
-                          ? "bg-blue-600 text-white hover:bg-blue-700"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      }`}
+                      className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${selectedDayForMedia
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        }`}
                     >
                       Upload
                     </button>
@@ -2899,27 +2876,23 @@ function CalendarMonth({
               disabled={!day.isCurrentMonth || isPast}
               className={`
                 aspect-square flex items-center justify-center rounded-lg text-sm transition-all duration-200
-                ${
-                  !day.isCurrentMonth || isPast
-                    ? "text-gray-300 cursor-not-allowed"
-                    : ""
+                ${!day.isCurrentMonth || isPast
+                  ? "text-gray-300 cursor-not-allowed"
+                  : ""
                 }
-                ${
-                  day.isCurrentMonth &&
+                ${day.isCurrentMonth &&
                   !isPast &&
                   !isStart &&
                   !isEnd &&
                   !inRange
-                    ? "hover:bg-gray-100 text-gray-700"
-                    : ""
+                  ? "hover:bg-gray-100 text-gray-700"
+                  : ""
                 }
-                ${
-                  isStart || isEnd ? "bg-blue-600 text-white font-semibold" : ""
+                ${isStart || isEnd ? "bg-blue-600 text-white font-semibold" : ""
                 }
-                ${
-                  inRange && !isStart && !isEnd
-                    ? "bg-blue-100 text-blue-700"
-                    : ""
+                ${inRange && !isStart && !isEnd
+                  ? "bg-blue-100 text-blue-700"
+                  : ""
                 }
               `}
             >
