@@ -11,15 +11,16 @@ import {
   UserCircle,
   Bell,
 } from "lucide-react";
-import { AuthContext } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/AuthProvider";
 import SearchBox from "./SearchBox";
 import { toast } from "sonner";
+import NotificationBell from "./Notification/NotificationBell";
 
 export default function Header({ setActiveSection }) {
   const [showModal, setShowModal] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const { user, logout, isAuthenticated } = useContext(AuthContext);
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const menuRef = useRef(null);
 
@@ -93,33 +94,22 @@ export default function Header({ setActiveSection }) {
 
             {/* User Menu */}
             <div className="flex items-center gap-4 ml-6">
-              {isAuthenticated() ? (
+              {isAuthenticated ? (
                 <>
-                
                   {/* Notification Bell */}
-                  <button
-                    onClick={() => navigate("/")}
-                    className="relative p-2 rounded-full hover:bg-slate-100 transition"
-                  >
-                    <Bell className="w-6 h-6 text-slate-600" />
+                  <NotificationBell />
 
-                    {/* Chấm đỏ thông báo mới (tùy chọn) */}
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </button>
                   <div className="relative">
                     <button
                       onClick={() => setIsMenuOpen(!isMenuOpen)}
                       className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-slate-100 transition"
                     >
-                      {user?.avatar ? (
-                        <img
-                          src={user.avatar}
-                          alt="avatar"
-                          className="w-8 h-8 rounded-full object-cover border shadow-sm"
-                        />
-                      ) : (
-                        <UserCircle className="w-7 h-7 text-slate-600" />
-                      )}
+                      <img
+                        src={user?.avatar || "/imgs/image.png"}
+                        alt="avatar"
+                        className="w-8 h-8 rounded-full object-cover border shadow-sm"
+                      />
+
                       <ChevronDown className="w-4 h-4 text-slate-600" />
                     </button>
 
@@ -136,12 +126,12 @@ export default function Header({ setActiveSection }) {
                         </div>
                         <button
                           onClick={() => {
-                            navigate("/profile");
+                            navigate("/me");  
                             setIsMenuOpen(false);
                           }}
                           className="flex items-center gap-2 w-full px-4 py-2 text-slate-700 hover:bg-slate-100 transition"
                         >
-                          <UserCircle className="w-4 h-4" /> Thông tin tài khoản
+                          <UserCircle className="w-4 h-4" /> Trang cá nhân
                         </button>
                         <button
                           onClick={() => {

@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import {
-    sendInvite,
-    listInvites,
-    updateCollaboratorRole,
-    removeCollaborator,
+  sendInvite,
+  listInvites,
+  updateCollaboratorRole,
+  removeCollaborator,
 } from "../service/tripService";
 import CreateTourModal from "./CreateTourModal";
+import { Globe } from "lucide-react";
 
 export default function ShareModal({
   onClose,
@@ -26,8 +27,8 @@ export default function ShareModal({
   const [loadingInvites, setLoadingInvites] = useState(true);
   const [invitesError, setInvitesError] = useState("");
   const [showCreateTourModal, setShowCreateTourModal] = useState(false);
-    const [savingRoleId, setSavingRoleId] = useState(null);
-    const [removingId, setRemovingId] = useState(null);
+  const [savingRoleId, setSavingRoleId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
 
   const isValidEmail = useMemo(() => {
     if (!inviteEmail) return false;

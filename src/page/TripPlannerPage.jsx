@@ -2,7 +2,7 @@
 import React, { useState, useContext } from "react";
 import { Calendar, Plus, Users, Trash2 } from "lucide-react";
 import { createItinerary } from "../service/tripService";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthProvider";
 import AuthModal from "../components/AuthModal";
 import InviteCollaboratorModal from "../components/InviteCollaboratorModal";
 import SearchBox from "../components/SearchBox";
@@ -22,7 +22,7 @@ export default function TripPlanner() {
   const [collaborators, setCollaborators] = useState([]);
 
   const navigate = useNavigate();
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated } = useAuth();
 
   // Validate form
   const validateForm = () => {
@@ -103,7 +103,7 @@ export default function TripPlanner() {
   };
 
   const handleStartPlanning = () => {
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
       setShowModal(true);
     } else {
       handleCreateTrip();

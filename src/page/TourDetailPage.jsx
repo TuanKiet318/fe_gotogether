@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/AuthProvider";
 import AuthModal from "../components/AuthModal.jsx";
 import { toast } from "sonner";
 import {
@@ -31,8 +31,8 @@ const TourDetailPage = () => {
   const [joining, setJoining] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const { user, isAuthenticated } = useContext(AuthContext);
-  const currentUser = isAuthenticated() ? user : null;
+  const { user, isAuthenticated } = useAuth();
+  const currentUser = isAuthenticated ? user : null;
   // Lấy dữ liệu từ API
   useEffect(() => {
     const fetchData = async () => {
@@ -409,7 +409,7 @@ const TourDetailPage = () => {
                     onClick={handleJoinTour}
                     disabled={isFull || isDeadlinePassed || joining}
                     className={`w-full py-5 px-6 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                      isFull || isDeadlinePassed 
+                      isFull || isDeadlinePassed
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                         : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-2xl transform hover:-translate-y-1"
                     }`}
