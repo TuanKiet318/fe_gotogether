@@ -124,7 +124,7 @@ export default function Header({ setActiveSection }) {
                             {user?.username || user?.name}
                           </span>
                         </div>
-                        <button
+                        {/* <button
                           onClick={() => {
                             navigate("/me");  
                             setIsMenuOpen(false);
@@ -132,7 +132,7 @@ export default function Header({ setActiveSection }) {
                           className="flex items-center gap-2 w-full px-4 py-2 text-slate-700 hover:bg-slate-100 transition"
                         >
                           <UserCircle className="w-4 h-4" /> Trang cá nhân
-                        </button>
+                        </button> */}
                         <button
                           onClick={() => {
                             navigate("/trip-list");

@@ -40,26 +40,25 @@ export const AuthProvider = ({ children }) => {
       const storedDeviceId = localStorage.getItem("deviceId");
 
       if (token && storedDeviceId && checkTokenValid(token)) {
-        setDeviceId(storedDeviceId);
-
         try {
           const res = await APIGetMe();
           setUser(res.data.data);
-          setIsAuthenticated(true); // Set true khi có user
-        } catch (error) {
-          console.error("Failed to fetch user:", error);
+          setIsAuthenticated(true);
+        } catch {
           logout();
         }
-      } else if (token) {
-        // Token expired
-        logout();
+      } else {
+        // token không hợp lệ → clear
+        localStorage.removeItem("token");
+        setIsAuthenticated(false);
       }
 
-      setAuthLoaded(true); // Đánh dấu đã load xong
+      // ⚠ QUAN TRỌNG: PHẢI CHẠY DÙ TOKEN ĐÚNG HAY SAI
+      setAuthLoaded(true);
     };
 
     initAuth();
-  }, []); // Empty dependency array
+  }, []);
 
   const login = async (token, deviceId) => {
     localStorage.setItem("token", token);
