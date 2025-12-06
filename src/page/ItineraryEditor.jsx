@@ -321,12 +321,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
       const blogData = {
         title: itinerary.title,
-        excerpt: `Khám phá ${itinerary.destination} trong ${
-          itinerary.days.length
-        } ngày với ${itinerary.days.reduce(
-          (sum, d) => sum + d.items.length,
-          0
-        )} địa điểm tuyệt vời`,
+        excerpt: `Khám phá ${itinerary.destination} trong ${itinerary.days.length
+          } ngày với ${itinerary.days.reduce(
+            (sum, d) => sum + d.items.length,
+            0
+          )} địa điểm tuyệt vời`,
         content: blogContent,
         includeMedia: true,
         autoPublish: false,
@@ -345,7 +344,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       console.error("Lỗi khi chia sẻ lên blog:", error);
       alert(
         error.response?.data?.message ||
-          "Có lỗi xảy ra khi chia sẻ lên blog. Vui lòng thử lại!"
+        "Có lỗi xảy ra khi chia sẻ lên blog. Vui lòng thử lại!"
       );
     } finally {
       setIsSharing(false);
@@ -366,9 +365,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
       content += `Hôm nay chúng tôi đã khám phá ${day.items.length} địa điểm tuyệt vời. `;
       content += `Hành trình bắt đầu từ ${day.items[0]?.placeName || "..."} `;
-      content += `và kết thúc tại ${
-        day.items[day.items.length - 1]?.placeName || "..."
-      }.\n\n`;
+      content += `và kết thúc tại ${day.items[day.items.length - 1]?.placeName || "..."
+        }.\n\n`;
 
       if (dayMedia.length > 0) {
         content += `### Hình ảnh\n\n`;
@@ -1843,7 +1841,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                         }`}
                     >
                       <Plus size={18} />
-                      Upload Media
+                      Thêm ảnh / Video
                     </button>
                   </div>
                 </div>

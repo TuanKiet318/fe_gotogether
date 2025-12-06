@@ -19,10 +19,10 @@ export default function OtpForm({ user, onSuccess }) {
     try {
       const res = await APIVerifyOtp(user.id, otp);
       if (res.data?.data === true) {
-        toast.success("✅ Xác thực thành công, bạn có thể đăng nhập.");
+        toast.success("Xác thực thành công, bạn có thể đăng nhập.");
         onSuccess();
       } else {
-        toast.error("❌ OTP không hợp lệ hoặc đã hết hạn.");
+        toast.error("OTP không hợp lệ hoặc đã hết hạn.");
       }
     } catch (err) {
       toast.error("Lỗi khi xác thực OTP.");
@@ -66,11 +66,10 @@ export default function OtpForm({ user, onSuccess }) {
         <button
           onClick={handleResend}
           disabled={cooldown > 0}
-          className={`px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap transition ${
-            cooldown > 0
-              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-              : "bg-indigo-500 text-white hover:bg-indigo-600"
-          }`}
+          className={`px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap transition ${cooldown > 0
+            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+            : "bg-indigo-500 text-white hover:bg-indigo-600"
+            }`}
         >
           {cooldown > 0 ? `${cooldown}s` : "Gửi lại"}
         </button>

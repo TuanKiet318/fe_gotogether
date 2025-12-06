@@ -100,7 +100,7 @@ export default function ShareModal({
       console.error("sendInvite error:", err);
       alert(
         err?.response?.data?.message ||
-          "Gửi lời mời thất bại. Vui lòng thử lại."
+        "Gửi lời mời thất bại. Vui lòng thử lại."
       );
     } finally {
       setSending(false);
@@ -132,23 +132,21 @@ export default function ShareModal({
             <div className="flex gap-6">
               <button
                 onClick={() => setActiveTab("share")}
-                className={`rounded-full px-3 py-1 text-sm font-semibold shadow-sm ring-1 ${
-                  activeTab === "share"
-                    ? "bg-white/20 text-white ring-white/20"
-                    : "text-white/80 hover:text-white ring-transparent"
-                }`}
+                className={`rounded-full px-3 py-1 text-sm font-semibold shadow-sm ring-1 ${activeTab === "share"
+                  ? "bg-white/20 text-white ring-white/20"
+                  : "text-white/80 hover:text-white ring-transparent"
+                  }`}
               >
-                Share
+                Chia sẻ
               </button>
               <button
                 onClick={() => setActiveTab("publish")}
-                className={`rounded-full px-3 py-1 text-sm font-semibold shadow-sm ring-1 ${
-                  activeTab === "publish"
-                    ? "bg-white/20 text-white ring-white/20"
-                    : "text-white/80 hover:text-white ring-transparent"
-                }`}
+                className={`rounded-full px-3 py-1 text-sm font-semibold shadow-sm ring-1 ${activeTab === "publish"
+                  ? "bg-white/20 text-white ring-white/20"
+                  : "text-white/80 hover:text-white ring-transparent"
+                  }`}
               >
-                Publish
+                Tạo tour
               </button>
             </div>
             <button
@@ -165,7 +163,7 @@ export default function ShareModal({
             {activeTab === "share" ? (
               <>
                 <h2 className="mb-4 text-[17px] font-semibold text-gray-900">
-                  Share with people
+                  Chia sẻ đến mọi người
                 </h2>
 
                 {/* Invite form */}
@@ -173,19 +171,18 @@ export default function ShareModal({
                   <div className="relative">
                     <input
                       type="email"
-                      placeholder="Invite by email"
+                      placeholder="Nhập email người bạn muốn mời"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       className="peer h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                     />
                     <span
-                      className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full ${
-                        inviteEmail
-                          ? isValidEmail
-                            ? "bg-blue-500"
-                            : "bg-red-400"
-                          : "bg-gray-300"
-                      }`}
+                      className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full ${inviteEmail
+                        ? isValidEmail
+                          ? "bg-blue-500"
+                          : "bg-red-400"
+                        : "bg-gray-300"
+                        }`}
                     />
                   </div>
 
@@ -194,18 +191,17 @@ export default function ShareModal({
                     onChange={(e) => setInviteRoleUI(e.target.value)}
                     className="h-[42px] rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
-                    <option>Can View</option>
-                    <option>Can Edit</option>
+                    <option>Chỉ xem</option>
+                    <option>Chỉnh sửa</option>
                   </select>
 
                   <button
                     onClick={handleSendInvite}
                     disabled={!isValidEmail || sending}
-                    className={`inline-flex h-[42px] items-center justify-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition ${
-                      !isValidEmail || sending
-                        ? "bg-blue-300 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700"
-                    }`}
+                    className={`inline-flex h-[42px] items-center justify-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition ${!isValidEmail || sending
+                      ? "bg-blue-300 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                      }`}
                     title={!isValidEmail ? "Nhập email hợp lệ" : ""}
                   >
                     {sending ? (
@@ -214,7 +210,7 @@ export default function ShareModal({
                         Sending...
                       </span>
                     ) : (
-                      "Send invite"
+                      "Gửi lời mời"
                     )}
                   </button>
                 </div>
@@ -269,7 +265,7 @@ export default function ShareModal({
                             <div className="text-xs text-gray-500">
                               {user.email}
                             </div>
-                            {user.status && (
+                            {/* {user.status && (
                               <div className="mt-1 text-[11px]">
                                 <span
                                   className={`rounded px-1.5 py-0.5 ${statusChip(
@@ -279,7 +275,7 @@ export default function ShareModal({
                                   {user.status}
                                 </span>
                               </div>
-                            )}
+                            )} */}
                           </div>
                         </div>
 
@@ -294,8 +290,8 @@ export default function ShareModal({
                             className="h-[34px] rounded-lg border border-gray-200 bg-gray-50 px-2 text-sm text-gray-600"
                             title="Đổi quyền sẽ thêm sau"
                           >
-                            <option>Can Edit</option>
-                            <option>Can View</option>
+                            <option>Chỉnh sửa</option>
+                            <option>Chỉ xem</option>
                           </select>
                         )}
                       </div>

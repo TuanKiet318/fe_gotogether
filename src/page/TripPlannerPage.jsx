@@ -192,7 +192,7 @@ export default function TripPlanner() {
           </div>
 
           {/* Collaborators */}
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 type="button"
@@ -201,7 +201,7 @@ export default function TripPlanner() {
                 disabled={isCreatingTrip}
               >
                 <Plus className="w-5 h-5 mr-2" />
-                Mời bạn đồng hành
+
               </button>
 
               <button
@@ -241,7 +241,7 @@ export default function TripPlanner() {
                 </ul>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* CTA */}
           <div className="pt-2">
