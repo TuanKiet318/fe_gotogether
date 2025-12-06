@@ -1021,30 +1021,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     }
   };
 
-  // Helper functions for journey path calculation
-  const calculateJourneyPath = (days) => {
-    const totalDays = days.length;
-    let path = "M 100,300"; // Start point
-
-    for (let i = 1; i < totalDays; i++) {
-      const x = 100 + (i / totalDays) * 800;
-      const y = 300 + Math.sin(i * 0.8) * 150;
-
-      if (i === 1) {
-        path += ` Q ${x - 100},${y} ${x},${y}`;
-      } else {
-        path += ` S ${x},${y}`;
-      }
-    }
-
-    return path;
-  };
-
-  const calculatePointOnPath = (index, total) => {
-    const x = 100 + (index / total) * 800;
-    const y = 300 + Math.sin(index * 0.8) * 150;
-    return { x, y };
-  };
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
@@ -2045,536 +2021,608 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </div>
           </div>
         ) : (
-          /* Overview Mode - Journey Map Timeline */
-          <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-6 p-6 bg-gradient-to-br from-blue-50/30 via-white to-purple-50/30">
-            {/* Main Content - Interactive Journey Map */}
-            <div className="flex-1 overflow-hidden">
-              <div className="h-full flex flex-col">
-                {/* Header Section */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 mb-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div>
-                      <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                        Hành trình của bạn
-                      </h2>
-                      <p className="text-gray-600">
-                        Khám phá {itinerary.days.length} ngày đáng nhớ trên bản
-                        đồ tương tác
-                      </p>
-                    </div>
+          /* Overview Mode */
+          <div className="flex-1 overflow-hidden flex gap-6 p-6 bg-gray-50">
+            {/* Left side - Timeline */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                    Tổng quan lịch trình
+                  </h2>
+                  <p className="text-gray-600">
+                    Xem toàn bộ hành trình của bạn trong {itinerary.days.length}{" "}
+                    ngày
+                  </p>
 
-                    {/* Stats Cards - Horizontal Layout */}
-                    <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
-                      <div className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-4 min-w-[140px]">
-                        <div className="text-sm opacity-90 mb-1">
-                          Tổng số ngày
-                        </div>
-                        <div className="text-2xl font-bold">
-                          {itinerary.days.length}
-                        </div>
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-4 mt-6">
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                      <div className="text-sm text-blue-600 font-medium mb-1">
+                        Tổng số ngày
                       </div>
-                      <div className="flex-shrink-0 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl p-4 min-w-[140px]">
-                        <div className="text-sm opacity-90 mb-1">
-                          Tổng địa điểm
-                        </div>
-                        <div className="text-2xl font-bold">
-                          {itinerary.days.reduce(
-                            (sum, d) => sum + d.items.length,
-                            0
-                          )}
-                        </div>
+                      <div className="text-2xl font-bold text-blue-700">
+                        {itinerary.days.length}
                       </div>
-                      <div className="flex-shrink-0 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl p-4 min-w-[140px]">
-                        <div className="text-sm opacity-90 mb-1">
-                          Tổng chi phí
-                        </div>
-                        <div className="text-xl font-bold">
-                          {formatVND(grandTotal)}
-                        </div>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                      <div className="text-sm text-purple-600 font-medium mb-1">
+                        Tổng địa điểm
+                      </div>
+                      <div className="text-2xl font-bold text-purple-700">
+                        {itinerary.days.reduce(
+                          (sum, d) => sum + d.items.length,
+                          0
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                      <div className="text-sm text-emerald-600 font-medium mb-1">
+                        Tổng chi phí
+                      </div>
+                      <div className="text-xl font-bold text-emerald-700">
+                        {formatVND(grandTotal)}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Interactive Journey Map Container */}
-                <div className="flex-1 relative bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
-                  {/* Journey Path Visualization */}
-                  <div className="absolute inset-0 p-8">
-                    {/* Background Grid */}
-                    <div className="absolute inset-0 opacity-20">
-                      <div
-                        className="w-full h-full"
-                        style={{
-                          backgroundImage: `
-                linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
-              `,
-                          backgroundSize: "40px 40px",
-                        }}
-                      />
-                    </div>
+                {/* Circular Zigzag Timeline */}
+                <div className="relative py-8">
+                  {/* Central timeline line */}
+                  <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 via-purple-400 to-blue-300 hidden md:block"></div>
 
-                    {/* Journey Path Line */}
-                    <svg
-                      className="absolute inset-0 w-full h-full"
-                      style={{ overflow: "visible" }}
-                    >
-                      {/* Main Journey Path */}
-                      <path
-                        id="journeyPath"
-                        d={calculateJourneyPath(itinerary.days)}
-                        fill="none"
-                        stroke="url(#pathGradient)"
-                        strokeWidth="3"
-                        strokeDasharray="8,4"
-                      />
+                  {/* Days with circular items */}
+                  <div className="space-y-20">
+                    {itinerary.days.map((day, dayIndex) => {
+                      const daySubtotal = day.items.reduce(
+                        (s, i) => s + (Number(i.estimatedCost) || 0),
+                        0
+                      );
 
-                      {/* Day Markers on Path */}
-                      {itinerary.days.map((day, dayIndex) => {
-                        const point = calculatePointOnPath(
-                          dayIndex,
-                          itinerary.days.length
-                        );
-                        return (
-                          <g key={`day-marker-${day.dayNumber}`}>
-                            {/* Day Marker */}
-                            <circle
-                              cx={point.x}
-                              cy={point.y}
-                              r="12"
-                              fill="white"
-                              stroke="#3b82f6"
-                              strokeWidth="3"
-                              className="cursor-pointer hover:r-14 transition-all"
-                            />
-                            <text
-                              x={point.x}
-                              y={point.y}
-                              textAnchor="middle"
-                              dy=".3em"
-                              className="text-sm font-bold fill-blue-600 pointer-events-none"
-                            >
-                              {day.dayNumber}
-                            </text>
-
-                            {/* Day Label */}
-                            <g className="opacity-0 hover:opacity-100 transition-opacity">
-                              <rect
-                                x={point.x - 60}
-                                y={point.y - 45}
-                                width="120"
-                                height="36"
-                                rx="8"
-                                fill="white"
-                                stroke="#e5e7eb"
-                                strokeWidth="1"
-                                className="shadow-lg"
-                              />
-                              <text
-                                x={point.x}
-                                y={point.y - 25}
-                                textAnchor="middle"
-                                className="text-sm font-semibold fill-gray-700"
-                              >
-                                Ngày {day.dayNumber}
-                              </text>
-                              <text
-                                x={point.x}
-                                y={point.y - 10}
-                                textAnchor="middle"
-                                className="text-xs fill-gray-500"
-                              >
-                                {day.items.length} địa điểm
-                              </text>
-                            </g>
-                          </g>
-                        );
-                      })}
-
-                      <defs>
-                        <linearGradient
-                          id="pathGradient"
-                          x1="0%"
-                          y1="0%"
-                          x2="100%"
-                          y2="0%"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="#3b82f6"
-                            stopOpacity="0.8"
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="#8b5cf6"
-                            stopOpacity="0.8"
-                          />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-
-                    {/* Place Markers - Interactive */}
-                    <div className="relative z-10">
-                      {itinerary.days.flatMap((day, dayIndex) =>
-                        day.items.map((item, itemIndex) => {
-                          const basePoint = calculatePointOnPath(
-                            dayIndex,
-                            itinerary.days.length
-                          );
-                          const angle =
-                            (itemIndex / Math.max(day.items.length - 1, 1)) *
-                              Math.PI -
-                            Math.PI / 2;
-                          const radius = 100 + (itemIndex % 3) * 30;
-                          const x = basePoint.x + Math.cos(angle) * radius;
-                          const y = basePoint.y + Math.sin(angle) * radius;
-
-                          return (
-                            <div
-                              key={item.id}
-                              className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-                              style={{ left: `${x}px`, top: `${y}px` }}
-                              onMouseEnter={() => setHoveredItemId(item.id)}
-                              onMouseLeave={() => setHoveredItemId(null)}
-                              onClick={() => {
-                                setSelectedPlaceForDetail({
-                                  id: item.placeId,
-                                  name: item.placeName,
-                                });
-                              }}
-                            >
-                              {/* Connection Line to Day */}
-                              <div
-                                className="absolute top-1/2 left-1/2 w-24 h-px bg-gradient-to-r from-blue-300/50 to-transparent"
-                                style={{
-                                  transform: `rotate(${Math.atan2(
-                                    y - basePoint.y,
-                                    x - basePoint.x
-                                  )}rad)`,
-                                  transformOrigin: "0 0",
-                                }}
-                              />
-
-                              {/* Place Marker */}
-                              <div className="relative">
-                                {/* Outer Glow */}
-                                <div
-                                  className={`absolute inset-0 rounded-full blur-md transition-opacity duration-300 ${
-                                    hoveredItemId === item.id
-                                      ? "bg-blue-400/40 opacity-100"
-                                      : "bg-blue-300/20 opacity-0"
-                                  }`}
-                                />
-
-                                {/* Main Marker */}
-                                <div className="relative w-16 h-16 rounded-full border-3 border-white shadow-lg overflow-hidden bg-white transform transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl">
-                                  <img
-                                    src={item.placeImage}
-                                    alt={item.placeName}
-                                    className="w-full h-full object-cover"
-                                  />
-
-                                  {/* Order Badge */}
-                                  <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center text-xs font-bold shadow-md">
-                                    {itemIndex + 1}
+                      return (
+                        <div key={day.dayNumber} className="relative">
+                          {/* Day Header - Fixed position for each day */}
+                          <div className=" top-4 z-30 mb-10">
+                            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg p-5 max-w-md mx-auto border border-white/20">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-14 h-14 rounded-full bg-white text-blue-600 flex items-center justify-center font-bold text-xl shadow-lg">
+                                    {day.dayNumber}
+                                  </div>
+                                  <div>
+                                    <h3 className="text-xl font-bold text-white">
+                                      Ngày {day.dayNumber}
+                                    </h3>
+                                    <p className="text-blue-100 text-sm">
+                                      {day.date}
+                                    </p>
                                   </div>
                                 </div>
-
-                                {/* Info Card (Appears on Hover) */}
-                                <div
-                                  className={`absolute left-1/2 bottom-full mb-3 transform -translate-x-1/2 w-64 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-gray-200 transition-all duration-300 ${
-                                    hoveredItemId === item.id
-                                      ? "opacity-100 visible translate-y-0"
-                                      : "opacity-0 invisible translate-y-2"
-                                  }`}
-                                >
-                                  <div className="flex items-start gap-3 mb-3">
-                                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                                      <img
-                                        src={item.placeImage}
-                                        alt={item.placeName}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <h4 className="font-bold text-gray-900 text-sm mb-1 truncate">
-                                        {item.placeName}
-                                      </h4>
-                                      <p className="text-xs text-gray-600 truncate">
-                                        📍 {item.placeAddress}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex flex-wrap gap-2 mb-3">
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs font-medium text-gray-700">
-                                      ⏰ {item.startTime}
-                                    </span>
-                                    {item.estimatedCost > 0 && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 rounded-md text-xs font-medium text-emerald-700">
-                                        💰 {formatVND(item.estimatedCost)}
-                                      </span>
-                                    )}
-                                    {item.transportMode && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 rounded-md text-xs font-medium text-blue-700">
-                                        🚗 {item.transportMode}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {item.description && (
-                                    <p className="text-xs text-gray-600 line-clamp-2">
-                                      {item.description}
-                                    </p>
-                                  )}
-
-                                  <div className="mt-3 pt-3 border-t border-gray-200">
-                                    <div className="text-xs text-gray-500 flex items-center justify-between">
-                                      <span>Ngày {day.dayNumber}</span>
-                                      <span className="font-medium text-blue-600">
-                                        Điểm thứ {itemIndex + 1}
-                                      </span>
-                                    </div>
-                                  </div>
+                                <div className="text-right">
+                                  <p className="text-xs text-blue-100">
+                                    Chi phí ngày
+                                  </p>
+                                  <p className="text-lg font-bold text-white">
+                                    {formatVND(daySubtotal)}
+                                  </p>
                                 </div>
                               </div>
                             </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Map Controls and Info */}
-                  <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
-                    {/* Legend */}
-                    <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-200">
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600"></div>
-                          <span className="text-sm text-gray-700">
-                            Ngày trong hành trình
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded"></div>
-                          <span className="text-sm text-gray-700">
-                            Đường đi
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full border-2 border-white shadow bg-gradient-to-br from-emerald-400 to-emerald-500"></div>
-                          <span className="text-sm text-gray-700">
-                            Địa điểm
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Day Navigation */}
-                    <div className="flex items-center gap-3">
-                      <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-gray-200">
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium text-gray-700">
-                            Chuyển ngày:
-                          </span>
-                          <div className="flex gap-2">
-                            {itinerary.days.slice(0, 5).map((day) => (
-                              <button
-                                key={day.dayNumber}
-                                className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center text-sm font-medium text-blue-700 hover:from-blue-200 hover:to-blue-100 transition-all"
-                              >
-                                {day.dayNumber}
-                              </button>
-                            ))}
-                            {itinerary.days.length > 5 && (
-                              <span className="px-2 text-sm text-gray-500">
-                                ...
-                              </span>
-                            )}
                           </div>
+
+                          {/* Circular Items for this day */}
+                          {day.items.length === 0 ? (
+                            <div className="text-center py-12 bg-white/50 rounded-2xl backdrop-blur-sm border border-gray-200">
+                              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="32"
+                                  height="32"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="text-gray-400"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <line x1="12" y1="8" x2="12" y2="12" />
+                                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                              </div>
+                              <p className="text-gray-500 text-lg">
+                                Chưa có địa điểm nào trong ngày này
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              {/* Connecting lines between items */}
+                              <div className="absolute inset-0 hidden md:block">
+                                {day.items.slice(0, -1).map((_, index) => {
+                                  const isEven = index % 2 === 0;
+                                  const leftPos = isEven ? "35%" : "65%";
+                                  const rightPos = isEven ? "65%" : "35%";
+
+                                  return (
+                                    <div
+                                      key={`line-${index}`}
+                                      className="absolute"
+                                      style={{
+                                        top: `${index * 140 + 70}px`,
+                                        left: leftPos,
+                                        right: rightPos,
+                                        height: "70px",
+                                      }}
+                                    >
+                                      <div className="relative w-full h-full">
+                                        {/* Curved connection line */}
+                                        <svg
+                                          width="100%"
+                                          height="100%"
+                                          className={`${
+                                            isEven
+                                              ? ""
+                                              : "transform scale-x[-1]"
+                                          }`}
+                                        >
+                                          <path
+                                            d={`M 0,0 Q 50,35 100,70`}
+                                            stroke="url(#gradient-${dayIndex}-${index})"
+                                            strokeWidth="2"
+                                            fill="none"
+                                            strokeDasharray="5,3"
+                                          />
+                                          <defs>
+                                            <linearGradient
+                                              id={`gradient-${dayIndex}-${index}`}
+                                              x1="0%"
+                                              y1="0%"
+                                              x2="100%"
+                                              y2="100%"
+                                            >
+                                              <stop
+                                                offset="0%"
+                                                stopColor="#3b82f6"
+                                                stopOpacity="0.6"
+                                              />
+                                              <stop
+                                                offset="100%"
+                                                stopColor="#8b5cf6"
+                                                stopOpacity="0.6"
+                                              />
+                                            </linearGradient>
+                                          </defs>
+
+                                          {/* Arrow head */}
+                                          <polygon
+                                            points="95,65 100,70 95,75"
+                                            fill="#8b5cf6"
+                                          />
+                                        </svg>
+
+                                        {/* Distance label */}
+                                        {(() => {
+                                          const current = day.items[index];
+                                          const next = day.items[index + 1];
+                                          const dist = formatDistance(
+                                            current,
+                                            next
+                                          );
+                                          return (
+                                            <div
+                                              className={`absolute ${
+                                                isEven
+                                                  ? "left-1/4"
+                                                  : "right-1/4"
+                                              } top-1/3 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-200 shadow-sm`}
+                                            >
+                                              <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  width="12"
+                                                  height="12"
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  strokeWidth="2"
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                >
+                                                  <path d="M5 12h14" />
+                                                  <path d="m12 5 7 7-7 7" />
+                                                </svg>
+                                                {dist ? `${dist}` : "N/A"}
+                                              </span>
+                                            </div>
+                                          );
+                                        })()}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Circular Items */}
+                              <div className="space-y-20 md:space-y-28">
+                                {day.items.map((item, itemIndex) => {
+                                  const isEven = itemIndex % 2 === 0;
+
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className={`relative flex flex-col md:flex-row items-center ${
+                                        isEven
+                                          ? "md:flex-row"
+                                          : "md:flex-row-reverse"
+                                      }`}
+                                    >
+                                      {/* Timeline node on central line (desktop) */}
+                                      <div className="absolute left-1/2 transform -translate-x-1/2 w-6 h-6 rounded-full bg-white border-4 border-blue-500 z-10 hidden md:flex items-center justify-center shadow-lg">
+                                        <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                                      </div>
+
+                                      {/* Circular Item Card */}
+                                      <div
+                                        className={`md:w-1/2 ${
+                                          isEven ? "md:pr-16" : "md:pl-16"
+                                        }`}
+                                      >
+                                        <div
+                                          className={`relative group cursor-pointer transform transition-all duration-300 hover:scale-105 ${
+                                            isEven
+                                              ? "md:ml-auto md:mr-8"
+                                              : "md:mr-auto md:ml-8"
+                                          }`}
+                                          onClick={() => {
+                                            setSelectedPlaceForDetail({
+                                              id: item.placeId,
+                                              name: item.placeName,
+                                            });
+                                          }}
+                                        >
+                                          {/* Main Circular Container */}
+                                          <div className="relative w-64 h-64 mx-auto">
+                                            {/* Outer glow effect */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                                            {/* Circular Image Container */}
+                                            <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-white shadow-xl bg-white">
+                                              {/* Background Image */}
+                                              <img
+                                                src={item.placeImage}
+                                                alt={item.placeName}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                              />
+
+                                              {/* Overlay Gradient */}
+                                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+
+                                              {/* Content */}
+                                              <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
+                                                {/* Order Badge */}
+                                                <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold text-lg shadow-lg">
+                                                  {itemIndex + 1}
+                                                </div>
+
+                                                {/* Title */}
+                                                <h4 className="text-xl font-bold mb-2 leading-tight line-clamp-2">
+                                                  {item.placeName}
+                                                </h4>
+
+                                                {/* Address */}
+                                                <p className="text-sm text-gray-200 mb-3 line-clamp-1 flex items-center gap-1">
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="14"
+                                                    height="14"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                  >
+                                                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                                    <circle
+                                                      cx="12"
+                                                      cy="10"
+                                                      r="3"
+                                                    />
+                                                  </svg>
+                                                  {item.placeAddress}
+                                                </p>
+
+                                                {/* Time & Cost Badges */}
+                                                <div className="flex flex-wrap gap-2 mb-3">
+                                                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium">
+                                                    <svg
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width="12"
+                                                      height="12"
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      stroke="currentColor"
+                                                      strokeWidth="2"
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                    >
+                                                      <circle
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="10"
+                                                      />
+                                                      <polyline points="12 6 12 12 16 14" />
+                                                    </svg>
+                                                    {item.startTime} -{" "}
+                                                    {item.endTime}
+                                                  </span>
+
+                                                  {item.estimatedCost > 0 && (
+                                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-500/20 backdrop-blur-sm rounded-full text-xs font-medium">
+                                                      <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="12"
+                                                        height="12"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                      >
+                                                        <line
+                                                          x1="12"
+                                                          y1="1"
+                                                          x2="12"
+                                                          y2="23"
+                                                        />
+                                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                                      </svg>
+                                                      {formatVND(
+                                                        item.estimatedCost
+                                                      )}
+                                                    </span>
+                                                  )}
+
+                                                  {item.transportMode && (
+                                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-500/20 backdrop-blur-sm rounded-full text-xs font-medium">
+                                                      <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="12"
+                                                        height="12"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                      >
+                                                        <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2" />
+                                                        <circle
+                                                          cx="6.5"
+                                                          cy="16.5"
+                                                          r="2.5"
+                                                        />
+                                                        <circle
+                                                          cx="16.5"
+                                                          cy="16.5"
+                                                          r="2.5"
+                                                        />
+                                                      </svg>
+                                                      {item.transportMode}
+                                                    </span>
+                                                  )}
+                                                </div>
+
+                                                {/* Description (appears on hover) */}
+                                                {item.description && (
+                                                  <div className="absolute -bottom-16 left-0 right-0 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-20">
+                                                    <p className="text-sm text-gray-700 line-clamp-3">
+                                                      {item.description}
+                                                    </p>
+                                                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white/90 rotate-45"></div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Info Panel (opposite side) */}
+                                      <div
+                                        className={`md:w-1/2 mt-4 md:mt-0 ${
+                                          isEven
+                                            ? "md:pl-16 md:text-left"
+                                            : "md:pr-16 md:text-right"
+                                        }`}
+                                      >
+                                        <div
+                                          className={`bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/50 shadow-sm ${
+                                            isEven ? "md:ml-8" : "md:mr-8"
+                                          }`}
+                                        >
+                                          <h5 className="font-bold text-gray-900 text-lg mb-2">
+                                            Thông tin chi tiết
+                                          </h5>
+                                          <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  width="18"
+                                                  height="18"
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  strokeWidth="2"
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  className="text-blue-600"
+                                                >
+                                                  <circle
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                  />
+                                                  <polyline points="12 6 12 12 16 14" />
+                                                </svg>
+                                              </div>
+                                              <div>
+                                                <div className="text-sm text-gray-500">
+                                                  Thời gian
+                                                </div>
+                                                <div className="font-medium">
+                                                  {item.startTime} -{" "}
+                                                  {item.endTime}
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            {item.estimatedCost > 0 && (
+                                              <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="text-emerald-600"
+                                                  >
+                                                    <line
+                                                      x1="12"
+                                                      y1="1"
+                                                      x2="12"
+                                                      y2="23"
+                                                    />
+                                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                                  </svg>
+                                                </div>
+                                                <div>
+                                                  <div className="text-sm text-gray-500">
+                                                    Chi phí dự kiến
+                                                  </div>
+                                                  <div className="font-medium text-emerald-600">
+                                                    {formatVND(
+                                                      item.estimatedCost
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {item.transportMode && (
+                                              <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="text-blue-600"
+                                                  >
+                                                    <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2" />
+                                                    <circle
+                                                      cx="6.5"
+                                                      cy="16.5"
+                                                      r="2.5"
+                                                    />
+                                                    <circle
+                                                      cx="16.5"
+                                                      cy="16.5"
+                                                      r="2.5"
+                                                    />
+                                                  </svg>
+                                                </div>
+                                                <div>
+                                                  <div className="text-sm text-gray-500">
+                                                    Phương tiện
+                                                  </div>
+                                                  <div className="font-medium">
+                                                    {item.transportMode}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Day separator (mobile) */}
+                          {dayIndex < itinerary.days.length - 1 && (
+                            <div className="flex justify-center my-12 md:my-20">
+                              <div className="relative">
+                                <div className="w-px h-16 bg-gradient-to-b from-blue-400 to-purple-400"></div>
+                                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
+                                  <span className="text-sm text-gray-600 font-medium">
+                                    Tiếp tục ngày sau
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Side - Detailed Day Info Panel */}
-            <div className="lg:w-96 flex-shrink-0">
+            {/* Right side - Map */}
+            <div className="w-[500px] flex-shrink-0">
               <div className="sticky top-0 h-[calc(100vh-120px)]">
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden h-full flex flex-col">
-                  {/* Panel Header */}
-                  <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-                    <h3 className="font-bold text-gray-900 text-lg flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-white"
-                        >
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                          <polyline points="9 22 9 12 15 12 15 22" />
-                        </svg>
-                      </div>
-                      Chi tiết ngày
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
+                  {/* Map Header */}
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                      <MapPin size={18} className="text-gray-700" />
+                      Bản đồ tổng quan
                     </h3>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Chọn một địa điểm trên bản đồ để xem chi tiết
+                    <p className="text-xs text-gray-500 mt-1">
+                      Xem vị trí tất cả các địa điểm trong hành trình
                     </p>
                   </div>
 
-                  {/* Selected Day/Place Details */}
-                  <div className="flex-1 overflow-y-auto p-6">
-                    {selectedPlaceForDetail ? (
-                      <div className="space-y-6">
-                        {/* Selected Place Details */}
-                        <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border border-blue-100">
-                          <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 rounded-xl overflow-hidden">
-                              <img
-                                src={
-                                  selectedPlaceForDetail.image ||
-                                  "https://via.placeholder.com/150"
-                                }
-                                alt={selectedPlaceForDetail.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-gray-900 text-lg">
-                                {selectedPlaceForDetail.name}
-                              </h4>
-                              <p className="text-sm text-gray-600">
-                                📍 Đang được chọn
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Thời gian</span>
-                              <span className="font-medium">10:00 - 12:00</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">
-                                Chi phí ước tính
-                              </span>
-                              <span className="font-medium text-emerald-600">
-                                200,000 VND
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Phương tiện</span>
-                              <span className="font-medium">🚗 Xe hơi</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Nearby Places in Same Day */}
-                        <div>
-                          <h5 className="font-bold text-gray-900 mb-4">
-                            Các địa điểm cùng ngày
-                          </h5>
-                          <div className="space-y-3">
-                            {itinerary.days[0]?.items
-                              .slice(0, 3)
-                              .map((item, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer border border-gray-200"
-                                >
-                                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                                    <img
-                                      src={item.placeImage}
-                                      alt={item.placeName}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h6 className="font-medium text-gray-900 text-sm truncate">
-                                      {item.placeName}
-                                    </h6>
-                                    <p className="text-xs text-gray-500">
-                                      ⏰ {item.startTime}
-                                    </p>
-                                  </div>
-                                  <div className="text-xs font-medium text-blue-600">
-                                    Điểm {idx + 1}
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="32"
-                            height="32"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-gray-400"
-                          >
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                            <circle cx="12" cy="10" r="3" />
-                          </svg>
-                        </div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">
-                          Chọn một địa điểm
-                        </h4>
-                        <p className="text-gray-600">
-                          Nhấp vào bất kỳ địa điểm nào trên bản đồ để xem chi
-                          tiết
-                        </p>
-                      </div>
-                    )}
+                  {/* Map */}
+                  <div className="flex-1 relative">
+                    <LeafletMap
+                      places={getRouteItems()}
+                      image={itinerary.destinationImage}
+                      hoveredPlaceId={hoveredItemId}
+                      provider="google-roadmap"
+                    />
                   </div>
 
-                  {/* Quick Stats Footer */}
-                  <div className="p-6 border-t border-gray-200 bg-gray-50/50">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <div className="text-sm text-gray-600 mb-1">
-                          Đang hiển thị
-                        </div>
-                        <div className="text-xl font-bold text-blue-600">
-                          {itinerary.days.reduce(
-                            (sum, d) => sum + d.items.length,
-                            0
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500">địa điểm</div>
+                  {/* Map Legend */}
+                  <div className="p-4 border-t border-gray-200 bg-gray-50">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                        <span className="text-gray-600">Điểm đến</span>
                       </div>
-                      <div className="text-center">
-                        <div className="text-sm text-gray-600 mb-1">
-                          Trung bình
-                        </div>
-                        <div className="text-lg font-bold text-purple-600">
-                          {Math.round(
-                            itinerary.days.reduce(
-                              (sum, d) => sum + d.items.length,
-                              0
-                            ) / itinerary.days.length
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          địa điểm/ngày
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-0.5 bg-blue-600"></div>
+                        <span className="text-gray-600">Tuyến đường</span>
                       </div>
                     </div>
                   </div>
@@ -2583,11 +2631,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </div>
           </div>
         )}
-        <style jsx>{`
-          .group:hover .group-hover\:scale-110 {
-            transform: scale(1.1);
-          }
-        `}</style>
       </div>
 
       {/* PlaceSidebar modal */}
