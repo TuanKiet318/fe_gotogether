@@ -65,12 +65,12 @@ export default function Header({ setActiveSection }) {
                   <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-gradient-to-r from-sky-500 to-indigo-600 transition-all group-hover:w-full"></span>
                 </Link>
               ))}
-              <Link
+              {/* <Link
                 to="/explores"
                 className="relative font-semibold text-slate-700 hover:text-sky-600 transition"
               >
                 Khám phá
-              </Link>
+              </Link> */}
               <Link
                 to="/tours"
                 className="relative font-semibold text-slate-700 hover:text-sky-600 transition"

@@ -6,18 +6,29 @@ import instance from "./axios.admin.customize";
  * @param {string} itineraryId
  * @param {number} dayNumber - optional, lọc theo ngày
  */
-export const listItems = async (itineraryId, dayNumber) => {
-  try {
-    const params = dayNumber !== undefined ? { dayNumber } : {};
-    const res = await instance.get(`/itineraries/${itineraryId}/items`, {
-      params,
-    });
-    return res.data;
-  } catch (error) {
-    console.error("Error in listItems:", error);
-    throw error;
+export const listMyItineraries = async (filters = {}) => {
+  const params = {};
+
+  if (filters.destinationIds?.length > 0) {
+    params.destinationIds = filters.destinationIds;
   }
+
+  params.type = filters.type || "all"; // 🔸 NEW
+
+  if (filters.minDuration != null) params.minDuration = filters.minDuration; // 🔸 NEW
+  if (filters.maxDuration != null) params.maxDuration = filters.maxDuration; // 🔸 NEW
+
+  params.sortBy = filters.sortBy || "createdAt";
+  params.sortDir = filters.sortDir || "desc";
+
+  params.period = filters.period || "all";
+
+  console.log("📤 Params gửi lên API:", params);
+
+  const res = await instance.get("/itineraries", { params });
+  return res;
 };
+
 /** * Lấy chi tiết một chuyến đi */
 export const getItineraryById = async (id) => {
   try {

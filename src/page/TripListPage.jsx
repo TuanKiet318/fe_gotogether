@@ -1,5 +1,5 @@
 // src/pages/MyItinerariesPage.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -10,21 +10,16 @@ import {
   MapPin,
   Trash2,
   PlusCircle,
+  X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthProvider";
 import { Link } from "react-router-dom";
 
-/* API services */
-import { getAllItineraries as apiGetAllItineraries } from "../service/tripService";
+/* API */
+import { listMyItineraries } from "../service/tripService";
 import { DeleteItinerary as apiDeleteItinerary } from "../service/api.admin.service.jsx";
 
-/* ---------------------------- Util Functions ---------------------------- */
-const parseDate = (d) => {
-  if (!d) return null;
-  const dt = new Date(d);
-  return isNaN(dt) ? null : dt;
-};
-
+/* Utils */
 const formatDateVN = (dateString) =>
   new Date(dateString).toLocaleDateString("vi-VN", {
     day: "2-digit",
@@ -33,25 +28,18 @@ const formatDateVN = (dateString) =>
   });
 
 const calculateDuration = (startDate, endDate) => {
-  const s = parseDate(startDate);
-  const e = parseDate(endDate);
-  if (!s || !e) return "";
+  const s = new Date(startDate);
+  const e = new Date(endDate);
   const diff = Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1;
   return `${diff} ngày`;
 };
 
-const todayStart = () => {
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
-  return t;
-};
-
-/* ---------------------------- ItineraryCard ---------------------------- */
+/* ---------------------------- Card Component ---------------------------- */
 function ItineraryCard({ trip, onDelete }) {
   return (
     <Link
       to={`/itinerary-editor/${trip.id}`}
-      className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden"
+      className="group bg-white rounded-2xl border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden"
     >
       <div className="relative h-56 overflow-hidden">
         <img
@@ -73,10 +61,9 @@ function ItineraryCard({ trip, onDelete }) {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onDelete?.(e, trip.id);
+              onDelete(trip.id);
             }}
-            className="bg-white/90 hover:bg-white p-2 rounded-xl shadow opacity-80 transition"
-            title="Xoá"
+            className="bg-white/90 hover:bg-white p-2 rounded-xl shadow transition"
           >
             <Trash2 className="w-4 h-4 text-red-600" />
           </button>
@@ -86,8 +73,7 @@ function ItineraryCard({ trip, onDelete }) {
               e.preventDefault();
               e.stopPropagation();
             }}
-            className="bg-white/90 hover:bg-white p-2 rounded-xl shadow opacity-90 transition"
-            title="More"
+            className="bg-white/90 hover:bg-white p-2 rounded-xl shadow transition"
           >
             <MoreVertical className="w-4 h-4 text-gray-700" />
           </button>
@@ -114,33 +100,16 @@ function ItineraryCard({ trip, onDelete }) {
         )}
 
         <div className="flex items-center gap-2 text-sm text-gray-500">
-
-          {/* Trường hợp bạn là chủ sở hữu */}
-          {trip.owner ? (
-            <>
-              <img
-                src={trip.ownerAvatar || "/imgs/image.png"}
-                className="w-6 h-6 rounded-full object-cover"
-              />
-              <span>Bạn là chủ sở hữu</span>
-            </>
-          ) : (
-            /* Trường hợp người khác tạo/chia sẻ */
-            <>
-              <img
-                src={trip.ownerAvatar || "/imgs/image.png"}
-                className="w-6 h-6 rounded-full object-cover"
-              />
-              <span>
-                {trip.ownerName
-                  ? `Chia sẻ bởi ${trip.ownerName}`
-                  : "Chia sẻ bởi ai đó"}
-              </span>
-            </>
-          )}
-
+          <img
+            src={trip.ownerAvatar || "/imgs/image.png"}
+            className="w-6 h-6 rounded-full object-cover"
+          />
+          <span>
+            {trip.owner
+              ? "Bạn là chủ sở hữu"
+              : `Chia sẻ bởi ${trip.ownerName || "ai đó"}`}
+          </span>
         </div>
-
       </div>
     </Link>
   );
@@ -149,23 +118,62 @@ function ItineraryCard({ trip, onDelete }) {
 /* ---------------------------- Main Page ---------------------------- */
 const MyItinerariesPage = () => {
   const { user } = useAuth?.() || { user: { name: "Bạn" } };
+
   const [activeTab, setActiveTab] = useState("upcoming");
   const [sortBy, setSortBy] = useState("Ngày tạo");
   const [searchText, setSearchText] = useState("");
+
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const [filter, setFilter] = useState({
+    destinationId: "",
+    type: "all",
+    minDuration: "",
+    maxDuration: "",
+  });
+
+
   const [itineraries, setItineraries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const mockData = []; // mock đã bỏ, dùng mapping API thật
-
-  /* ---------------------------- LOAD + MAP API DATA ---------------------------- */
+  /* ---------------------------- Load Data via API ---------------------------- */
   useEffect(() => {
     let cancelled = false;
 
-    const load = async () => {
-      setLoading(true);
+    const fetchData = async () => {
       try {
-        const res = await apiGetAllItineraries();
-        const raw = res?.data || res || [];
+        setLoading(true);
+
+        const period = activeTab; // upcoming | ongoing | past
+
+        const apiFilters = {
+          search: searchText || undefined,
+
+          destinationIds:
+            filter.destinationId !== "" ? [filter.destinationId] : undefined,
+
+          type: filter.type || "all",
+
+          minDuration:
+            filter.minDuration !== "" ? Number(filter.minDuration) : undefined,
+
+          maxDuration:
+            filter.maxDuration !== "" ? Number(filter.maxDuration) : undefined,
+
+          sortBy: sortBy === "Ngày tạo" ? "createdAt" : "title",
+          sortDir: sortBy === "Tên A-Z" ? "asc" : "desc",
+
+          period: activeTab,
+        };
+
+
+        console.log("🔵 Gửi filter lên API:", apiFilters);
+
+        const res = await listMyItineraries(apiFilters);
+        if (cancelled) return;
+        console.log("🟢 API response:", res);
+        const raw = res ?? [];
+        console.log("🟢 Dữ liệu nhận về:", raw);
 
         const mapped = raw.map((it) => ({
           id: it.id,
@@ -173,217 +181,206 @@ const MyItinerariesPage = () => {
           startDate: it.startDate,
           endDate: it.endDate,
           location: it.destinationName,
-
-          coverImage: it.coverImage || null,
-          image: it.coverImage || null,
-
-          // owner info
-          owner: it.owner, // boolean
-          ownerId: it.ownerId,
+          coverImage: it.coverImage,
+          owner: it.owner,
           ownerName: it.ownerName,
           ownerAvatar: it.ownerAvatar,
-
-          createdAt: it.createdAt || it.startDate || null,
-          updatedAt: it.updatedAt || it.endDate || null,
+          createdAt: it.createdAt,
         }));
 
-        if (!cancelled) setItineraries(mapped);
+        setItineraries(mapped);
       } catch (err) {
-        console.error("Lỗi load itineraries:", err);
-        if (!cancelled) setItineraries(mockData);
+        console.error("Load error:", err);
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
-    load();
+    fetchData();
     return () => (cancelled = true);
-  }, []);
+  }, [
+    activeTab,
+    searchText,
+    filter.destinationId,
+    filter.type,
+    filter.minDuration,
+    filter.maxDuration,
+    sortBy
+  ]);
 
-
-  /* ---------------------------- DELETE ITEM ---------------------------- */
-  const handleDelete = async (e, id) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!window.confirm("Bạn có chắc muốn xoá lịch trình này?")) return;
+  /* ---------------------------- Delete ---------------------------- */
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bạn có chắc muốn xoá?")) return;
 
     try {
       await apiDeleteItinerary(id);
       setItineraries((prev) => prev.filter((t) => t.id !== id));
       alert("Đã xoá!");
-    } catch (err) {
-      console.error("Lỗi xoá:", err);
-      alert("Xoá thất bại.");
+    } catch {
+      alert("Xoá thất bại");
     }
   };
 
-  /* ---------------------------- FILTER + SORT ---------------------------- */
-  const filtered = useMemo(() => {
-    const now = todayStart();
-    const q = searchText.toLowerCase().trim();
-
-    return itineraries
-      .filter((it) => {
-        const s = parseDate(it.startDate);
-        const e = parseDate(it.endDate);
-        if (!s || !e) return true;
-        if (activeTab === "upcoming") return s > now;
-        if (activeTab === "ongoing") return s <= now && e >= now;
-        if (activeTab === "past") return e < now;
-        return true;
-      })
-      .filter((it) => {
-        if (!q) return true;
-        return (
-          it.title?.toLowerCase().includes(q) ||
-          it.location?.toLowerCase().includes(q)
-        );
-      })
-      .sort((a, b) => {
-        if (sortBy === "Ngày tạo") {
-          return (parseDate(b.createdAt) || 0) - (parseDate(a.createdAt) || 0);
-        }
-        if (sortBy === "Tên A-Z") {
-          return a.title.localeCompare(b.title);
-        }
-        return 0;
-      });
-  }, [itineraries, activeTab, searchText, sortBy]);
-
-  /* ---------------------------- RENDER ---------------------------- */
+  /* ---------------------------- UI ---------------------------- */
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar */}
-          <aside className="w-80 flex-shrink-0">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <div className="text-center mb-6">
-                <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <User className="w-12 h-12 text-gray-400" />
-                </div>
-                <h2 className="text-xl font-semibold mb-2">{user?.name}</h2>
-                <p className="text-sm text-gray-500">Thành viên</p>
-              </div>
-
-              <nav className="space-y-1">
-                <a className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  🎟️ Hồ sơ
-                </a>
-                <a className="flex items-center gap-3 px-4 py-3 bg-white text-blue-600 rounded-lg font-medium shadow-sm">
-                  📋 Hành trình
-                  <span className="ml-auto bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-sm">
-                    {itineraries.length}
-                  </span>
-                </a>
-                <a className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  📅 Bài viết
-                </a>
-                <a className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  ❤️ Yêu thích
-                </a>
-              </nav>
+      <div className="max-w-7xl mx-auto px-4 py-8 flex gap-8">
+        {/* Sidebar */}
+        <aside className="w-80 flex-shrink-0">
+          <div className="bg-white rounded-2xl p-6 shadow-sm text-center">
+            <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <User className="w-12 h-12 text-gray-400" />
             </div>
-          </aside>
+            <h2 className="text-xl font-semibold">{user?.name}</h2>
+            <p className="text-sm text-gray-500">Thành viên</p>
+          </div>
+        </aside>
 
-          {/* Main */}
-          <main className="flex-1 bg-white rounded-2xl p-6 shadow-sm">
+        {/* Main */}
+        <main className="flex-1 bg-white rounded-2xl p-6 shadow-sm">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Lịch trình của tôi</h1>
+            <button
+              onClick={() => (window.location.href = "/trip-planner")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg flex items-center gap-2"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Tạo lịch trình
+            </button>
+          </div>
 
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Lịch trình của tôi</h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  Quản lý và theo dõi hành trình của bạn
-                </p>
-              </div>
-
+          {/* Tabs */}
+          <div className="flex gap-8 mb-6 border-b pb-3">
+            {["upcoming", "ongoing", "past"].map((tab) => (
               <button
-                onClick={() => (window.location.href = "/trip-planner")}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-medium flex items-center gap-2"
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-2 font-medium relative ${activeTab === tab ? "text-blue-600" : "text-gray-500"
+                  }`}
               >
-                <PlusCircle className="w-5 h-5" />
-                Tạo lịch trình
+                {{ upcoming: "Sắp tới", ongoing: "Đang diễn ra", past: "Quá khứ" }[
+                  tab
+                ]}
+                {activeTab === tab && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+                )}
               </button>
+            ))}
+          </div>
+
+          {/* Controls */}
+          <div className="flex gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                type="text"
+                placeholder="Tìm kiếm lịch trình..."
+                className="w-full pl-12 pr-4 py-3 border rounded-lg"
+              />
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-8 mb-6 border-b border-gray-200">
-              {["upcoming", "ongoing", "past"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-3 font-medium relative ${activeTab === tab ? "text-blue-600" : "text-gray-500"
-                    }`}
-                >
-                  {
-                    { upcoming: "Sắp tới", ongoing: "Đang diễn ra", past: "Quá khứ" }[tab]
-                  }
-                  {activeTab === tab && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
-                  )}
-                </button>
+            <button
+              onClick={() => setFilterOpen(true)}
+              className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-gray-50"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              Bộ lọc
+            </button>
+
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none px-6 py-3 pr-10 border rounded-lg"
+              >
+                <option>Ngày tạo</option>
+                <option>Tên A-Z</option>
+                <option>Ngày khởi hành</option>  {/* <-- thêm đây */}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
+
+          </div>
+
+          {/* LIST */}
+          {loading ? (
+            <div className="text-center py-20 text-gray-600">Đang tải...</div>
+          ) : itineraries.length ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+              {itineraries.map((trip) => (
+                <ItineraryCard key={trip.id} trip={trip} onDelete={handleDelete} />
               ))}
             </div>
+          ) : (
+            <div className="text-center py-20 text-gray-400">
+              <CalendarDays className="w-20 h-20 mx-auto opacity-30" />
+              <h3 className="text-2xl font-bold mt-4">Không có dữ liệu</h3>
+            </div>
+          )}
 
-            {/* Controls */}
-            <div className="flex gap-4 mb-6">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  type="text"
-                  placeholder="Tìm kiếm lịch trình..."
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg"
-                />
-              </div>
-
-              <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <SlidersHorizontal className="w-5 h-5" />
-                Bộ lọc
-              </button>
-
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none px-6 py-3 pr-10 border border-gray-300 rounded-lg"
+          {/* FILTER MODAL */}
+          {filterOpen && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]">
+              <div className="bg-white w-[500px] max-w-[95%] rounded-2xl p-6 shadow-xl relative">
+                <button
+                  onClick={() => setFilterOpen(false)}
+                  className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
                 >
-                  <option>Ngày tạo</option>
-                  <option>Tên A-Z</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <X className="w-5 h-5" />
+                </button>
+
+                <h2 className="text-xl font-semibold mb-4">Bộ lọc</h2>
+
+                {/* DESTINATION
+                <div className="mb-6">
+                  <label className="font-medium text-gray-700">Điểm đến</label>
+                  <select
+                    value={filter.destinationId}
+                    onChange={(e) =>
+                      setFilter((f) => ({ ...f, destinationId: e.target.value }))
+                    }
+                    className="w-full mt-2 px-3 py-2 border rounded-lg"
+                  >
+                    <option value="">Chọn điểm đến</option>
+                    {[...new Set(itineraries.map((i) => i.location))].map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
+                </div> */}
+
+                {/* TYPE */}
+                <div className="mb-6">
+                  <label className="font-medium text-gray-700">Loại lịch trình</label>
+                  <select
+                    value={filter.type}
+                    onChange={(e) =>
+                      setFilter((f) => ({ ...f, type: e.target.value }))
+                    }
+                    className="w-full mt-2 px-3 py-2 border rounded-lg"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="owner">Bạn là chủ sở hữu</option>
+                    <option value="collaborator">Bạn là cộng tác viên</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={() => setFilterOpen(false)}
+                    className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Áp dụng
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Grid */}
-            {loading ? (
-              <div className="text-center py-20 text-gray-600">Đang tải...</div>
-            ) : filtered.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-                {filtered.map((trip) => (
-                  <ItineraryCard key={trip.id} trip={trip} onDelete={handleDelete} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-20">
-                <CalendarDays className="w-20 h-20 mx-auto text-gray-300" />
-                <h3 className="text-2xl font-bold text-gray-700 mt-4">
-                  Chưa có lịch trình nào
-                </h3>
-
-                {/* <button
-                  onClick={() => (window.location.href = "/trip-planner")}
-                  className="mt-6 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 rounded-full"
-                >
-                  <PlusCircle className="w-5 h-5" />
-                  Tạo lịch trình đầu tiên
-                </button> */}
-              </div>
-            )}
-          </main>
-        </div>
+          )}
+        </main>
       </div>
     </div>
   );
