@@ -141,6 +141,14 @@ export default function Header({ setActiveSection }) {
                           className="flex items-center gap-2 w-full px-4 py-2 text-slate-700 hover:bg-slate-100 transition"
                         >
                           <MapPin className="w-4 h-4" /> Lịch trình của bạn
+                        </button><button
+                          onClick={() => {
+                            navigate("/local-guide");
+                            setIsMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-slate-700 hover:bg-slate-100 transition"
+                        >
+                          <MapPin className="w-4 h-4" /> Hướng dẫn viên
                         </button>
                         <div className="border-t my-1"></div>
                         <button

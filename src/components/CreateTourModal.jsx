@@ -113,6 +113,7 @@ const CreateTourModal = ({ isOpen, onClose, itineraryId, itineraryData }) => {
     } catch (error) {
       console.error("Error creating tour:", error);
       alert(error?.response?.data?.message || "Có lỗi xảy ra khi tạo tour!");
+      navigate("/local-guide");
     } finally {
       setIsSubmitting(false);
     }
@@ -170,9 +171,8 @@ const CreateTourModal = ({ isOpen, onClose, itineraryId, itineraryData }) => {
                   value={formData.title}
                   onChange={handleInputChange}
                   placeholder="Ví dụ: Tour Đà Lạt 3 ngày 2 đêm"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
-                    errors.title ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.title ? "border-red-500" : "border-gray-300"
+                    }`}
                 />
                 {errors.title && (
                   <p className="text-red-500 text-sm mt-1">{errors.title}</p>
@@ -191,9 +191,8 @@ const CreateTourModal = ({ isOpen, onClose, itineraryId, itineraryData }) => {
                   onChange={handleInputChange}
                   placeholder="Khám phá Đà Lạt mùa hoa dã quỳ..."
                   rows="3"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none ${
-                    errors.description ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none ${errors.description ? "border-red-500" : "border-gray-300"
+                    }`}
                 />
                 {errors.description && (
                   <p className="text-red-500 text-sm mt-1">
@@ -214,9 +213,8 @@ const CreateTourModal = ({ isOpen, onClose, itineraryId, itineraryData }) => {
                     name="startDate"
                     value={formData.startDate}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
-                      errors.startDate ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.startDate ? "border-red-500" : "border-gray-300"
+                      }`}
                   />
                   {errors.startDate && (
                     <p className="text-red-500 text-sm mt-1">
@@ -235,9 +233,8 @@ const CreateTourModal = ({ isOpen, onClose, itineraryId, itineraryData }) => {
                     name="endDate"
                     value={formData.endDate}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
-                      errors.endDate ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.endDate ? "border-red-500" : "border-gray-300"
+                      }`}
                   />
                   {errors.endDate && (
                     <p className="text-red-500 text-sm mt-1">
@@ -256,11 +253,10 @@ const CreateTourModal = ({ isOpen, onClose, itineraryId, itineraryData }) => {
                     name="registrationDeadline"
                     value={formData.registrationDeadline}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
-                      errors.registrationDeadline
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.registrationDeadline
                         ? "border-red-500"
                         : "border-gray-300"
-                    }`}
+                      }`}
                   />
                   {errors.registrationDeadline && (
                     <p className="text-red-500 text-sm mt-1">
@@ -284,11 +280,10 @@ const CreateTourModal = ({ isOpen, onClose, itineraryId, itineraryData }) => {
                     onChange={handleInputChange}
                     placeholder="15"
                     min="1"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
-                      errors.maxParticipants
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.maxParticipants
                         ? "border-red-500"
                         : "border-gray-300"
-                    }`}
+                      }`}
                   />
                   {errors.maxParticipants && (
                     <p className="text-red-500 text-sm mt-1">
@@ -309,11 +304,10 @@ const CreateTourModal = ({ isOpen, onClose, itineraryId, itineraryData }) => {
                     onChange={handleInputChange}
                     placeholder="1500000"
                     min="0"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
-                      errors.pricePerPerson
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.pricePerPerson
                         ? "border-red-500"
                         : "border-gray-300"
-                    }`}
+                      }`}
                   />
                   {errors.pricePerPerson && (
                     <p className="text-red-500 text-sm mt-1">

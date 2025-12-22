@@ -1,5 +1,6 @@
 // ...existing code...
 import React, { useState, useEffect, useRef } from "react";
+import CreateTourModal from "../components/CreateTourModal";
 import { useParams, useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import { LeafletMap } from "../components/LeafletMap.jsx";
@@ -129,7 +130,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const itineraryId = propItineraryId || params.id;
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [openWarningDay, setOpenWarningDay] = useState(null);
-
+  const [showCreateTourModal, setShowCreateTourModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [itinerary, setItinerary] = useState(null);
   const [warningsByDay, setWarningsByDay] = useState({});
@@ -844,6 +845,16 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       });
   };
 
+  const handlePublishClick = () => {
+    console.log("Publish clicked");
+    setShowCreateTourModal(true);
+  };
+
+  const handleCloseTourModal = () => {
+    setShowCreateTourModal(false);
+  };
+
+
   const grandTotal = itinerary.days.reduce(
     (sum, d) =>
       sum + d.items.reduce((s, i) => s + (Number(i.estimatedCost) || 0), 0),
@@ -1157,7 +1168,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <Share2 size={16} />
                 <span>Chia sẻ</span>
               </button>
+
             )}
+            {/* <button
+              onClick={handlePublishClick}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200"
+            >
+              <span>Tạo Tour</span>
+            </button> */}
 
             <button
               onClick={() => navigate(-1)}
@@ -2162,11 +2180,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                         <svg
                                           width="100%"
                                           height="100%"
-                                          className={`${
-                                            isEven
-                                              ? ""
-                                              : "transform scale-x[-1]"
-                                          }`}
+                                          className={`${isEven
+                                            ? ""
+                                            : "transform scale-x[-1]"
+                                            }`}
                                         >
                                           <path
                                             d={`M 0,0 Q 50,35 100,70`}
@@ -2213,11 +2230,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                           );
                                           return (
                                             <div
-                                              className={`absolute ${
-                                                isEven
-                                                  ? "left-1/4"
-                                                  : "right-1/4"
-                                              } top-1/3 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-200 shadow-sm`}
+                                              className={`absolute ${isEven
+                                                ? "left-1/4"
+                                                : "right-1/4"
+                                                } top-1/3 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-200 shadow-sm`}
                                             >
                                               <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
                                                 <svg
@@ -2253,11 +2269,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                   return (
                                     <div
                                       key={item.id}
-                                      className={`relative flex flex-col md:flex-row items-center ${
-                                        isEven
-                                          ? "md:flex-row"
-                                          : "md:flex-row-reverse"
-                                      }`}
+                                      className={`relative flex flex-col md:flex-row items-center ${isEven
+                                        ? "md:flex-row"
+                                        : "md:flex-row-reverse"
+                                        }`}
                                     >
                                       {/* Timeline node on central line (desktop) */}
                                       <div className="absolute left-1/2 transform -translate-x-1/2 w-6 h-6 rounded-full bg-white border-4 border-blue-500 z-10 hidden md:flex items-center justify-center shadow-lg">
@@ -2266,16 +2281,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
                                       {/* Circular Item Card */}
                                       <div
-                                        className={`md:w-1/2 ${
-                                          isEven ? "md:pr-16" : "md:pl-16"
-                                        }`}
+                                        className={`md:w-1/2 ${isEven ? "md:pr-16" : "md:pl-16"
+                                          }`}
                                       >
                                         <div
-                                          className={`relative group cursor-pointer transform transition-all duration-300 hover:scale-105 ${
-                                            isEven
-                                              ? "md:ml-auto md:mr-8"
-                                              : "md:mr-auto md:ml-8"
-                                          }`}
+                                          className={`relative group cursor-pointer transform transition-all duration-300 hover:scale-105 ${isEven
+                                            ? "md:ml-auto md:mr-8"
+                                            : "md:mr-auto md:ml-8"
+                                            }`}
                                           onClick={() => {
                                             setSelectedPlaceForDetail({
                                               id: item.placeId,
@@ -2434,16 +2447,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
                                       {/* Info Panel (opposite side) */}
                                       <div
-                                        className={`md:w-1/2 mt-4 md:mt-0 ${
-                                          isEven
-                                            ? "md:pl-16 md:text-left"
-                                            : "md:pr-16 md:text-right"
-                                        }`}
+                                        className={`md:w-1/2 mt-4 md:mt-0 ${isEven
+                                          ? "md:pl-16 md:text-left"
+                                          : "md:pr-16 md:text-right"
+                                          }`}
                                       >
                                         <div
-                                          className={`bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/50 shadow-sm ${
-                                            isEven ? "md:ml-8" : "md:mr-8"
-                                          }`}
+                                          className={`bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/50 shadow-sm ${isEven ? "md:ml-8" : "md:mr-8"
+                                            }`}
                                         >
                                           <h5 className="font-bold text-gray-900 text-lg mb-2">
                                             Thông tin chi tiết
@@ -2810,6 +2821,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </div>
           </div>
         </>
+      )}
+      {/* Create Tour Modal */}
+      {showCreateTourModal && (
+        <CreateTourModal onClose={() => setShowCreateTourModal(false)} />
       )}
 
       {/* Modal đề xuất địa điểm tiếp theo */}
@@ -3248,6 +3263,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               </div>
             </div>
           </div>
+
         </>
       )}
     </div>

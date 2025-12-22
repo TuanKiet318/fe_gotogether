@@ -23,6 +23,8 @@ import TourListPage from "./page/TourListPage.jsx";
 import TourDetailPage from "./page/TourDetailPage.jsx";
 import TravelBlog from "./page/BlogPage.jsx";
 import VietnamTravelExplore from "./page/VietnamTravelExplore.jsx";
+import LocalGuidePage from "./page/LocalGuidePage";
+
 import { NotificationProvider } from "./context/NotificationContext";
 
 const App = () => {
@@ -68,6 +70,14 @@ const App = () => {
             />
             <Route path="/tours" element={<TourListPage />} />
             <Route path="/tour/detail/:tourId" element={<TourDetailPage />} />
+            <Route
+              path="/local-guide"
+              element={
+                <PrivateRoute>
+                  <LocalGuidePage />
+                </PrivateRoute>
+              }
+            />
 
             {/* Route MyProfile */}
             <Route
