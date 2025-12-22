@@ -70,82 +70,7 @@ function Gallery({ photos = [] }) {
 /* ---------------------- Main ---------------------- */
 export default function ItineraryLanding({ itinerary: propItinerary, sourceId }) {
     const navigate = useNavigate();
-
-    // ------- Fake data Quy Nhơn -------
-    const demo = useMemo(() => ({
-        title: "Lịch trình Quy Nhơn 3 ngày — Cân bằng Văn hoá & Ẩm thực",
-        destination: "Quy Nhơn, Việt Nam",
-        tags: ["3 ngày", "16 địa điểm", "Tham quan", "Ẩm thực", "Văn hoá & Nghệ thuật", "Nightlife"],
-        heroPhotos: [
-            "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?q=80&w=1600&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
-        ],
-        overview:
-            "Quy Nhơn là thành phố biển hiền hòa của Bình Định, nổi tiếng với bờ cát cong ôm vịnh, những dải đá kỳ thú và di sản Chăm Pa. Lịch trình 3 ngày này cân bằng giữa khám phá thiên nhiên (Kỳ Co, Eo Gió), văn hoá – lịch sử (Tháp Đôi, Bảo tàng Quang Trung) và ẩm thực địa phương (bánh xèo tôm nhảy, bún chả cá, hải sản tươi). Bạn sẽ có thời gian dạo biển hoàng hôn, ngắm bình minh trên Eo Gió, len lỏi các quán cà phê xinh xắn trong phố, và thưởng thức hải sản ở làng chài — tất cả với nhịp điệu thong thả, tối ưu cung đường di chuyển.",
-        notes: [
-            "Sân bay Phù Cát cách trung tâm ~30–35 km; có shuttle bus/taxi về trung tâm.",
-            "Phương tiện gợi ý: thuê xe máy hoặc taxi; đi Kỳ Co/Eo Gió nên xuất phát sớm để tránh nắng.",
-            "Ẩm thực nổi bật: bánh xèo tôm nhảy, bún chả cá, tré rơm, ốc các loại; hải sản nên chọn quán gần làng chài.",
-        ],
-        author: {
-            name: "Rose",
-            avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop",
-            bio: "Yêu biển và ẩm thực miền Trung; chia sẻ hành trình khám phá Quy Nhơn theo nhịp chậm.",
-            joined: "2023",
-        },
-        startDate: "2025-04-18",
-        endDate: "2025-04-20",
-        days: [
-            {
-                dayNumber: 1,
-                date: "2025-04-18",
-                title: "Phố biển & di sản Chăm",
-                items: [
-                    {
-                        id: "1-1",
-                        category: "Ăn uống",
-                        placeName: "Bánh xèo tôm nhảy",
-                        placeAddress: "Trần Bình Trọng, Quy Nhơn",
-                        placeImage:
-                            "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop",
-                        startTime: "07:00",
-                        endTime: "08:00",
-                        estimatedCost: 60000,
-                        lat: 13.7706,
-                        lng: 109.2193,
-                        description:
-                            "Bữa sáng đặc trưng Quy Nhơn: bánh xèo tôm nhảy giòn rụm, ăn kèm rau sống và nước chấm chua ngọt.",
-                        placeRating: 4.8,
-                        placeReviews: 1200,
-                        orderInDay: 1,
-                    },
-                    {
-                        id: "1-2",
-                        category: "Tham quan",
-                        placeName: "Tháp Đôi",
-                        placeAddress: "110A Trần Hưng Đạo, Quy Nhơn",
-                        placeImage:
-                            "https://images.unsplash.com/photo-1532375810709-75b1da00537c?q=80&w=1200&auto=format&fit=crop",
-                        startTime: "09:00",
-                        endTime: "10:30",
-                        estimatedCost: 40000,
-                        lat: 13.7767,
-                        lng: 109.2236,
-                        description:
-                            "Cụm tháp Chăm Pa ngay trung tâm thành phố; điểm check-in kiến trúc & lịch sử thú vị.",
-                        placeRating: 4.6,
-                        placeReviews: 3200,
-                        orderInDay: 2,
-                    },
-                ],
-            },
-            { dayNumber: 2, date: "2025-04-19", title: "Kỳ Co – Eo Gió • Biển & gió", items: [] },
-            { dayNumber: 3, date: "2025-04-20", title: "Ghềnh Ráng – Cafe biển & hải sản", items: [] },
-        ],
-    }), []);
-
-    const itinerary = propItinerary || demo;
+    const itinerary = propItinerary;
 
     /* -------- Derived -------- */
     const days = itinerary?.days || [];
@@ -258,7 +183,13 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
                 </div>
 
                 {/* ====== Gallery ====== */}
-                <Gallery photos={itinerary?.heroPhotos} />
+                <Gallery
+                    photos={
+                        itinerary?.heroImages ||
+                        (itinerary?.coverImage ? [itinerary.coverImage] : [])
+                    }
+                />
+
             </div>
 
             {/* ====== Tabs ====== */}
@@ -287,7 +218,10 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
                     <section id="overview" className="scroll-mt-20">
                         <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-3">Tổng quan</h2>
                         <div className="rounded-2xl border bg-white p-5">
-                            <p className="text-slate-700 leading-relaxed">{demo?.overview}</p>
+                            <p className="text-slate-700 leading-relaxed">
+                                {itinerary?.intro || "Chưa có mô tả cho lịch trình này."}
+                            </p>
+
                             <div className="flex flex-wrap gap-2 mt-4">
                                 <MetaPill icon={Calendar}>{metaDates || "Linh hoạt"}</MetaPill>
                                 <MetaPill icon={Clock}>{metaDays} ngày</MetaPill>
@@ -297,7 +231,7 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
                     </section>
 
                     {/* Notes */}
-                    <section className="scroll-mt-20">
+                    {/* <section className="scroll-mt-20">
                         <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-3">
                             Ghi chú quan trọng trước chuyến đi
                         </h2>
@@ -308,7 +242,7 @@ export default function ItineraryLanding({ itinerary: propItinerary, sourceId })
                                 ))}
                             </ul>
                         </div>
-                    </section>
+                    </section> */}
 
                     {/* Map */}
                     <section id="map" className="scroll-mt-20">

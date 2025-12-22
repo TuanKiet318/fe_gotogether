@@ -176,6 +176,43 @@ export const createItinerary = async (tripData) => {
   }
 };
 
+/** 
+ * Lấy chi tiết itinerary featured
+ */
+export const getFeaturedItineraryDetail = async (id) => {
+  try {
+    console.log("Get featured itinerary detail, id:", id);
+    return await instance.get(`/itineraries/featured/${id}`);
+  } catch (error) {
+    console.error(
+      "Error in getFeaturedItineraryDetail:",
+      error.response?.data || error
+    );
+    throw error;
+  }
+};
+/**
+ * Lấy danh sách itinerary featured theo destination
+ */
+export const getFeaturedItinerariesByDestination = async (destinationId) => {
+  try {
+    console.log(
+      "Get featured itineraries by destination:",
+      destinationId
+    );
+    return await instance.get(
+      `/itineraries/by-destination/${destinationId}/featured`
+    );
+  } catch (error) {
+    console.error(
+      "Error in getFeaturedItinerariesByDestination:",
+      error.response?.data || error
+    );
+    throw error;
+  }
+};
+
+
 export const getAllItineraries = getItineraries; // ====== CREATE: thêm 1 địa điểm (item) vào lịch trình ====== @PostMapping @ResponseStatus(HttpStatus.CREATED) public ItineraryItemDto createItem(@PathVariable String itineraryId, @Valid @RequestBody CreateItemRequest req) { String userId = currentUserId(); return itineraryService.createItem(userId, itineraryId, req); }
 
 /**

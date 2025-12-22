@@ -31,22 +31,24 @@ import {
 import { ArrowLeft } from "lucide-react";
 import FoodCard from "../components/FoodCard.jsx";
 import { AnimatePresence, motion } from "framer-motion";
+import { getFeaturedItinerariesByDestination } from "../service/tripService.js";
 
-const MOCK_FEATURED_ITINERARIES = [
-  {
-    id: "2466a75e-f6b1-4e28-b986-ae9cd40d07eb",
-    title: "Quy Nhơn 3 ngày 2 đêm",
-    startDate: "2025-10-09",
-    endDate: "2025-10-11",
-    totalItems: 1,
-    destinationId: "dest-quynhon",
-    destinationName: "Quy Nhơn",
-    // có thể thêm coverImage / bannerImage nếu muốn
-    // coverImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
-    shortDescription:
-      "Lịch trình mẫu 3 ngày 2 đêm: bãi biển, ẩm thực và các điểm check-in nổi bật.",
-  },
-];
+
+// const MOCK_FEATURED_ITINERARIES = [
+//   {
+//     id: "2466a75e-f6b1-4e28-b986-ae9cd40d07eb",
+//     title: "Quy Nhơn 3 ngày 2 đêm",
+//     startDate: "2025-10-09",
+//     endDate: "2025-10-11",
+//     totalItems: 1,
+//     destinationId: "dest-quynhon",
+//     destinationName: "Quy Nhơn",
+//     // có thể thêm coverImage / bannerImage nếu muốn
+//     // coverImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
+//     shortDescription:
+//       "Lịch trình mẫu 3 ngày 2 đêm: bãi biển, ẩm thực và các điểm check-in nổi bật.",
+//   },
+// ];
 
 // helper tính số ngày (nếu backend không trả)
 const calcDays = (start, end) => {
@@ -111,20 +113,37 @@ export default function DestinationDetail() {
   useEffect(() => {
     if (activeMainTab !== "lich-trinh") return;
 
-    // giả delay nhỏ nếu muốn animation "đang tải"
+    let isMounted = true;
     setLoadingItineraries(true);
-    const t = setTimeout(() => {
-      // map thêm totalDays nếu chưa có
-      const data = MOCK_FEATURED_ITINERARIES.map((x) => ({
-        ...x,
-        totalDays: x.totalDays ?? calcDays(x.startDate, x.endDate),
-      }));
-      setItineraries(data);
-      setLoadingItineraries(false);
-    }, 250);
 
-    return () => clearTimeout(t);
-  }, [activeMainTab]);
+    getFeaturedItinerariesByDestination(id)
+      .then((res) => {
+        if (!isMounted) return;
+
+        const data = (res || []).map((x) => ({
+          ...x,
+          totalDays:
+            x.totalDays ??
+            (x.startDate && x.endDate
+              ? calcDays(x.startDate, x.endDate)
+              : null),
+        }));
+
+        setItineraries(data);
+      })
+      .catch((err) => {
+        console.error("Load featured itineraries failed:", err);
+        if (isMounted) setItineraries([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingItineraries(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeMainTab, id]);
+
 
   // Sync selectedCategory khi URL thay đổi
   useEffect(() => {
@@ -331,11 +350,10 @@ export default function DestinationDetail() {
                   key={tab.id}
                   onClick={() => handleMainTabSelect(tab.id)}
                   className={`relative px-4 py-2 text-lg font-semibold transition-all duration-500
-            ${
-              isActive
-                ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
-                : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
-            }`}
+            ${isActive
+                      ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
+                      : "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500"
+                    }`}
                 >
                   {tab.label}
                   {/* underline glow */}
@@ -453,21 +471,19 @@ export default function DestinationDetail() {
                     <button
                       onClick={() => handleCategorySelect("")}
                       className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                    ${
-                      !selectedCategory
-                        ? "text-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-blue-500"
-                    }
+                    ${!selectedCategory
+                          ? "text-blue-600 font-semibold"
+                          : "text-gray-600 hover:text-blue-500"
+                        }
                   `}
                     >
                       Nổi bật
                       <span
                         className={`absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500
-                      ${
-                        !selectedCategory
-                          ? "w-full opacity-100"
-                          : "w-0 opacity-0"
-                      }
+                      ${!selectedCategory
+                            ? "w-full opacity-100"
+                            : "w-0 opacity-0"
+                          }
                     `}
                       />
                     </button>
@@ -481,11 +497,10 @@ export default function DestinationDetail() {
                           key={cat.id}
                           onClick={() => handleCategorySelect(cat.id)}
                           className={`relative whitespace-nowrap pb-3 text-lg font-medium transition-all duration-300 hover:scale-105 cursor-pointer
-                        ${
-                          isActive
-                            ? "text-blue-600 font-semibold"
-                            : "text-gray-600 hover:text-blue-500"
-                        }
+                        ${isActive
+                              ? "text-blue-600 font-semibold"
+                              : "text-gray-600 hover:text-blue-500"
+                            }
                       `}
                         >
                           {cat.name}
@@ -502,15 +517,13 @@ export default function DestinationDetail() {
 
                 {/* Places Content */}
                 <div
-                  className={`grid gap-8 transition-all duration-500 ease-in-out ${
-                    isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
-                  }`}
+                  className={`grid gap-8 transition-all duration-500 ease-in-out ${isMapVisible ? "grid-cols-1 lg:grid-cols-5" : "grid-cols-1"
+                    }`}
                 >
                   {/* Left: Places List */}
                   <div
-                    className={`space-y-10 ${
-                      isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
-                    }`}
+                    className={`space-y-10 ${isMapVisible ? "lg:col-span-3" : "max-w-5xl mx-auto"
+                      }`}
                   >
                     <AnimatePresence mode="wait">
                       {/* Khi có category được chọn */}
@@ -790,7 +803,7 @@ export default function DestinationDetail() {
                               </span>
                             ) : null}
                             {itinerary.destinationName ||
-                            itinerary.destination?.name ? (
+                              itinerary.destination?.name ? (
                               <span className="px-2 py-1 rounded-full bg-gray-50 border">
                                 {itinerary.destinationName ||
                                   itinerary.destination?.name}
