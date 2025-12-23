@@ -24,6 +24,7 @@ import TourDetailPage from "./page/TourDetailPage.jsx";
 import TravelBlog from "./page/BlogPage.jsx";
 import VietnamTravelExplore from "./page/VietnamTravelExplore.jsx";
 import { NotificationProvider } from "./context/NotificationContext";
+import TravelProfilePage from "./page/TravelProfilePage.jsx";
 
 const App = () => {
   return (
@@ -83,7 +84,7 @@ const App = () => {
               path="/me"
               element={
                 <PrivateRoute>
-                  <MyItinerariesPage />
+                  <TravelProfilePage />
                 </PrivateRoute>
               }
             />

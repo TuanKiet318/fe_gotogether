@@ -9,6 +9,18 @@
 
 @config "../tailwind.config.js";
 
+/* CSS Variables - THÊM VÀO ĐÂY */
+:root {
+  --header-height: 3.5rem; /* 56px - Desktop */
+  --header-height-mobile: 3.5rem; /* Mobile */
+}
+
+@media (max-width: 768px) {
+  :root {
+    --header-height: var(--header-height-mobile);
+  }
+}
+
 /* Google Font (tuỳ chọn) */
 
 /* Base layer */
@@ -46,6 +58,11 @@
   .input-field {
     @apply w-full px-4 py-3 border border-slate-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-300 transition-all duration-200;
   }
+
+  /* Header Spacer - THÊM VÀO ĐÂY */
+  .header-spacer {
+    height: var(--header-height);
+  }
 }
 
 /* Background helpers */
@@ -69,6 +86,7 @@
          bg-white text-gray-800;
 }
 
+/* Animations */
 @keyframes slide-left {
   from {
     transform: translateX(100%);
@@ -82,4 +100,70 @@
 
 .animate-slide-left {
   animation: slide-left 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Transition cho các element */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

@@ -1,3 +1,4 @@
+// src/components/SearchBox.jsx
 import { useState, useEffect, useRef } from "react";
 import { Search, MapPin } from "lucide-react";
 import { autocompleteSearch } from "../lib/places.js";
@@ -5,10 +6,11 @@ import { useNavigate } from "react-router-dom";
 import useSearchStore from "../store/searchStore.js";
 
 export default function SearchBox({
-  onSelect, // callback khi chọn
-  navigateOnSelect = true, // bật/tắt navigate (default: true)
+  onSelect,
+  navigateOnSelect = true,
   placeholder = "Bạn muốn đi đâu?",
   className = "",
+  variant = "default",
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -63,16 +65,13 @@ export default function SearchBox({
       event.preventDefault();
 
       if (activeSuggestionIndex >= 0 && suggestions.length > 0) {
-        // Người dùng chọn bằng mũi tên
         selectSuggestion(suggestions[activeSuggestionIndex]);
       } else if (searchQuery.trim() !== "") {
         let matched = null;
 
-        // Nếu đã có suggestions sẵn → lấy cái đầu tiên
         if (suggestions.length > 0) {
           matched = suggestions[0];
         } else {
-          // Nếu chưa có → gọi lại API
           try {
             const results = await autocompleteSearch(searchQuery.trim());
             if (results.length > 0) {
@@ -84,9 +83,8 @@ export default function SearchBox({
         }
 
         if (matched) {
-          selectSuggestion(matched); // matched luôn có id hợp lệ
+          selectSuggestion(matched);
         } else {
-          // fallback: không có gì thì KHÔNG navigate
           console.warn("Không tìm thấy địa điểm phù hợp");
           setShowSuggestions(false);
         }
@@ -114,44 +112,69 @@ export default function SearchBox({
     setActiveSuggestionIndex(-1);
     setQuery(suggestion.name);
 
-    // callback ra ngoài
     if (onSelect) {
       onSelect(suggestion);
     }
 
-    // chỉ navigate khi được bật
     if (navigateOnSelect) {
       navigate(`/destination/${suggestion.id}`);
     }
   };
 
+  // Xác định màu sắc dựa trên variant
+  const getStyles = () => {
+    if (variant === "transparent") {
+      return {
+        container: "bg-white/20 backdrop-blur-sm border-white/30",
+        icon: "text-white/70",
+        input: "text-white placeholder-white/70",
+        placeholder: "placeholder-white/70",
+      };
+    }
+    return {
+      container: "bg-white border-slate-200",
+      icon: "text-slate-400",
+      input: "text-slate-700 placeholder-slate-400",
+      placeholder: "placeholder-slate-400",
+    };
+  };
+
+  const styles = getStyles();
+
   return (
     <div className={`w-full relative ${className}`} ref={searchRef}>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+      <div
+        className={`relative flex items-center rounded-full transition-all ${styles.container}`}
+      >
+        <Search
+          className={`absolute left-3 w-4 h-4 pointer-events-none ${styles.icon}`}
+        />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => handleSearchInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full border border-gray-300 rounded-full py-2 pl-10 pr-4
-           focus:outline-none focus:ring-2 focus:ring-sky-500
-           text-sm md:text-base"
+          className={`w-full pl-10 pr-4 py-2 bg-transparent outline-none text-sm rounded-full focus:ring-2 focus:ring-sky-500/50 ${styles.input}`}
         />
       </div>
 
       {/* Dropdown */}
       {showSuggestions && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto z-50 animate-fadeIn">
           {suggestions.length > 0 ? (
             suggestions.map((suggestion, index) => (
               <button
                 key={suggestion.id}
                 onClick={() => selectSuggestion(suggestion)}
-                className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl ${
-                  index === activeSuggestionIndex ? "bg-slate-50" : ""
-                }`}
+                className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-all duration-200 
+                  first:rounded-t-xl last:rounded-b-xl
+                  ${
+                    index === activeSuggestionIndex
+                      ? "bg-slate-50 scale-[0.995]"
+                      : ""
+                  }
+                  active:scale-[0.99]`}
               >
                 <div className="flex items-center gap-3">
                   <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
