@@ -2,7 +2,6 @@ import axios from "axios";
 import plainAxios from "./plainAxios"; // axios không có interceptor
 
 const API_BASE_URL = import.meta.env.VITE_API_URL; // Lấy từ biến môi trường hoặc mặc định
-// const API_BASE_URL = "https://conkin.vn/ebay-express/api/";
 const instance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,

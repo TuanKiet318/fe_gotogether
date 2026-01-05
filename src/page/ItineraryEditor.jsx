@@ -1,6 +1,5 @@
 // ...existing code...
-import React, { useState, useEffect, useRef } from "react";
-import CreateTourModal from "../components/CreateTourModal";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import { LeafletMap } from "../components/LeafletMap.jsx";
@@ -47,6 +46,7 @@ import {
   getMediaStats,
 } from "../service/itineraryApi";
 import blogApi from "../service/blogApi";
+import "../styles/timeline.css";
 
 /* ------------------- HELPER ------------------- */
 // ...existing helper functions...
@@ -130,7 +130,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const itineraryId = propItineraryId || params.id;
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [openWarningDay, setOpenWarningDay] = useState(null);
-  const [showCreateTourModal, setShowCreateTourModal] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [itinerary, setItinerary] = useState(null);
   const [warningsByDay, setWarningsByDay] = useState({});
@@ -168,6 +168,155 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [mediaCaption, setMediaCaption] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+
+  const calculateProgress = (dayIndex, itemIndex, totalDays, itemsInDay) => {
+    const dayProgress = dayIndex / Math.max(1, totalDays - 1);
+    const itemStepInDay = itemsInDay > 1 ? 1 / totalDays / itemsInDay : 0;
+    return dayProgress + itemIndex * itemStepInDay;
+  };
+
+  // State for current position
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
+  const [prevPosition, setPrevPosition] = useState({ x: 50, y: 250 });
+  const [currentPointIndex, setCurrentPointIndex] = useState(0);
+
+  const goToPreviousPoint = () => {
+    if (currentPointIndex > 0) {
+      const newIndex = currentPointIndex - 1;
+      setCurrentPointIndex(newIndex);
+      const point = allTimelineItems[newIndex];
+      if (point) {
+        moveCarToProgress(point.progress);
+        const label = document.getElementById("car-label");
+        if (label) label.textContent = point.placeName;
+      }
+    }
+  };
+
+  const goToNextPoint = () => {
+    if (currentPointIndex < allTimelineItems.length - 1) {
+      const newIndex = currentPointIndex + 1;
+      setCurrentPointIndex(newIndex);
+      const point = allTimelineItems[newIndex];
+      if (point) {
+        moveCarToProgress(point.progress);
+        const label = document.getElementById("car-label");
+        if (label) label.textContent = point.placeName;
+      }
+    }
+  };
+
+  // Function to move car along the path with rotation
+  const moveCarToProgress = (progress, onComplete) => {
+    const path = document.getElementById("curve-path");
+    const car = document.getElementById("timeline-car");
+    const scooterImg = document.getElementById("scooter-img");
+
+    if (!path || !car) return;
+
+    const totalLength = path.getTotalLength();
+    const point = path.getPointAtLength(
+      totalLength * Math.min(1, Math.max(0, progress))
+    );
+
+    // Xác định hướng trái / phải
+    const isMovingRight = point.x >= prevPosition.x;
+
+    car.style.transition =
+      "left 1000ms cubic-bezier(0.4, 0, 0.2, 1), top 1000ms cubic-bezier(0.4, 0, 0.2, 1)";
+    car.style.left = `${point.x}px`;
+    car.style.top = `${point.y}px`;
+
+    if (scooterImg) {
+      scooterImg.style.transition = "transform 300ms ease-out";
+      scooterImg.style.transform = isMovingRight ? "scaleX(1)" : "scaleX(-1)";
+    }
+
+    setPrevPosition({ x: point.x, y: point.y });
+
+    // Auto scroll
+    setTimeout(() => {
+      const container = document.getElementById("timeline-scroll-container");
+      if (container) {
+        const scrollLeft = point.x - container.clientWidth / 2;
+        container.scrollTo({
+          left: Math.max(0, scrollLeft),
+          behavior: "smooth",
+        });
+      }
+      if (onComplete) onComplete();
+    }, 100);
+  };
+
+  // Calculate all items with their progress positions
+  const allTimelineItems = useMemo(() => {
+    if (!itinerary || !Array.isArray(itinerary.days)) return [];
+
+    const items = [];
+    let absoluteIndex = 0;
+
+    itinerary.days.forEach((day, dayIndex) => {
+      const dayColor = `hsl(${(dayIndex * 360) / itinerary.days.length
+        }, 70%, 60%)`;
+
+      day.items?.forEach((item, itemIndex) => {
+        const progress = calculateProgress(
+          dayIndex,
+          itemIndex,
+          itinerary.days.length,
+          day.items.length
+        );
+
+        items.push({
+          ...item,
+          dayNumber: day.dayNumber,
+          dayDate: day.date,
+          dayColor,
+          progress,
+          isDayStart: itemIndex === 0,
+          itemIndex,
+          dayIndex,
+          absoluteIndex: absoluteIndex++,
+        });
+      });
+    });
+
+    return items;
+  }, [itinerary]);
+
+  // Initialize positions on mount
+  useEffect(() => {
+    if (!allTimelineItems.length) return;
+
+    const timer = setTimeout(() => {
+      const path = document.getElementById("curve-path");
+      if (!path) return;
+
+      const totalLength = path.getTotalLength();
+
+      allTimelineItems.forEach((item) => {
+        const point = path.getPointAtLength(totalLength * item.progress);
+
+        const element = document.getElementById(`timeline-item-${item.id}`);
+        if (element) {
+          element.style.left = `${point.x}px`;
+          element.style.top = `${point.y + 40}px`;
+        }
+
+        if (item.isDayStart) {
+          const dayMarker = document.getElementById(
+            `day-marker-${item.dayNumber}`
+          );
+          if (dayMarker) {
+            dayMarker.style.left = `${point.x}px`;
+            dayMarker.style.top = `${point.y - 80}px`;
+          }
+        }
+      });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [allTimelineItems]);
 
   useEffect(() => {
     if (itineraryId && viewMode === "media") {
@@ -845,16 +994,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
       });
   };
 
-  const handlePublishClick = () => {
-    console.log("Publish clicked");
-    setShowCreateTourModal(true);
-  };
-
-  const handleCloseTourModal = () => {
-    setShowCreateTourModal(false);
-  };
-
-
   const grandTotal = itinerary.days.reduce(
     (sum, d) =>
       sum + d.items.reduce((s, i) => s + (Number(i.estimatedCost) || 0), 0),
@@ -1032,98 +1171,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     }
   };
 
-  // Helper functions
-  const getTransportIcon = (mode) => {
-    if (!mode) return "🚗";
-    const lowerMode = mode.toLowerCase();
-    if (lowerMode.includes("xe máy") || lowerMode.includes("moto")) return "🏍️";
-    if (lowerMode.includes("ô tô") || lowerMode.includes("car")) return "🚗";
-    if (lowerMode.includes("đi bộ") || lowerMode.includes("walk")) return "🚶";
-    if (lowerMode.includes("taxi")) return "🚕";
-    if (lowerMode.includes("bus")) return "🚌";
-    if (lowerMode.includes("bike") || lowerMode.includes("xe đạp")) return "🚲";
-    return "🚗";
-  };
-
-  const calculateDuration = (startTime, endTime) => {
-    if (!startTime || !endTime) return "2 giờ";
-    try {
-      const [startHour, startMin] = startTime.split(":").map(Number);
-      const [endHour, endMin] = endTime.split(":").map(Number);
-
-      const duration = endHour * 60 + endMin - (startHour * 60 + startMin);
-
-      if (duration < 60) return `${duration} phút`;
-      const hours = Math.floor(duration / 60);
-      const minutes = duration % 60;
-      return minutes > 0 ? `${hours}h${minutes}` : `${hours} giờ`;
-    } catch {
-      return "2 giờ";
-    }
-  };
-
-  const calculateTotalDistance = () => {
-    const totalPlaces = itinerary.days.reduce(
-      (sum, d) => sum + d.items.length,
-      0
-    );
-    return Math.round(totalPlaces * 2.5);
-  };
-
-  const calculateTotalHours = () => {
-    let total = 0;
-    itinerary.days.forEach((day) => {
-      day.items.forEach((item) => {
-        const duration = calculateDuration(item.startTime, item.endTime);
-        const hours = parseInt(duration) || 2;
-        total += hours;
-      });
-    });
-    return total;
-  };
-
-  const calculateDayDistance = (currentDay, nextDay) => {
-    if (!nextDay) return 0;
-    return Math.round((currentDay.items.length + nextDay.items.length) * 1.5);
-  };
-
-  const formatDistance = (item1, item2) => {
-    if (!item1 || !item2) return "2.5 km";
-    // Simulated distance
-    const distance = 2 + Math.random();
-    return `${distance.toFixed(1)} km`;
-  };
-  // Helper functions
-  const calculateDayHours = (day) => {
-    let totalHours = 0;
-    day.items.forEach((item) => {
-      const duration = calculateDuration(item.startTime, item.endTime);
-      const hours = parseInt(duration) || 2;
-      totalHours += hours;
-    });
-    return totalHours;
-  };
-
-  const getTransportationStats = () => {
-    const stats = {};
-
-    itinerary.days.forEach((day) => {
-      day.items.forEach((item) => {
-        const mode = item.transportMode || "Không xác định";
-        if (!stats[mode]) {
-          stats[mode] = { mode, count: 0, distance: 0, time: "0h" };
-        }
-        stats[mode].count++;
-        stats[mode].distance += 1.5; // Giả sử mỗi chặng 1.5km
-      });
-    });
-
-    // Chuyển thành mảng và tính thời gian
-    return Object.values(stats).map((stat) => ({
-      ...stat,
-      time: `${Math.round(stat.distance * 10)} phút`, // Giả sử 10 phút/km
-    }));
-  };
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
@@ -1171,8 +1218,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <h1
                   onClick={handleTitleEdit}
                   className={`text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${itinerary?.canEdit
-                    ? "cursor-pointer hover:opacity-70"
-                    : "cursor-default opacity-90"
+                      ? "cursor-pointer hover:opacity-70"
+                      : "cursor-default opacity-90"
                     } transition relative group`}
                   title={itinerary?.canEdit ? "Click để sửa tên" : "Chỉ xem"}
                 >
@@ -1198,8 +1245,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <button
                   onClick={handleDateClick}
                   className={`text-gray-600 font-medium underline decoration-dotted transition ${itinerary?.canEdit
-                    ? "hover:text-blue-600 cursor-pointer"
-                    : "text-gray-400 cursor-not-allowed"
+                      ? "hover:text-blue-600 cursor-pointer"
+                      : "text-gray-400 cursor-not-allowed"
                     }`}
                 >
                   {itinerary.startDate}{" "}
@@ -1213,14 +1260,13 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </div>
           </div>
           {/* Thanh chuyển mode*/}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white p-1 rounded-lg shadow-lg border border-gray-200">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
             <button
               onClick={() => setViewMode("editor")}
-              className={`p-2.5 rounded-md transition-all ${
-                viewMode === "editor"
+              className={`p-2.5 rounded-md transition-all ${viewMode === "editor"
                   ? "bg-blue-50 text-blue-600 shadow-sm"
                   : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-              }`}
+                }`}
               title="Chế độ chỉnh sửa"
             >
               <svg
@@ -1240,11 +1286,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </button>
             <button
               onClick={() => setViewMode("calendar")}
-              className={`p-2.5 rounded-md transition-all ${
-                viewMode === "calendar"
+              className={`p-2.5 rounded-md transition-all ${viewMode === "calendar"
                   ? "bg-blue-50 text-blue-600 shadow-sm"
                   : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-              }`}
+                }`}
               title="Lịch"
             >
               <svg
@@ -1266,11 +1311,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </button>
             <button
               onClick={() => setViewMode("overview")}
-              className={`p-2.5 rounded-md transition-all ${
-                viewMode === "overview"
+              className={`p-2.5 rounded-md transition-all ${viewMode === "overview"
                   ? "bg-blue-50 text-blue-600 shadow-sm"
                   : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-              }`}
+                }`}
               title="Tổng quan"
             >
               <svg
@@ -1291,11 +1335,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </button>
             <button
               onClick={() => setViewMode("media")}
-              className={`p-2.5 rounded-md transition-all ${
-                viewMode === "media"
+              className={`p-2.5 rounded-md transition-all ${viewMode === "media"
                   ? "bg-blue-50 text-blue-600 shadow-sm"
                   : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-              }`}
+                }`}
               title="Thư viện ảnh"
             >
               <svg
@@ -1324,14 +1367,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <Share2 size={16} />
                 <span>Chia sẻ</span>
               </button>
-
             )}
-            {/* <button
-              onClick={handlePublishClick}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200"
-            >
-              <span>Tạo Tour</span>
-            </button> */}
 
             <button
               onClick={() => navigate(-1)}
@@ -1357,10 +1393,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             {/* Days List - Editor Mode */}
             <div
               className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${mapSize === "full"
-                ? "w-1/4"
-                : mapSize === "half"
-                  ? "w-1/2"
-                  : "w-3/4"
+                  ? "w-1/4"
+                  : mapSize === "half"
+                    ? "w-1/2"
+                    : "w-3/4"
                 }`}
             >
               <div className="flex gap-4 min-w-max h-full">
@@ -1411,8 +1447,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               }}
                               disabled={!itinerary?.canEdit}
                               className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${itinerary?.canEdit
-                                ? "bg-blue-500 text-white hover:bg-blue-600"
-                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
                                 }`}
                             >
                               <Plus size={16} />
@@ -1585,8 +1621,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                                 className={`space-y-3 min-h-[100px] ${snapshot.isDraggingOver
-                                  ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
-                                  : ""
+                                    ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
+                                    : ""
                                   }`}
                               >
                                 {day.items.map((item, index) => (
@@ -1609,8 +1645,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                             setHoveredItemId(null)
                                           }
                                           className={`transition-transform ${snapshot.isDragging
-                                            ? "scale-[1.02] shadow-lg"
-                                            : ""
+                                              ? "scale-[1.02] shadow-lg"
+                                              : ""
                                             }`}
                                         >
                                           <DayItemCard
@@ -1683,10 +1719,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             {/* Map - Editor Mode */}
             <div
               className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
-                ? "w-3/4"
-                : mapSize === "half"
-                  ? "w-1/2"
-                  : "w-1/4"
+                  ? "w-3/4"
+                  : mapSize === "half"
+                    ? "w-1/2"
+                    : "w-1/4"
                 }`}
             >
               <div className="h-full relative">
@@ -1716,8 +1752,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
-                            ? "bg-blue-50 text-blue-600 font-medium"
-                            : ""
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
                             }`}
                         >
                           {mapSize === "default" && "✓ "}Default
@@ -1731,8 +1767,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
-                            ? "bg-blue-50 text-blue-600 font-medium"
-                            : ""
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
                             }`}
                         >
                           {mapSize === "half" && "✓ "}Half
@@ -1746,8 +1782,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
-                            ? "bg-blue-50 text-blue-600 font-medium"
-                            : ""
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
                             }`}
                         >
                           {mapSize === "full" && "✓ "}Full
@@ -1895,10 +1931,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             {/* Map - Editor Mode */}
             <div
               className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
-                ? "w-3/4"
-                : mapSize === "half"
-                  ? "w-1/2"
-                  : "w-1/4"
+                  ? "w-3/4"
+                  : mapSize === "half"
+                    ? "w-1/2"
+                    : "w-1/4"
                 }`}
             >
               <div className="h-full relative">
@@ -1928,8 +1964,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
-                            ? "bg-blue-50 text-blue-600 font-medium"
-                            : ""
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
                             }`}
                         >
                           {mapSize === "default" && "✓ "}Default
@@ -1943,8 +1979,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
-                            ? "bg-blue-50 text-blue-600 font-medium"
-                            : ""
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
                             }`}
                         >
                           {mapSize === "half" && "✓ "}Half
@@ -1958,8 +1994,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
-                            ? "bg-blue-50 text-blue-600 font-medium"
-                            : ""
+                              ? "bg-blue-50 text-blue-600 font-medium"
+                              : ""
                             }`}
                         >
                           {mapSize === "full" && "✓ "}Full
@@ -1987,10 +2023,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                      📸 Thư viện Ảnh
+                      📸 Thư viện Media
                     </h2>
                     <p className="text-gray-600">
-                      Tải và quản lý ảnh, video cho lịch trình của bạn
+                      Upload và quản lý ảnh, video cho lịch trình của bạn
                     </p>
                   </div>
                   <div className="flex gap-3">
@@ -1999,7 +2035,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
                     >
                       <Eye size={18} />
-                      Xem trước bài viết
+                      Xem bài Blog
                     </button>
                     <button
                       onClick={() => {
@@ -2010,12 +2046,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       }}
                       disabled={!itinerary?.canEdit}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${itinerary?.canEdit
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
                         }`}
                     >
                       <Plus size={18} />
-                      Tải ảnh lên
+                      Thêm ảnh / Video
                     </button>
                   </div>
                 </div>
@@ -2048,7 +2084,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   </div>
                   <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
                     <div className="text-sm text-emerald-600 font-medium mb-1">
-                      Ngày có ảnh/video
+                      Ngày có media
                     </div>
                     <div className="text-2xl font-bold text-emerald-700">
                       {new Set(mediaFiles.map((m) => m.dayNumber)).size}
@@ -2089,12 +2125,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           }}
                           disabled={!itinerary?.canEdit}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${itinerary?.canEdit
-                            ? "bg-gray-900 text-white hover:bg-gray-800"
-                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              ? "bg-gray-900 text-white hover:bg-gray-800"
+                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
                         >
                           <Plus size={16} />
-                          Thêm ảnh/video
+                          Thêm media
                         </button>
                       </div>
 
@@ -2184,78 +2220,470 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                     }}
                     disabled={!itinerary?.canEdit}
                     className={`px-6 py-3 rounded-lg font-medium transition-colors ${itinerary?.canEdit
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
                   >
-                    Tải ảnh/video đầu tiên
+                    Upload Media đầu tiên
                   </button>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-hidden flex gap-6 p-6 bg-gradient-to-br from-gray-50 via-white to-blue-50/20">
-            {/* Left side - Full Width Journey Path Timeline */}
+          <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-6 p-4 lg:p-6 bg-gray-50">
+            {/* Left side - Timeline (Main Content) */}
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-6xl mx-auto">
-                {/* Journey Path Timeline */}
-                <div className="relative min-h-screen py-8">
-                  {/* Background Path Line */}
-                  <div className="absolute left-8 right-8 top-0 bottom-0 hidden md:block">
-                    <svg className="w-full h-full" preserveAspectRatio="none">
-                      <path
-                        d="M 0,100 
-                 C 150,80 250,120 400,100
-                 S 600,80 800,100
-                 S 1000,120 1200,100"
-                        fill="none"
-                        stroke="url(#journeyGradient)"
-                        strokeWidth="4"
-                        strokeDasharray="15,10"
-                      />
-                      <defs>
-                        <linearGradient
-                          id="journeyGradient"
-                          x1="0%"
-                          y1="0%"
-                          x2="100%"
-                          y2="0%"
-                        >
-                          <stop offset="0%" stopColor="#3b82f6" />
-                          <stop offset="50%" stopColor="#8b5cf6" />
-                          <stop offset="100%" stopColor="#ec4899" />
-                        </linearGradient>
-                      </defs>
+              <div className="max-w-full">
+                {/* Timeline Container */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Hành trình của bạn
+                    </h2>
 
-                      {/* Animated travel car */}
-                      <circle
-                        r="8"
-                        fill="#ef4444"
-                        stroke="white"
-                        strokeWidth="3"
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const container = document.getElementById(
+                            "timeline-scroll-container"
+                          );
+                          if (container) {
+                            container.scrollBy({
+                              left: -300,
+                              behavior: "smooth",
+                            });
+                          }
+                        }}
+                        className="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        title="Cuộn trái"
                       >
-                        <animateMotion
-                          dur="20s"
-                          repeatCount="indefinite"
-                          path="M 0,100 
-                      C 150,80 250,120 400,100
-                      S 600,80 800,100
-                      S 1000,120 1200,100"
-                        />
-                        <animate
-                          attributeName="r"
-                          values="6;8;6"
-                          dur="1s"
-                          repeatCount="indefinite"
-                        />
-                      </circle>
-                    </svg>
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const container = document.getElementById(
+                            "timeline-scroll-container"
+                          );
+                          if (container) {
+                            container.scrollBy({
+                              left: 300,
+                              behavior: "smooth",
+                            });
+                          }
+                        }}
+                        className="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        title="Cuộn phải"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Journey Content */}
-                  <div className="relative z-10">
-                    {itinerary.days.map((day, dayIndex) => {
+                  {/* Scrollable Timeline */}
+                  <div
+                    id="timeline-scroll-container"
+                    className="overflow-x-auto overflow-y-hidden scrollbar-thin"
+                    style={{ height: "500px" }}
+                  >
+                    <div
+                      className="relative"
+                      style={{
+                        width: `${Math.max(
+                          1200,
+                          allTimelineItems.length * 250
+                        )}px`,
+                        height: "100%",
+                      }}
+                    >
+                      {/* SVG Path */}
+                      <svg
+                        width="100%"
+                        height="100%"
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ zIndex: 1 }}
+                      >
+                        <defs>
+                          <linearGradient
+                            id="curve-gradient"
+                            x1="0%"
+                            y1="0%"
+                            x2="100%"
+                            y2="0%"
+                          >
+                            <stop offset="0%" stopColor="#3b82f6" />
+                            <stop offset="50%" stopColor="#8b5cf6" />
+                            <stop offset="100%" stopColor="#ec4899" />
+                          </linearGradient>
+                          <marker
+                            id="arrowhead"
+                            markerWidth="10"
+                            markerHeight="7"
+                            refX="9"
+                            refY="3.5"
+                            orient="auto"
+                          >
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#ec4899" />
+                          </marker>
+                        </defs>
+
+                        {/* Main curved path */}
+                        <path
+                          id="curve-path"
+                          d={`M 50,250 ${Array.from(
+                            { length: Math.max(20, allTimelineItems.length) },
+                            (_, i) => {
+                              const totalPoints = Math.max(
+                                20,
+                                allTimelineItems.length
+                              );
+                              const x =
+                                50 +
+                                ((i + 1) *
+                                  (Math.max(
+                                    1200,
+                                    allTimelineItems.length * 250
+                                  ) -
+                                    100)) /
+                                totalPoints;
+                              const y =
+                                250 +
+                                Math.sin((i / totalPoints) * Math.PI * 2) * 100;
+                              return `L ${x},${y}`;
+                            }
+                          ).join(" ")}`}
+                          fill="none"
+                          stroke="url(#curve-gradient)"
+                          strokeWidth="3"
+                          strokeDasharray="8,4"
+                          markerEnd="url(#arrowhead)"
+                        />
+                      </svg>
+
+                      {/* Animated Car with Scooter Icon */}
+                      <div
+                        id="timeline-car"
+                        className="absolute z-30 transition-all duration-1000 ease-in-out"
+                        style={{
+                          transform: "translate(-50%, -50%)",
+                          left: "50px",
+                          top: "250px",
+                        }}
+                      >
+                        <div className="relative">
+                          {/* Remove border and background from container */}
+                          <div className="w-16 h-16 flex items-center justify-center">
+                            <img
+                              id="scooter-img"
+                              src="/icons/scooter.png"
+                              alt="scooter"
+                              className="w-16 h-16 object-contain transition-all duration-300"
+                              style={{
+                                filter:
+                                  "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))",
+                                // Remove any border styles
+                              }}
+                            />
+                          </div>
+                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg whitespace-nowrap">
+                            <span id="car-label">Bắt đầu</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Timeline Items (Places) positioned on the path */}
+                      {allTimelineItems.map((item, index) => {
+                        return (
+                          <React.Fragment key={item.id}>
+                            {/* Day Marker (only for first item of each day) */}
+                            {item.isDayStart && (
+                              <div
+                                id={`day-marker-${item.dayNumber}`}
+                                className="absolute z-20 cursor-pointer group"
+                                style={{
+                                  transform: "translate(-50%, -50%)",
+                                }}
+                                onClick={() => {
+                                  setCurrentDayIndex(item.dayIndex);
+                                  moveCarToProgress(item.progress);
+                                  const label =
+                                    document.getElementById("car-label");
+                                  if (label)
+                                    label.textContent = `Ngày ${item.dayNumber}`;
+                                }}
+                              >
+                                <div className="relative">
+                                  <div
+                                    className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-xl border-4 border-white transition-all duration-300 group-hover:scale-110"
+                                    style={{ background: item.dayColor }}
+                                  >
+                                    {item.dayNumber}
+                                  </div>
+
+                                  {/* Day tooltip */}
+                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <div className="bg-white rounded-lg shadow-xl p-3 border border-gray-200 whitespace-nowrap">
+                                      <div className="font-bold text-gray-900">
+                                        Ngày {item.dayNumber}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {item.dayDate}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Place Item - Circular Design */}
+                            <div
+                              id={`timeline-item-${item.id}`}
+                              className="absolute z-50 cursor-pointer group"
+                              style={{
+                                transform: "translate(-50%, 0)",
+                              }}
+                              onClick={() => {
+                                setCurrentPointIndex(item.absoluteIndex);
+                                moveCarToProgress(item.progress);
+                                const label =
+                                  document.getElementById("car-label");
+                                if (label) label.textContent = item.placeName;
+
+                                if (setSelectedPlaceForDetail) {
+                                  setSelectedPlaceForDetail({
+                                    id: item.placeId,
+                                    name: item.placeName,
+                                  });
+                                }
+                              }}
+                              onMouseEnter={() =>
+                                setHoveredItemId && setHoveredItemId(item.id)
+                              }
+                              onMouseLeave={() =>
+                                setHoveredItemId && setHoveredItemId(null)
+                              }
+                            >
+                              {/* Connector line */}
+                              <div
+                                className="absolute bottom-full left-1/2 w-0.5 h-8 -translate-x-1/2"
+                                style={{ background: item.dayColor }}
+                              />
+
+                              {/* Circular Place Marker */}
+                              <div className="relative">
+                                {/* Main circular marker with image */}
+                                <div
+                                  className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-xl transition-all duration-300 group-hover:scale-110"
+                                  style={{ borderColor: item.dayColor }}
+                                >
+                                  {/* Placeholder image or actual image */}
+                                  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                                    {item.placeImage ? (
+                                      <img
+                                        src={item.placeImage}
+                                        alt={item.placeName}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                                        <span className="text-white font-bold">
+                                          {item.itemIndex + 1}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Place name outside circle */}
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 whitespace-nowrap">
+                                  <span className="text-sm font-medium text-gray-900 truncate max-w-[160px] block">
+                                    {item.placeName}
+                                  </span>
+                                </div>
+
+                                {/* Hover Tooltip with detailed info */}
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-50">
+                                  <div className="bg-white rounded-xl shadow-2xl p-4 border border-gray-200">
+                                    <div className="flex items-start gap-3 mb-3">
+                                      {item.placeImage && (
+                                        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                                          <img
+                                            src={item.placeImage}
+                                            alt={item.placeName}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-bold text-gray-900 text-sm mb-1">
+                                          {item.placeName}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 truncate">
+                                          {item.placeAddress}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <svg
+                                          width="12"
+                                          height="12"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                        >
+                                          <circle cx="12" cy="12" r="10" />
+                                          <polyline points="12 6 12 12 16 14" />
+                                        </svg>
+                                        <span className="text-gray-700">
+                                          {item.startTime} - {item.endTime}
+                                        </span>
+                                      </div>
+
+                                      {item.estimatedCost > 0 && (
+                                        <div className="flex items-center gap-2 text-xs">
+                                          <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                          >
+                                            <line
+                                              x1="12"
+                                              y1="1"
+                                              x2="12"
+                                              y2="23"
+                                            />
+                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                          </svg>
+                                          <span className="font-medium text-emerald-600">
+                                            {formatVND(item.estimatedCost)}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {item.transportMode && (
+                                        <div className="flex items-center gap-2 text-xs">
+                                          <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                          >
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                          </svg>
+                                          <span className="text-blue-600">
+                                            {item.transportMode}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {item.description && (
+                                        <div className="text-xs text-gray-600 mt-2 pt-2 border-t border-gray-100">
+                                          {item.description}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Timeline Navigation Controls */}
+                  <div className="mt-6 bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium text-blue-600">Tip:</span>{" "}
+                        Click vào ngày hoặc địa điểm để di chuyển xe
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={goToPreviousPoint} // Sẽ tạo hàm mới
+                          disabled={currentPointIndex === 0}
+                          className={`px-5 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 shadow-md ${currentPointIndex === 0
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90"
+                            }`}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M15 18l-6-6 6-6" />
+                          </svg>
+                          Điểm trước
+                        </button>
+
+                        <div className="px-4 py-2 bg-white rounded-lg border-2 border-blue-500 font-bold text-blue-600">
+                          Điểm {currentPointIndex + 1}/{allTimelineItems.length}
+                        </div>
+
+                        <button
+                          onClick={goToNextPoint} // Sẽ tạo hàm mới
+                          disabled={
+                            currentPointIndex >= allTimelineItems.length - 1
+                          }
+                          className={`px-5 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 shadow-md ${currentPointIndex >= allTimelineItems.length - 1
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
+                            }`}
+                        >
+                          Điểm tiếp
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M9 18l6-6-6-6" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile View (Vertical Timeline) */}
+                <div className="lg:hidden mt-8">
+                  <div className="space-y-6">
+                    {itinerary.days.map((day) => {
                       const daySubtotal = day.items.reduce(
                         (s, i) => s + (Number(i.estimatedCost) || 0),
                         0
@@ -2264,320 +2692,100 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       return (
                         <div
                           key={day.dayNumber}
-                          id={`day-${dayIndex}`}
-                          className="mb-20"
+                          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
                         >
-                          {/* Day Header */}
-                          <div className="top-8 z-20 mb-12 bg-gradient-to-b from-white via-white/95 to-transparent">
-                            <div className="inline-flex items-center gap-6 bg-white/95 backdrop-blur-md rounded-2xl px-8 py-6 shadow-xl border border-gray-200 max-w-2xl mx-auto">
-                              <div className="relative">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                          <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 text-white">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold text-xl">
                                   {day.dayNumber}
                                 </div>
-                                <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-emerald-500 text-white text-sm flex items-center justify-center animate-pulse">
-                                  {day.items.length}
-                                </div>
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="text-2xl font-bold text-gray-900">
-                                  Ngày {day.dayNumber}
-                                </h3>
-                                <p className="text-gray-600">{day.date}</p>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <span className="text-sm text-gray-500">
-                                    {day.items.length} địa điểm
-                                  </span>
-                                  <span className="text-sm font-bold text-emerald-600">
-                                    {formatVND(daySubtotal)}
-                                  </span>
+                                <div>
+                                  <h3 className="font-bold text-lg">
+                                    Ngày {day.dayNumber}
+                                  </h3>
+                                  <p className="text-sm opacity-90">
+                                    {day.date}
+                                  </p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <button
-                                  onClick={() => {
-                                    const element = document.getElementById(
-                                      `day-content-${dayIndex}`
-                                    );
-                                    element?.classList.toggle("hidden");
-                                  }}
-                                  className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors"
-                                >
-                                  {day.items.length > 0
-                                    ? "Xem chi tiết"
-                                    : "Thêm địa điểm"}
-                                </button>
+                                <p className="text-sm opacity-90">Chi phí</p>
+                                <p className="font-bold">
+                                  {formatVND(daySubtotal)}
+                                </p>
                               </div>
                             </div>
                           </div>
 
-                          {/* Day's Journey Path */}
-                          {day.items.length > 0 && (
-                            <div
-                              id={`day-content-${dayIndex}`}
-                              className="relative ml-12 md:ml-24"
-                            >
-                              {/* Vertical connector line */}
-                              <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-blue-300 via-purple-300 to-pink-300 rounded-full">
-                                {/* Animated progress dots */}
-                                {[...Array(5)].map((_, i) => (
-                                  <div
-                                    key={i}
-                                    className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full border-3 border-blue-500 animate-pulse"
-                                    style={{
-                                      top: `${20 + i * 15}%`,
-                                      animationDelay: `${i * 0.2}s`,
-                                    }}
-                                  ></div>
-                                ))}
-                              </div>
+                          <div className="p-4">
+                            <div className="relative pl-8">
+                              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-purple-300"></div>
 
-                              {/* Places along the journey */}
-                              <div className="space-y-10 pl-10">
-                                {day.items.map((item, itemIndex) => (
+                              {day.items.map((item, index) => (
+                                <div
+                                  key={item.id}
+                                  className="relative mb-6 last:mb-0"
+                                >
+                                  <div className="absolute -left-8 top-2 w-8 h-8 rounded-full bg-white border-4 border-blue-500 flex items-center justify-center z-10">
+                                    <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                                  </div>
+
                                   <div
-                                    key={item.id}
-                                    className={`relative group ${
-                                      itemIndex % 2 === 0
-                                        ? "transform hover:-translate-x-3"
-                                        : "transform hover:translate-x-3"
-                                    } transition-all duration-500`}
-                                    style={{
-                                      marginLeft: `${Math.min(
-                                        itemIndex * 16,
-                                        64
-                                      )}px`,
-                                      animationDelay: `${itemIndex * 0.1}s`,
+                                    className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                                    onClick={() => {
+                                      if (setSelectedPlaceForDetail) {
+                                        setSelectedPlaceForDetail({
+                                          id: item.placeId,
+                                          name: item.placeName,
+                                        });
+                                      }
                                     }}
-                                    onMouseEnter={() =>
-                                      setHoveredItemId(item.id)
-                                    }
-                                    onClick={() =>
-                                      setSelectedPlaceForDetail({
-                                        id: item.placeId,
-                                        name: item.placeName,
-                                      })
-                                    }
                                   >
-                                    {/* Journey marker */}
-                                    <div className="absolute -left-10 top-1/2 transform -translate-y-1/2">
-                                      <div className="relative">
-                                        <div className="w-8 h-8 rounded-full bg-white border-4 border-blue-500 flex items-center justify-center shadow-xl">
-                                          <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-bold text-gray-900 truncate">
+                                          {item.placeName}
+                                        </h4>
+                                        <p className="text-sm text-gray-500 mt-1 truncate">
+                                          {item.placeAddress}
+                                        </p>
+                                      </div>
+                                      <div className="text-right ml-2 flex-shrink-0">
+                                        <div className="text-sm font-medium text-blue-600 whitespace-nowrap">
+                                          {item.startTime} - {item.endTime}
                                         </div>
-                                        <div className="absolute inset-0 rounded-full border-2 border-blue-300 animate-ping"></div>
+                                        {item.estimatedCost > 0 && (
+                                          <div className="text-sm font-bold text-emerald-600 mt-1">
+                                            {formatVND(item.estimatedCost)}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
 
-                                    {/* Time badge */}
-                                    <div
-                                      className={`absolute ${
-                                        itemIndex % 2 === 0
-                                          ? "-top-2 -right-2"
-                                          : "-top-2 -left-2"
-                                      } z-10`}
-                                    >
-                                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-lg shadow-lg">
-                                        <div className="text-sm font-bold">
-                                          {item.startTime}
-                                        </div>
-                                        <div className="text-xs opacity-90">
-                                          → {item.endTime}
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Place Card */}
-                                    <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden hover:shadow-3xl transition-all duration-500 group-hover:scale-[1.03]">
-                                      {/* Card Content */}
-                                      <div className="p-6">
-                                        <div className="flex items-start gap-6">
-                                          {/* Image */}
-                                          <div className="flex-shrink-0 w-32 h-32 rounded-xl overflow-hidden border-2 border-gray-100">
-                                            <img
-                                              src={item.placeImage}
-                                              alt={item.placeName}
-                                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                                          </div>
-
-                                          {/* Info */}
-                                          <div className="flex-1">
-                                            <div className="flex items-start justify-between mb-4">
-                                              <div>
-                                                <h4 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                                                  {item.placeName}
-                                                </h4>
-                                                <p className="text-gray-600 text-sm flex items-center gap-2 mb-3">
-                                                  <span className="text-blue-500">
-                                                    📍
-                                                  </span>
-                                                  <span className="line-clamp-1">
-                                                    {item.placeAddress}
-                                                  </span>
-                                                </p>
-                                              </div>
-                                              {item.estimatedCost > 0 && (
-                                                <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-xl font-bold shadow-lg">
-                                                  {formatVND(
-                                                    item.estimatedCost
-                                                  )}
-                                                </div>
-                                              )}
-                                            </div>
-
-                                            {/* Quick info badges */}
-                                            <div className="flex flex-wrap gap-3 mb-4">
-                                              {item.transportMode && (
-                                                <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                                                  {getTransportIcon(
-                                                    item.transportMode
-                                                  )}{" "}
-                                                  {item.transportMode}
-                                                </span>
-                                              )}
-                                              <span className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                                                ⏱️{" "}
-                                                {calculateDuration(
-                                                  item.startTime,
-                                                  item.endTime
-                                                )}
-                                              </span>
-                                              <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
-                                                ⭐ 4.5
-                                              </span>
-                                            </div>
-
-                                            {/* Description */}
-                                            {item.description && (
-                                              <p className="text-gray-600 text-sm line-clamp-2 mb-6">
-                                                {item.description}
-                                              </p>
-                                            )}
-
-                                            {/* Action buttons */}
-                                            <div className="flex gap-3">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setSelectedPlaceForDetail({
-                                                    id: item.placeId,
-                                                    name: item.placeName,
-                                                  });
-                                                }}
-                                                className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold hover:shadow-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-3"
-                                              >
-                                                <svg
-                                                  xmlns="http://www.w3.org/2000/svg"
-                                                  width="18"
-                                                  height="18"
-                                                  viewBox="0 0 24 24"
-                                                  fill="none"
-                                                  stroke="currentColor"
-                                                  strokeWidth="2"
-                                                  strokeLinecap="round"
-                                                  strokeLinejoin="round"
-                                                >
-                                                  <circle
-                                                    cx="11"
-                                                    cy="11"
-                                                    r="8"
-                                                  />
-                                                  <path d="m21 21-4.3-4.3" />
-                                                </svg>
-                                                Xem chi tiết
-                                              </button>
-                                              <button
-                                                className="px-6 py-3 border-2 border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 text-gray-700 font-medium transition-all duration-300"
-                                                onClick={(e) =>
-                                                  e.stopPropagation()
-                                                }
-                                              >
-                                                Đánh dấu
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* Hover gradient overlay */}
-                                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                                    </div>
-
-                                    {/* Transportation to next location */}
-                                    {itemIndex < day.items.length - 1 && (
-                                      <div className="relative h-12 flex items-center justify-center">
-                                        <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-gray-300 via-gray-400 to-gray-300 rounded-full"></div>
-                                        <div className="absolute left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-lg flex items-center gap-3">
-                                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center animate-bounce">
-                                            {getTransportIcon(
-                                              item.transportMode
-                                            )}
-                                          </div>
-                                          <div className="text-sm">
-                                            <div className="font-medium text-gray-900">
-                                              5 phút di chuyển
-                                            </div>
-                                            <div className="text-gray-500 text-xs">
-                                              Khoảng 1.5 km
-                                            </div>
-                                          </div>
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="16"
-                                            height="16"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            className="text-blue-500"
-                                          >
-                                            <path d="m6 9 6 6 6-6" />
-                                          </svg>
-                                        </div>
+                                    {item.transportMode && (
+                                      <div className="flex items-center gap-2 mt-3">
+                                        <svg
+                                          width="14"
+                                          height="14"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                        >
+                                          <path d="M5 12h14" />
+                                          <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span className="text-sm text-gray-600 truncate">
+                                          {item.transportMode}
+                                        </span>
                                       </div>
                                     )}
                                   </div>
-                                ))}
-                              </div>
+                                </div>
+                              ))}
                             </div>
-                          )}
-
-                          {/* Empty state for day */}
-                          {day.items.length === 0 && (
-                            <div className="text-center py-16 bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl border-2 border-dashed border-gray-300 mx-6">
-                              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center mx-auto mb-6 shadow-lg">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="40"
-                                  height="40"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="text-gray-400"
-                                >
-                                  <circle cx="12" cy="12" r="10" />
-                                  <line x1="12" y1="8" x2="12" y2="12" />
-                                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                                </svg>
-                              </div>
-                              <h4 className="text-xl font-bold text-gray-700 mb-2">
-                                Chưa có địa điểm nào
-                              </h4>
-                              <p className="text-gray-500 mb-6">
-                                Thêm địa điểm để bắt đầu hành trình ngày{" "}
-                                {day.dayNumber}
-                              </p>
-                              <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:shadow-lg transition-shadow">
-                                + Thêm địa điểm đầu tiên
-                              </button>
-                            </div>
-                          )}
+                          </div>
                         </div>
                       );
                     })}
@@ -2586,455 +2794,108 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               </div>
             </div>
 
-            {/* Right side - Combined Journey Summary */}
-            <div className="w-[450px] flex-shrink-0">
-              <div className="sticky top-6 h-[calc(100vh-48px)]">
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden h-full flex flex-col">
-                  {/* Combined Header */}
-                  <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-white to-purple-50">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-white"
-                        >
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
+            {/* Right side - Sidebar (Stats + Map) */}
+            <div className="lg:w-[400px] xl:w-[450px] flex-shrink-0">
+              <div className="sticky top-6 space-y-6">
+                {/* Overview Stats Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Tổng quan lịch trình
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                      <div className="text-sm text-blue-600 font-medium mb-1">
+                        Tổng số ngày
                       </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                          Tổng Quan Hành Trình
-                        </h3>
-                        <p className="text-gray-600 text-sm">
-                          Thống kê chi tiết về chuyến đi của bạn
-                        </p>
+                      <div className="text-2xl font-bold text-blue-700">
+                        {itinerary.days.length}
                       </div>
                     </div>
 
-                    {/* Journey Stats */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="text-blue-600"
-                            >
-                              <rect
-                                x="3"
-                                y="4"
-                                width="18"
-                                height="18"
-                                rx="2"
-                                ry="2"
-                              ></rect>
-                              <line x1="16" y1="2" x2="16" y2="6"></line>
-                              <line x1="8" y1="2" x2="8" y2="6"></line>
-                              <line x1="3" y1="10" x2="21" y2="10"></line>
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="text-sm text-blue-600">
-                              Tổng số ngày
-                            </div>
-                            <div className="text-xl font-bold text-gray-900">
-                              {itinerary.days.length}
-                            </div>
-                          </div>
-                        </div>
+                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                      <div className="text-sm text-purple-600 font-medium mb-1">
+                        Tổng địa điểm
                       </div>
-
-                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="text-purple-600"
-                            >
-                              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                              <circle cx="12" cy="10" r="3" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="text-sm text-purple-600">
-                              Tổng địa điểm
-                            </div>
-                            <div className="text-xl font-bold text-gray-900">
-                              {itinerary.days.reduce(
-                                (sum, d) => sum + d.items.length,
-                                0
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                      <div className="text-2xl font-bold text-purple-700">
+                        {itinerary.days.reduce(
+                          (sum, d) => sum + d.items.length,
+                          0
+                        )}
                       </div>
+                    </div>
 
-                      <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="text-emerald-600"
-                            >
-                              <line x1="12" y1="1" x2="12" y2="23" />
-                              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="text-sm text-emerald-600">
-                              Tổng chi phí
-                            </div>
-                            <div className="text-xl font-bold text-emerald-700">
-                              {formatVND(grandTotal)}
-                            </div>
-                          </div>
-                        </div>
+                    <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                      <div className="text-sm text-emerald-600 font-medium mb-1">
+                        Tổng chi phí
                       </div>
-
-                      <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="text-amber-600"
-                            >
-                              <path d="M5 12h14" />
-                              <path d="m12 5 7 7-7 7" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="text-sm text-amber-600">
-                              Tổng quãng đường
-                            </div>
-                            <div className="text-xl font-bold text-gray-900">
-                              {calculateTotalDistance()} km
-                            </div>
-                          </div>
-                        </div>
+                      <div className="text-xl font-bold text-emerald-700">
+                        {formatVND(grandTotal)}
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Scrollable content */}
-                  <div className="flex-1 overflow-y-auto">
-                    {/* Daily Breakdown */}
-                    <div className="p-6">
-                      <h4 className="text-lg font-bold text-gray-900 mb-4">
-                        Chi tiết theo ngày
-                      </h4>
-                      <div className="space-y-4">
-                        {itinerary.days.map((day, idx) => {
-                          const daySubtotal = day.items.reduce(
-                            (s, i) => s + (Number(i.estimatedCost) || 0),
-                            0
-                          );
-                          const dayDistance = calculateDayDistance(
-                            day,
-                            itinerary.days[idx + 1]
-                          );
+                {/* Map Card */}
+                <div
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+                  style={{ height: "calc(100vh - 450px)", minHeight: "400px" }}
+                >
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      Bản đồ tổng quan
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Xem vị trí tất cả các địa điểm
+                    </p>
+                  </div>
 
-                          return (
-                            <div
-                              key={day.dayNumber}
-                              className="group relative bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 cursor-pointer"
-                              onClick={() => {
-                                const element = document.getElementById(
-                                  `day-${idx}`
-                                );
-                                if (element) {
-                                  element.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "center",
-                                  });
-                                }
-                              }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="relative">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
-                                      {day.dayNumber}
-                                    </div>
-                                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center">
-                                      {day.items.length}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-gray-900">
-                                      Ngày {day.dayNumber}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      {day.date}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="font-bold text-emerald-600">
-                                    {formatVND(daySubtotal)}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {dayDistance} km
-                                  </div>
-                                </div>
-                              </div>
+                  <div
+                    className="h-full relative"
+                    style={{ height: "calc(100% - 120px)" }}
+                  >
+                    <LeafletMap
+                      places={getRouteItems()}
+                      image={itinerary.destinationImage}
+                      hoveredPlaceId={hoveredItemId}
+                      provider="google-roadmap"
+                    />
+                  </div>
 
-                              {/* Progress bar */}
-                              <div className="mt-3">
-                                <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-1000"
-                                    style={{
-                                      width: `${Math.min(
-                                        (day.items.length / 8) * 100,
-                                        100
-                                      )}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                  <span>{day.items.length} địa điểm</span>
-                                  <span>{calculateDayHours(day)} giờ</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                  <div className="p-4 border-t border-gray-200 bg-gray-50">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                        <span className="text-xs text-gray-600">Điểm đến</span>
                       </div>
-                    </div>
-
-                    {/* Cost Distribution */}
-                    <div className="px-6 pb-6">
-                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-200">
-                        <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                          <span>💰</span>
-                          Phân bổ chi phí
-                        </h4>
-                        <div className="space-y-3">
-                          {itinerary.days.map((day, idx) => {
-                            const subtotal = day.items.reduce(
-                              (s, i) => s + (Number(i.estimatedCost) || 0),
-                              0
-                            );
-                            const percentage =
-                              grandTotal > 0
-                                ? (subtotal / grandTotal) * 100
-                                : 0;
-
-                            return (
-                              <div key={idx}>
-                                <div className="flex justify-between text-sm mb-1">
-                                  <span className="text-gray-700">
-                                    Ngày {day.dayNumber}
-                                  </span>
-                                  <span className="font-medium">
-                                    {formatVND(subtotal)}
-                                  </span>
-                                </div>
-                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-1000"
-                                    style={{ width: `${percentage}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                        <span className="text-xs text-gray-600">
+                          Tuyến đường
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Transportation Summary */}
-                    <div className="px-6 pb-6">
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
-                        <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                          Phương tiện di chuyển
-                        </h4>
-                        <div className="space-y-3">
-                          {getTransportationStats().map((stat, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center justify-between"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-                                  {getTransportIcon(stat.mode)}
-                                </div>
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {stat.mode}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {stat.count} lần
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {stat.distance} km
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {stat.time}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                        <span className="text-xs text-gray-600">
+                          Điểm bắt đầu
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Export & Actions */}
-                    <div className="p-6 border-t border-gray-200">
-                      <h4 className="text-sm font-bold text-gray-900 mb-4">
-                        Tác vụ nhanh
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all group">
-                          <div className="flex flex-col items-center">
-                            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-3 group-hover:bg-blue-50">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="text-blue-600"
-                              >
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <line x1="16" y1="13" x2="8" y2="13" />
-                                <line x1="16" y1="17" x2="8" y2="17" />
-                                <line x1="10" y1="9" x2="8" y2="9" />
-                              </svg>
-                            </div>
-                            <span className="text-sm font-medium text-blue-700">
-                              Xuất PDF
-                            </span>
-                          </div>
-                        </button>
-
-                        <button className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl hover:border-purple-500 hover:shadow-md transition-all group">
-                          <div className="flex flex-col items-center">
-                            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-3 group-hover:bg-purple-50">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="text-purple-600"
-                              >
-                                <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
-                                <path d="M18 14h-8" />
-                                <path d="M15 18h-5" />
-                                <path d="M10 6h8v4h-8V6Z" />
-                              </svg>
-                            </div>
-                            <span className="text-sm font-medium text-purple-700">
-                              Google Maps
-                            </span>
-                          </div>
-                        </button>
-
-                        <button className="p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl hover:border-emerald-500 hover:shadow-md transition-all group">
-                          <div className="flex flex-col items-center">
-                            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-3 group-hover:bg-emerald-50">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="text-emerald-600"
-                              >
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="7 10 12 15 17 10" />
-                                <line x1="12" y1="15" x2="12" y2="3" />
-                              </svg>
-                            </div>
-                            <span className="text-sm font-medium text-emerald-700">
-                              Chia sẻ
-                            </span>
-                          </div>
-                        </button>
-
-                        <button className="p-4 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-xl hover:border-amber-500 hover:shadow-md transition-all group">
-                          <div className="flex flex-col items-center">
-                            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-3 group-hover:bg-amber-50">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="text-amber-600"
-                              >
-                                <path d="M3 3h18v18H3z" />
-                                <path d="m9 9 6 6" />
-                                <path d="m15 9-6 6" />
-                              </svg>
-                            </div>
-                            <span className="text-sm font-medium text-amber-700">
-                              Huỷ hành trình
-                            </span>
-                          </div>
-                        </button>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span className="text-xs text-gray-600">
+                          Điểm kết thúc
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -3213,8 +3074,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   !selectedStartDate || !selectedEndDate || !itinerary?.canEdit
                 }
                 className={`px-6 py-2.5 rounded-lg font-medium transition ${selectedStartDate && selectedEndDate && itinerary?.canEdit
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
               >
                 Update
@@ -3222,10 +3083,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             </div>
           </div>
         </>
-      )}
-      {/* Create Tour Modal */}
-      {showCreateTourModal && (
-        <CreateTourModal onClose={() => setShowCreateTourModal(false)} />
       )}
 
       {/* Modal đề xuất địa điểm tiếp theo */}
@@ -3261,7 +3118,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
               <div className="flex justify-between items-center">
                 <h3 className="text-2xl font-bold text-gray-900">
-                  Tải ảnh/video
+                  Upload Media
                 </h3>
                 <button
                   onClick={() => {
@@ -3422,8 +3279,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       onClick={() => handleUploadMedia(selectedFile)}
                       disabled={!selectedDayForMedia}
                       className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${selectedDayForMedia
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
                         }`}
                     >
                       Upload
@@ -3664,7 +3521,6 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               </div>
             </div>
           </div>
-
         </>
       )}
     </div>

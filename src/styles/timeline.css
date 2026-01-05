@@ -1,0 +1,56 @@
+/* Thêm vào file CSS của bạn */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+#scooter-img {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+img {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* Add to your global CSS */
+.timeline-tooltip {
+  transform-origin: center bottom;
+}
+
+.timeline-tooltip-left {
+  transform: translateX(0);
+  left: 50%;
+}
+
+.timeline-tooltip-right {
+  transform: translateX(-100%);
+  left: 50%;
+}
+
+/* Ensure tooltip is always visible */
+.timeline-tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid white;
+}

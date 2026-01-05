@@ -1,12 +1,11 @@
 // src/layouts/MainLayout.jsx
-import React, { useState } from "react";
+import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { NotificationProvider } from "../context/NotificationContext";
 
 export default function MainLayout() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
 
   // 🔹 Cấu hình route cần ẩn Header
@@ -35,7 +34,7 @@ export default function MainLayout() {
         </NotificationProvider>
       )}
 
-      {/* Nội dung */}
+      {/* Nội dung chính - KHÔNG có padding-top */}
       <main className="flex-1">
         <Outlet />
       </main>

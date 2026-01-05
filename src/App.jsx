@@ -24,8 +24,13 @@ import TourDetailPage from "./page/TourDetailPage.jsx";
 import TravelBlog from "./page/BlogPage.jsx";
 import VietnamTravelExplore from "./page/VietnamTravelExplore.jsx";
 import LocalGuidePage from "./page/LocalGuidePage";
+import AdminTagPage from "./page/AdminTagPage.jsx";
+import AdminItineraryFeaturePage from "./page/AdminItineraryFeaturePage.jsx";
+
+import AdminLayout from "./layouts/AdminLayout.jsx";
 
 import { NotificationProvider } from "./context/NotificationContext";
+import TravelProfilePage from "./page/TravelProfilePage.jsx";
 
 const App = () => {
   return (
@@ -42,6 +47,11 @@ const App = () => {
             path="/dashboard"
             element={<div>Trang Bảng Điều Khiển Người Dùng</div>}
           />
+          {/* ADMIN */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="tags" element={<AdminTagPage />} />
+            <Route path="itineraries" element={<AdminItineraryFeaturePage />} />
+          </Route>
 
           {/* Routes dùng layout */}
           <Route element={<MainLayout />}>
@@ -79,6 +89,7 @@ const App = () => {
               }
             />
 
+
             {/* Route MyProfile */}
             <Route
               path="/profile"
@@ -93,7 +104,7 @@ const App = () => {
               path="/me"
               element={
                 <PrivateRoute>
-                  <MyItinerariesPage />
+                  <TravelProfilePage />
                 </PrivateRoute>
               }
             />

@@ -10,6 +10,11 @@ const GetAllDestinations = async () => {
   return await axios.get(API);
 };
 
+const GetFeatured = async () => {
+  const API = "/destinations/featured";
+  return await axios.get(API);
+};
+
 const searchDestinations = async (keyword, limit = 10) => {
   if (!keyword || keyword.length < 2) return [];
   try {
@@ -145,7 +150,6 @@ const GetItineraryDetail = async (itineraryId) => {
   return await axios.get(API);
 };
 
-
 // Cập nhật thông tin lịch trình (title/startDate/endDate)
 const UpdateItinerary = async (
   itineraryId,
@@ -255,7 +259,10 @@ const GetItinerariesByDestination = (destinationId, page = 0, size = 10) => {
   const API = `/itineraries/by-destination/${destinationId}`;
   return axios.get(API, { params: { page, size } });
 };
-const GetItineraryWarnings = async (itineraryId, timezone = "Asia/Ho_Chi_Minh") => {
+const GetItineraryWarnings = async (
+  itineraryId,
+  timezone = "Asia/Ho_Chi_Minh"
+) => {
   if (!itineraryId) return { itineraryId: null, warningsByDay: {} };
   try {
     const API = `/itineraries/${encodeURIComponent(itineraryId)}/warnings`;
@@ -269,8 +276,13 @@ const GetItineraryWarnings = async (itineraryId, timezone = "Asia/Ho_Chi_Minh") 
 };
 
 // Lấy warnings cho 1 ngày cụ thể (trả về { itineraryId, dayNumber, warnings: [...] })
-const GetItineraryWarningsForDay = async (itineraryId, day /* number */, timezone = "Asia/Ho_Chi_Minh") => {
-  if (!itineraryId || !day) return { itineraryId: null, dayNumber: day, warnings: [] };
+const GetItineraryWarningsForDay = async (
+  itineraryId,
+  day /* number */,
+  timezone = "Asia/Ho_Chi_Minh"
+) => {
+  if (!itineraryId || !day)
+    return { itineraryId: null, dayNumber: day, warnings: [] };
   try {
     const API = `/itineraries/${encodeURIComponent(itineraryId)}/warnings`;
     const res = await axios.get(API, { params: { day, timezone } });
@@ -326,6 +338,7 @@ export {
   // NEW: warnings API
   GetItineraryWarnings,
   GetItineraryWarningsForDay,
+  GetFeatured,
 };
 // Lấy thông tin invite theo token
 const GetInviteByToken = async (token) => {

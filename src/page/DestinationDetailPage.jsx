@@ -213,8 +213,9 @@ export default function DestinationDetail() {
         console.error("Lỗi load destination:", err);
       }
     };
+
     fetchDestination();
-  }, [locationQuery]);
+  }, [id]);
 
   // Load places by category khi selectedCategory thay đổi
   useEffect(() => {
