@@ -179,10 +179,10 @@ export default function Header() {
       >
         <div
           className={`w-full h-full ${isTransparent
-              ? "bg-transparent border-transparent"
-              : isScrolled
-                ? "bg-white/95 backdrop-blur-md border-slate-200 shadow-sm"
-                : "bg-white border-slate-100"
+            ? "bg-transparent border-transparent"
+            : isScrolled
+              ? "bg-white/95 backdrop-blur-md border-slate-200 shadow-sm"
+              : "bg-white border-slate-100"
             }`}
         >
           <div className="container-custom h-full">
@@ -234,8 +234,8 @@ export default function Header() {
                       ref={(el) => setMenuItemRef(index, el)}
                       to={item.path}
                       className={`relative px-3 py-1.5 font-medium transition-colors rounded-md ${isTransparent
-                          ? "!text-white hover:!text-sky-200"
-                          : "text-slate-700 hover:text-sky-600"
+                        ? "!text-white hover:!text-sky-200"
+                        : "text-slate-700 hover:text-sky-600"
                         } ${isActive(item.path)
                           ? isTransparent
                             ? "text-white"
@@ -247,8 +247,8 @@ export default function Header() {
                       {isActive(item.path) && (
                         <span
                           className={`absolute left-1/2 bottom-0 h-0.5 rounded-full -translate-x-1/2 transition-all duration-300 ${isTransparent
-                              ? "bg-white"
-                              : "bg-gradient-to-r from-sky-500 to-indigo-600"
+                            ? "bg-white"
+                            : "bg-gradient-to-r from-sky-500 to-indigo-600"
                             }`}
                           style={{
                             width: getMenuItemWidth(index) - 24 + "px",
@@ -265,8 +265,8 @@ export default function Header() {
               <div className="hidden md:flex flex-1 max-w-sm mx-4">
                 <SearchBox
                   className={`w-full rounded-full transition-colors ${isTransparent
-                      ? "border border-transparent"
-                      : "border border-slate-200 hover:border-sky-500"
+                    ? "border border-transparent"
+                    : "border border-slate-200 hover:border-sky-500"
                     }`}
                   navigateOnSelect={true}
                   variant={isTransparent ? "transparent" : "default"}
@@ -327,6 +327,15 @@ export default function Header() {
                           >
                             <MapPin className="w-3.5 h-3.5" />
                             <span>Lịch trình của bạn</span>
+                          </button><button
+                            onClick={() => {
+                              navigate("/local-guide");
+                              setIsMenuOpen(false);
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-slate-700 hover:bg-slate-50 transition-all duration-200 text-left text-sm hover:translate-x-1"
+                          >
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>Hướng dẫn viên</span>
                           </button>
                           <div className="border-t my-1"></div>
                           <button
@@ -351,8 +360,8 @@ export default function Header() {
                   <button
                     onClick={() => setShowModal(true)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium shadow-sm hover:opacity-90 transition-all duration-200 active:scale-95 ${isTransparent
-                        ? "bg-white/20 text-white backdrop-blur-sm border border-white/30 hover:bg-white/30"
-                        : "bg-gradient-to-r from-sky-500 to-indigo-600 text-white hover:shadow-md"
+                      ? "bg-white/20 text-white backdrop-blur-sm border border-white/30 hover:bg-white/30"
+                      : "bg-gradient-to-r from-sky-500 to-indigo-600 text-white hover:shadow-md"
                       }`}
                   >
                     <User className="w-4 h-4" />
@@ -423,8 +432,8 @@ export default function Header() {
                     key={item.path}
                     to={item.path}
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm ${isActive(item.path)
-                        ? "bg-sky-50 text-sky-600 font-medium scale-[1.02]"
-                        : "text-slate-700 hover:bg-slate-50 hover:scale-[1.01]"
+                      ? "bg-sky-50 text-sky-600 font-medium scale-[1.02]"
+                      : "text-slate-700 hover:bg-slate-50 hover:scale-[1.01]"
                       }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -450,6 +459,16 @@ export default function Header() {
                     >
                       <MapPin className="w-4 h-4" />
                       <span>Lịch trình của bạn</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate("/local-guide");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-slate-700 hover:bg-slate-50 hover:translate-x-1 rounded-lg transition-all duration-200 text-left text-sm"
+                    >
+                      <MapPin className="w-4 h-4" />
+                      <span>Hướng dẫn viễn</span>
                     </button>
                     <button
                       onClick={() => {

@@ -162,10 +162,10 @@ export default function LocalGuideProfile() {
                                     <span className="opacity-90">Đánh giá</span>
                                     <span className="text-2xl font-bold">0</span>
                                 </div>
-                                <div className="flex justify-between items-center">
+                                {/* <div className="flex justify-between items-center">
                                     <span className="opacity-90">Xếp hạng</span>
                                     <span className="text-2xl font-bold">⭐ N/A</span>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     </div>
