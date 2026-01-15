@@ -25,6 +25,12 @@ import TravelBlog from "./page/BlogPage.jsx";
 import VietnamTravelExplore from "./page/VietnamTravelExplore.jsx";
 import { NotificationProvider } from "./context/NotificationContext";
 import TravelProfilePage from "./page/TravelProfilePage.jsx";
+import BlogDetailPage from "./page/BlogDetailPage";
+import TermsOfService from "./page/TermsOfServicePage.jsx";
+import PrivacyPolicy from "./page/PrivacyPolicyPage.jsx";
+import SupportPage from "./page/SupportPage.jsx";
+import DestionationsPage from "./page/DestinationsPage.jsx";
+import DestinationsPage from "./page/DestinationsPage.jsx";
 
 const App = () => {
   return (
@@ -32,9 +38,9 @@ const App = () => {
       <NotificationProvider>
         <ScrollToTop />
         <Toaster
-          position="top-right"
+          position="bottom-left"
           richColors
-          style={{ marginTop: "60px" }}
+          style={{ marginBottom: "20px" }}
         />
         <Routes>
           <Route
@@ -45,6 +51,10 @@ const App = () => {
           {/* Routes dùng layout */}
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/destinations" element={<DestinationsPage />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/support" element={<SupportPage />} />
             <Route path="/destination/:id" element={<DestinationDetail />} />
             <Route path="/destination/place/:id" element={<PlaceDetail />} />
             <Route
@@ -79,6 +89,7 @@ const App = () => {
                 </PrivateRoute>
               }
             />
+
             {/*  Route MyProfile */}
             <Route
               path="/me"
@@ -94,6 +105,7 @@ const App = () => {
             <Route path="/itineraries/new" element={<CreateItineraryPage />} />
             <Route path="/itineraries/:id" element={<ItineraryDetailPage />} />
             <Route path="/blogs" element={<TravelBlog />} />
+            <Route path="/blogs/:blogId" element={<BlogDetailPage />} />
             <Route path="/explores" element={<VietnamTravelExplore />} />
           </Route>
         </Routes>

@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import { motion, AnimatePresence } from "framer-motion";
@@ -528,9 +529,7 @@ export default function PlaceDetail({ placeId: propPlaceId, isModal = false }) {
             <SectionTitle icon={Info}>Giới thiệu</SectionTitle>
             <div className="p-5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
               <p className="text-slate-700 leading-relaxed">
-                {isRestaurant
-                  ? "Nhà hàng phục vụ các món đặc sản địa phương với không gian thoải mái và view đẹp. Phù hợp gia đình, nhóm bạn và du khách."
-                  : "Một điểm đến tuyệt vời để khám phá và trải nghiệm. Nơi đây mang đến cho du khách những khoảnh khắc đáng nhớ và cơ hội tìm hiểu về văn hóa, lịch sử địa phương."}
+                {place.description || " Chưa có mô tả cho địa điểm này."}
               </p>
             </div>
           </div>
@@ -627,93 +626,6 @@ export default function PlaceDetail({ placeId: propPlaceId, isModal = false }) {
             </div>
           </SectionCard>
         </div>
-
-        {/* Operating Hours & Ticket Pricing */}
-        {placeWithDefaults.openingHours && (
-          <SectionCard className="p-6 mt-8">
-            <SectionTitle
-              icon={Clock}
-              right={
-                <div className="flex gap-2 items-center text-sm text-slate-500">
-                  <Ticket className="w-4 h-4" />
-                  <span>Thông tin thiết yếu</span>
-                </div>
-              }
-            >
-              Giờ mở cửa
-            </SectionTitle>
-
-            {(() => {
-              const openingHours = placeWithDefaults.openingHours;
-              const ticket = placeWithDefaults.ticket;
-              const rows = [
-                { d: "Thứ 2", v: openingHours.mon },
-                { d: "Thứ 3", v: openingHours.tue },
-                { d: "Thứ 4", v: openingHours.wed },
-                { d: "Thứ 5", v: openingHours.thu },
-                { d: "Thứ 6", v: openingHours.fri },
-                { d: "Thứ 7", v: openingHours.sat },
-                { d: "Chủ nhật", v: openingHours.sun },
-              ];
-
-              return (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* <div>
-                    <h3 className="text-sm font-semibold text-slate-600 mb-3">
-                      Giờ mở cửa
-                    </h3>
-                    <div className="grid grid-cols-2 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden">
-                      {rows.map((r, i) => (
-                        <div
-                          key={r.d}
-                          className={`px-4 py-3 ${
-                            i % 2 === 0 ? "bg-white" : ""
-                          } border-b border-slate-100 col-span-2 grid grid-cols-2`}
-                        >
-                          <span className="text-slate-600">{r.d}</span>
-                          <span className="text-right font-medium text-slate-900">
-                            {r.v}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div> */}
-
-                  {/* {ticket && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-600 mb-3">
-                        Giá vé tham khảo
-                      </h3>
-                      <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100 rounded-xl p-5">
-                        <div className="flex items-center justify-between mb-2">
-                          <span>Người lớn</span>
-                          <span className="font-semibold">
-                            {ticket.adult.toLocaleString("vi-VN")} đ
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span>Trẻ em</span>
-                          <span className="font-semibold">
-                            {ticket.child.toLocaleString("vi-VN")} đ
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span>Sinh viên</span>
-                          <span className="font-semibold">
-                            {ticket.student.toLocaleString("vi-VN")} đ
-                          </span>
-                        </div>
-                        <p className="text-xs text-amber-700 mt-3">
-                          ℹ️ {ticket.note}
-                        </p>
-                      </div>
-                    </div>
-                  )} */}
-                </div>
-              );
-            })()}
-          </SectionCard>
-        )}
 
         {/* Food Nearby */}
         <SectionCard className="p-6 mt-8">
@@ -845,8 +757,12 @@ export default function PlaceDetail({ placeId: propPlaceId, isModal = false }) {
             <SectionTitle icon={MapPin}>Địa điểm gần đây</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {place.nearbyPlaces.slice(0, 6).map((np) => (
-                <div key={np.id} className="group cursor-pointer">
-                  <div className="rounded-xl overflow-hidden border border-slate-100 bg-white shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-0.5">
+                <Link
+                  key={np.id}
+                  to={`/destination/place/${np.id}`}
+                  className="group block"
+                >
+                  <div className="cursor-pointer rounded-xl overflow-hidden border border-slate-100 bg-white shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-0.5">
                     <div className="relative h-48">
                       <img
                         src={np.mainImage}
@@ -865,20 +781,23 @@ export default function PlaceDetail({ placeId: propPlaceId, isModal = false }) {
                         </div>
                       </div>
                     </div>
+
                     <div className="p-4">
                       <h3 className="font-semibold text-slate-900 mb-1 line-clamp-1 group-hover:text-blue-600">
                         {np.name}
                       </h3>
+
                       <p className="text-slate-600 text-sm mb-1 flex items-center">
                         <MapPin className="w-3.5 h-3.5 mr-1" />
                         <span className="line-clamp-1">{np.address}</span>
                       </p>
+
                       <p className="text-slate-700 text-sm line-clamp-2">
                         {np.description}
                       </p>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </SectionCard>

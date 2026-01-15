@@ -323,7 +323,6 @@ export default function DestinationDetail() {
               { id: "gioi-thieu", label: "Giới thiệu" },
               { id: "am-thuc", label: "Ẩm thực" },
               { id: "dia-diem", label: "Địa điểm" },
-              { id: "lich-trinh", label: "Lịch trình" },
             ].map((tab) => {
               const isActive = activeMainTab === tab.id;
 
@@ -381,6 +380,9 @@ export default function DestinationDetail() {
                           {info.infoKey}
                         </h2>
                       </div>
+                      <p className=" text-gray-700 leading-relaxed">
+                        {info.infoValue}
+                      </p>
 
                       {info.imageUrl && info.imageUrl.trim() !== "" && (
                         <img
@@ -389,10 +391,6 @@ export default function DestinationDetail() {
                           className="w-full h-auto object-cover"
                         />
                       )}
-
-                      <p className="text-gray-700 leading-relaxed">
-                        {info.infoValue}
-                      </p>
                     </div>
                   ))}
               </div>

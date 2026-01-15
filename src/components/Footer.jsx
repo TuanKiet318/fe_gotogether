@@ -13,13 +13,13 @@ export default function Footer() {
           </div>
 
           <div className="flex items-center gap-8 text-slate-400">
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="/terms" className="hover:text-white transition-colors">
               Điều khoản
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="/privacy" className="hover:text-white transition-colors">
               Chính sách
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="/support" className="hover:text-white transition-colors">
               Hỗ trợ
             </a>
           </div>

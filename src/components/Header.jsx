@@ -320,21 +320,20 @@ export default function Header() {
 
                       {isMenuOpen && (
                         <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50 animate-fadeIn">
-                          <div className="px-3 py-2 text-sm text-slate-600 border-b bg-slate-50">
-                            Xin chào,{" "}
+                          <div className="px-3 py-2 text-sm text-slate-600 border-b bg-slate-50"> 
                             <span className="font-semibold text-slate-800">
                               {user?.username || user?.name}
                             </span>
                           </div>
                           <button
                             onClick={() => {
-                              navigate("/trip-list");
+                              navigate("/me");
                               setIsMenuOpen(false);
                             }}
                             className="flex items-center gap-2 w-full px-3 py-2 text-slate-700 hover:bg-slate-50 transition-all duration-200 text-left text-sm hover:translate-x-1"
                           >
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span>Lịch trình của bạn</span>
+                            <User className="w-3.5 h-3.5" />
+                            <span>Trang của bạn</span>
                           </button>
                           <div className="border-t my-1"></div>
                           <button
@@ -454,13 +453,13 @@ export default function Header() {
                   <div className="space-y-0.5">
                     <button
                       onClick={() => {
-                        navigate("/trip-list");
+                        navigate("/me");
                         setIsMobileMenuOpen(false);
                       }}
                       className="flex items-center gap-2 w-full px-3 py-2.5 text-slate-700 hover:bg-slate-50 hover:translate-x-1 rounded-lg transition-all duration-200 text-left text-sm"
                     >
-                      <MapPin className="w-4 h-4" />
-                      <span>Lịch trình của bạn</span>
+                      <User className="w-4 h-4" />
+                      <span>Trang của bạn</span>
                     </button>
                     <button
                       onClick={() => {

@@ -13,6 +13,7 @@ import {
   MapPin,
   Navigation,
   AlertTriangle,
+  Camera,
 } from "lucide-react";
 import instance from "../service/axios.admin.customize";
 import ShareModal from "../components/ShareModal.jsx";
@@ -168,11 +169,45 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [mediaCaption, setMediaCaption] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [timelinePositions, setTimelinePositions] = useState({});
 
   const calculateProgress = (dayIndex, itemIndex, totalDays, itemsInDay) => {
     const dayProgress = dayIndex / Math.max(1, totalDays - 1);
     const itemStepInDay = itemsInDay > 1 ? 1 / totalDays / itemsInDay : 0;
     return dayProgress + itemIndex * itemStepInDay;
+  };
+
+  const [isItineraryEnded, setIsItineraryEnded] = useState(false);
+  const [isItineraryInProgress, setIsItineraryInProgress] = useState(false);
+
+  // Hàm kiểm tra trạng thái lịch trình
+  const checkItineraryStatus = (startDate, endDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    // Lịch trình đã kết thúc
+    if (today > end) {
+      setIsItineraryEnded(true);
+      setIsItineraryInProgress(false);
+      return "ended";
+    }
+
+    // Lịch trình đang diễn ra
+    if (today >= start && today <= end) {
+      setIsItineraryEnded(false);
+      setIsItineraryInProgress(true);
+      return "in-progress";
+    }
+
+    // Lịch trình chưa diễn ra
+    setIsItineraryEnded(false);
+    setIsItineraryInProgress(false);
+    return "upcoming";
   };
 
   // State for current position
@@ -287,37 +322,35 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   // Initialize positions on mount
   useEffect(() => {
-    if (!allTimelineItems.length) return;
+    if (!allTimelineItems.length || viewMode !== "overview") return;
 
-    const timer = setTimeout(() => {
-      const path = document.getElementById("curve-path");
-      if (!path) return;
+    const path = document.getElementById("curve-path");
+    if (!path) return;
 
-      const totalLength = path.getTotalLength();
+    const totalLength = path.getTotalLength();
+    const positions = {};
 
-      allTimelineItems.forEach((item) => {
+    allTimelineItems.forEach((item) => {
+      const point = path.getPointAtLength(totalLength * item.progress);
+      positions[item.id] = {
+        left: point.x,
+        top: point.y + 40,
+      };
+    });
+
+    // Lưu vị trí các day marker
+    allTimelineItems.forEach((item) => {
+      if (item.isDayStart) {
         const point = path.getPointAtLength(totalLength * item.progress);
+        positions[`day-marker-${item.dayNumber}`] = {
+          left: point.x,
+          top: point.y - 80,
+        };
+      }
+    });
 
-        const element = document.getElementById(`timeline-item-${item.id}`);
-        if (element) {
-          element.style.left = `${point.x}px`;
-          element.style.top = `${point.y + 40}px`;
-        }
-
-        if (item.isDayStart) {
-          const dayMarker = document.getElementById(
-            `day-marker-${item.dayNumber}`
-          );
-          if (dayMarker) {
-            dayMarker.style.left = `${point.x}px`;
-            dayMarker.style.top = `${point.y - 80}px`;
-          }
-        }
-      });
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [allTimelineItems]);
+    setTimelinePositions(positions);
+  }, [allTimelineItems, viewMode]);
 
   useEffect(() => {
     if (itineraryId && viewMode === "media") {
@@ -389,6 +422,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
           data.endDate,
           data.items || []
         );
+
+        // Kiểm tra trạng thái lịch trình
+        checkItineraryStatus(data.startDate, data.endDate);
 
         setItinerary({
           id: data.id,
@@ -666,7 +702,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleDateClick = () => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     setSelectedStartDate(new Date(itinerary.startDate));
     setSelectedEndDate(new Date(itinerary.endDate));
     setCurrentMonth(new Date(itinerary.startDate));
@@ -692,7 +728,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleUpdateDates = async () => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!selectedStartDate || !selectedEndDate) {
       alert("Vui lòng chọn ngày bắt đầu và kết thúc");
       return;
@@ -769,7 +805,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- QUẢN LÝ NGÀY (THÊM / XOÁ) ----- */
   const handleAddDayBefore = async (dayNumber) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!itineraryId) return;
     try {
       await insertDaysBefore(itineraryId, dayNumber, 1);
@@ -787,7 +823,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleAddDayAfter = async (dayNumber) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!itineraryId) return;
     try {
       await insertDaysAfter(itineraryId, dayNumber, 1);
@@ -804,7 +840,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleDeleteDay = async (dayNumber) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!itineraryId) return;
     if (!window.confirm(`Bạn có chắc muốn xóa ngày ${dayNumber}?`)) return;
 
@@ -824,7 +860,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- THÊM ĐỊA ĐIỂM VÀO NGÀY ----- */
   const handleAddPlaceToDay = async (dayNumber, place) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     const newItem = {
       placeId: place.id,
       dayNumber: dayNumber,
@@ -854,13 +890,13 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleTitleEdit = () => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     setEditedTitle(itinerary.title);
     setIsEditingTitle(true);
   };
 
   const handleTitleSave = async () => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
       setIsEditingTitle(false);
       return;
@@ -884,7 +920,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- UPDATE ITEM ----- */
   const updateItem = async (itemId, updates) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
 
     const item = itinerary.days
       .flatMap((d) => d.items)
@@ -934,7 +970,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- REMOVE ITEM ----- */
   const removeItem = async (itemId) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
 
     const item = itinerary.days
       .flatMap((d) => d.items)
@@ -1027,7 +1063,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   // ----- DRAG AND DROP HANDLER -----
   const handleDragEnd = async (result) => {
-    if (!itinerary?.canEdit) return; // chặn DnD khi viewer
+    if (!canEditItinerary) return; // chặn DnD khi viewer
     if (!result.destination) return;
 
     const { source, destination } = result;
@@ -1174,6 +1210,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     }
   };
 
+  const canEditItinerary = itinerary?.canEdit && !isItineraryEnded;
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
@@ -1228,12 +1265,12 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                   title={itinerary?.canEdit ? "Click để sửa tên" : "Chỉ xem"}
                 >
                   {itinerary.title}
-                  {!itinerary?.canEdit && (
+                  {!canEditItinerary && (
                     <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
                       VIEW ONLY
                     </span>
                   )}
-                  {itinerary?.canEdit && (
+                  {canEditItinerary && (
                     <span className="absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition text-gray-400 text-sm">
                       ✏️
                     </span>
@@ -1451,13 +1488,13 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             {/* Nút thêm địa điểm */}
                             <button
                               onClick={() => {
-                                if (!itinerary?.canEdit) return;
+                                if (!canEditItinerary) return;
                                 setSelectedDayNumber(day.dayNumber);
                                 setShowPlaceModal(true);
                               }}
-                              disabled={!itinerary?.canEdit}
+                              disabled={!canEditItinerary}
                               className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${
-                                itinerary?.canEdit
+                                canEditItinerary
                                   ? "bg-blue-500 text-white hover:bg-blue-600"
                                   : "bg-gray-200 text-gray-500 cursor-not-allowed"
                               }`}
@@ -1467,7 +1504,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             </button>
 
                             {/* Menu 3 chấm chỉ khi có quyền */}
-                            {itinerary?.canEdit && (
+                            {canEditItinerary && (
                               <div className="relative" ref={menuRef}>
                                 <button
                                   onClick={() => {
@@ -1625,7 +1662,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           <Droppable
                             droppableId={String(day.dayNumber)}
                             type="ITEM"
-                            isDropDisabled={!itinerary?.canEdit}
+                            isDropDisabled={!canEditItinerary}
                           >
                             {(provided, snapshot) => (
                               <div
@@ -1642,7 +1679,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                     key={item.id}
                                     draggableId={String(item.id)}
                                     index={index}
-                                    isDragDisabled={!itinerary?.canEdit}
+                                    isDragDisabled={!canEditItinerary}
                                   >
                                     {(provided, snapshot) => (
                                       <>
@@ -1664,7 +1701,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                         >
                                           <DayItemCard
                                             item={item}
-                                            readOnly={!itinerary?.canEdit}
+                                            readOnly={!canEditItinerary}
                                             onRemove={removeItem}
                                             onUpdate={updateItem}
                                             onClick={(clickedItem) => {
@@ -1674,7 +1711,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                               });
                                             }}
                                             onSuggest={(clickedItem) => {
-                                              if (!itinerary?.canEdit) return;
+                                              if (!canEditItinerary) return;
                                               setLastAddedPlace({
                                                 id: clickedItem.placeId,
                                                 name: clickedItem.placeName,
@@ -2044,7 +2081,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                      📸 Thư viện Media
+                      Thư viện Media
                     </h2>
                     <p className="text-gray-600">
                       Upload và quản lý ảnh, video cho lịch trình của bạn
@@ -2060,14 +2097,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                     </button>
                     <button
                       onClick={() => {
-                        if (!itinerary?.canEdit) return;
+                        if (!canEditItinerary) return;
                         setSelectedDayForMedia(null);
                         setMediaCaption("");
                         setShowMediaModal(true);
                       }}
-                      disabled={!itinerary?.canEdit}
+                      disabled={!canEditItinerary}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                        itinerary?.canEdit
+                        canEditItinerary
                           ? "bg-blue-600 text-white hover:bg-blue-700"
                           : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
@@ -2140,14 +2177,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                         </h3>
                         <button
                           onClick={() => {
-                            if (!itinerary?.canEdit) return;
+                            if (!canEditItinerary) return;
                             setSelectedDayForMedia(day.dayNumber);
                             setMediaCaption("");
                             setShowMediaModal(true);
                           }}
-                          disabled={!itinerary?.canEdit}
+                          disabled={!canEditItinerary}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                            itinerary?.canEdit
+                            canEditItinerary
                               ? "bg-gray-900 text-white hover:bg-gray-800"
                               : "bg-gray-200 text-gray-400 cursor-not-allowed"
                           }`}
@@ -2228,7 +2265,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               {/* Empty State */}
               {!loadingMedia && mediaFiles.length === 0 && (
                 <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
-                  <div className="text-6xl mb-4">📸</div>
+                  <div className="text-6xl mb-4">
+                    <Camera className="w-16 h-16 text-gray-700 mx-auto" />
+                  </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
                     Chưa có media nào
                   </h3>
@@ -2241,9 +2280,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       setMediaCaption("");
                       setShowMediaModal(true);
                     }}
-                    disabled={!itinerary?.canEdit}
+                    disabled={!canEditItinerary}
                     className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                      itinerary?.canEdit
+                      canEditItinerary
                         ? "bg-blue-600 text-white hover:bg-blue-700"
                         : "bg-gray-200 text-gray-400 cursor-not-allowed"
                     }`}
@@ -2435,6 +2474,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
                       {/* Timeline Items (Places) positioned on the path */}
                       {allTimelineItems.map((item, index) => {
+                        const position = timelinePositions[item.id];
                         return (
                           <React.Fragment key={item.id}>
                             {/* Day Marker (only for first item of each day) */}
@@ -2443,6 +2483,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                 id={`day-marker-${item.dayNumber}`}
                                 className="absolute z-20 cursor-pointer group"
                                 style={{
+                                  left:
+                                    timelinePositions[
+                                      `day-marker-${item.dayNumber}`
+                                    ]?.left + "px" || "0px",
+                                  top:
+                                    timelinePositions[
+                                      `day-marker-${item.dayNumber}`
+                                    ]?.top + "px" || "0px",
                                   transform: "translate(-50%, -50%)",
                                 }}
                                 onClick={() => {
@@ -2482,6 +2530,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               id={`timeline-item-${item.id}`}
                               className="absolute z-50 cursor-pointer group"
                               style={{
+                                left: position?.left + "px" || "0px",
+                                top: position?.top + "px" || "0px",
                                 transform: "translate(-50%, 0)",
                               }}
                               onClick={() => {
@@ -2822,106 +2872,112 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
             {/* Right side - Sidebar (Stats + Map) */}
             <div className="lg:w-[400px] xl:w-[450px] flex-shrink-0">
-              <div className="sticky top-6 space-y-6">
-                {/* Overview Stats Card */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
-                    Tổng quan lịch trình
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                      <div className="text-sm text-blue-600 font-medium mb-1">
-                        Tổng số ngày
-                      </div>
-                      <div className="text-2xl font-bold text-blue-700">
-                        {itinerary.days.length}
-                      </div>
-                    </div>
-
-                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                      <div className="text-sm text-purple-600 font-medium mb-1">
-                        Tổng địa điểm
-                      </div>
-                      <div className="text-2xl font-bold text-purple-700">
-                        {itinerary.days.reduce(
-                          (sum, d) => sum + d.items.length,
-                          0
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
-                      <div className="text-sm text-emerald-600 font-medium mb-1">
-                        Tổng chi phí
-                      </div>
-                      <div className="text-xl font-bold text-emerald-700">
-                        {formatVND(grandTotal)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map Card */}
+              <div className="sticky top-6">
+                {/* Scrollable container cho nội dung sidebar */}
                 <div
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-                  style={{ height: "calc(100vh - 450px)", minHeight: "400px" }}
+                  className="space-y-6 max-h-[calc(100vh-100px)] overflow-y-auto pr-2"
+                  style={{ scrollbarWidth: "thin" }}
                 >
-                  <div className="p-4 border-b border-gray-200 bg-gray-50">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                        <circle cx="12" cy="10" r="3" />
-                      </svg>
-                      Bản đồ tổng quan
+                  {/* Overview Stats Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      Tổng quan lịch trình
                     </h3>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Xem vị trí tất cả các địa điểm
-                    </p>
+
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                        <div className="text-sm text-blue-600 font-medium mb-1">
+                          Tổng số ngày
+                        </div>
+                        <div className="text-2xl font-bold text-blue-700">
+                          {itinerary.days.length}
+                        </div>
+                      </div>
+
+                      <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                        <div className="text-sm text-purple-600 font-medium mb-1">
+                          Tổng địa điểm
+                        </div>
+                        <div className="text-2xl font-bold text-purple-700">
+                          {itinerary.days.reduce(
+                            (sum, d) => sum + d.items.length,
+                            0
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                        <div className="text-sm text-emerald-600 font-medium mb-1">
+                          Tổng chi phí
+                        </div>
+                        <div className="text-xl font-bold text-emerald-700">
+                          {formatVND(grandTotal)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div
-                    className="h-full relative"
-                    style={{ height: "calc(100% - 120px)" }}
-                  >
-                    <LeafletMap
-                      places={getRouteItems()}
-                      image={itinerary.destinationImage}
-                      hoveredPlaceId={hoveredItemId}
-                      provider="google-roadmap"
-                    />
-                  </div>
+                  {/* Map Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="p-4 border-b border-gray-200 bg-gray-50">
+                      <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        Bản đồ tổng quan
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Xem vị trí tất cả các địa điểm
+                      </p>
+                    </div>
 
-                  <div className="p-4 border-t border-gray-200 bg-gray-50">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                        <span className="text-xs text-gray-600">Điểm đến</span>
+                    {/* Map với chiều cao cố định */}
+                    <div className="h-[400px] relative">
+                      <div className="absolute inset-0">
+                        <LeafletMap
+                          places={getRouteItems()}
+                          image={itinerary.destinationImage}
+                          hoveredPlaceId={hoveredItemId}
+                          provider="google-roadmap"
+                          style={{ height: "100%", width: "100%" }}
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                        <span className="text-xs text-gray-600">
-                          Tuyến đường
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                        <span className="text-xs text-gray-600">
-                          Điểm bắt đầu
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <span className="text-xs text-gray-600">
-                          Điểm kết thúc
-                        </span>
+                    </div>
+
+                    <div className="p-4 border-t border-gray-200 bg-gray-50">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                          <span className="text-xs text-gray-600">
+                            Điểm đến
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                          <span className="text-xs text-gray-600">
+                            Tuyến đường
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                          <span className="text-xs text-gray-600">
+                            Điểm bắt đầu
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <span className="text-xs text-gray-600">
+                            Điểm kết thúc
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3097,10 +3153,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               <button
                 onClick={handleUpdateDates}
                 disabled={
-                  !selectedStartDate || !selectedEndDate || !itinerary?.canEdit
+                  !selectedStartDate || !selectedEndDate || !canEditItinerary
                 }
                 className={`px-6 py-2.5 rounded-lg font-medium transition ${
-                  selectedStartDate && selectedEndDate && itinerary?.canEdit
+                  selectedStartDate && selectedEndDate && canEditItinerary
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
