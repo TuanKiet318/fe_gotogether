@@ -309,7 +309,7 @@ const TourListPage = () => {
               </div>
             </div>
 
-            <div>
+            {/* <div>
               <h3 className="font-semibold mb-3 text-gray-800">
                 Loại chuyến đi
               </h3>
@@ -335,7 +335,7 @@ const TourListPage = () => {
                   </button>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Tour Grid */}
