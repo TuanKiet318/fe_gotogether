@@ -465,9 +465,27 @@ export default function VietnamTravelExplore() {
                     exit={{ opacity: 0, x: -20 }}
                     className="space-y-8"
                   >
-                    <h3 className="text-3xl font-bold text-gray-900">
-                      Điểm đến đang thịnh hành
-                    </h3>
+                    <div className="flex items-center justify-between gap-4">
+                      <h3 className="text-3xl font-bold text-gray-900">
+                        Điểm đến đang thịnh hành
+                      </h3>
+
+                      <button
+                        onClick={() => navigate("/destinations")}
+                        className="group inline-flex items-center gap-2 rounded-full
+               border border-gray-200 bg-white px-5 py-2.5
+               text-sm font-medium text-gray-700
+               hover:bg-gray-900 hover:text-white
+               transition-all duration-300
+               whitespace-nowrap"
+                      >
+                        Xem tất cả
+                        <span className="transform transition-transform duration-300 group-hover:translate-x-1">
+                          →
+                        </span>
+                      </button>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {featuredDestinations.slice(0, 4).map((dest, idx) => (
                         <div

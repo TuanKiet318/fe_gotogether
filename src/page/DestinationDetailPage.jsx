@@ -399,6 +399,9 @@ export default function DestinationDetail() {
                           {info.infoKey}
                         </h2>
                       </div>
+                      <p className=" text-gray-700 leading-relaxed">
+                        {info.infoValue}
+                      </p>
 
                       {info.imageUrl && info.imageUrl.trim() !== "" && (
                         <img
@@ -407,10 +410,6 @@ export default function DestinationDetail() {
                           className="w-full h-auto object-cover"
                         />
                       )}
-
-                      <p className="text-gray-700 leading-relaxed">
-                        {info.infoValue}
-                      </p>
                     </div>
                   ))}
               </div>

@@ -295,6 +295,37 @@ const GetItineraryWarningsForDay = async (
 };
 
 /* =========================
+ * ADMIN ITINERARY FEATURE (CLONE & FEATURE)
+ * ========================= */
+
+// Tìm kiếm lịch trình của User (dành cho Admin)
+const SearchItinerariesForAdmin = async (keyword, page = 0, size = 10) => {
+  const API = "/admin/itineraries/search";
+  return await axios.get(API, { params: { keyword, page, size } });
+};
+
+// Clone và Đánh dấu nổi bật lịch trình
+const CloneAndFeatureItinerary = async (data) => {
+  // data bao gồm: { sourceItineraryId, overview, heroImageFiles: [] }
+  const formData = new FormData();
+  formData.append("sourceItineraryId", data.sourceItineraryId);
+  formData.append("overview", data.overview);
+
+  if (data.heroImageFiles && data.heroImageFiles.length > 0) {
+    data.heroImageFiles.forEach((file) => {
+      formData.append("heroImageFiles", file); // Tên field phải khớp với DTO ở backend
+    });
+  }
+
+  const API = "/admin/itineraries/clone-and-feature";
+  return await axios.post(API, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+/* =========================
  * EXPORT
  * ========================= */
 
@@ -339,6 +370,9 @@ export {
   GetItineraryWarnings,
   GetItineraryWarningsForDay,
   GetFeatured,
+  // Admin Itinerary Feature
+  SearchItinerariesForAdmin,
+  CloneAndFeatureItinerary,
 };
 // Lấy thông tin invite theo token
 const GetInviteByToken = async (token) => {

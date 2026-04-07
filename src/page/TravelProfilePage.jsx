@@ -24,13 +24,19 @@ import {
   AlertCircle,
   Eye,
   MessageCircle,
+  Compass,
+  Tag,
+  Star,
 } from "lucide-react";
 import { useAuth } from "../context/AuthProvider";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 /* API */
 import { listMyItineraries } from "../service/tripService";
-import { DeleteItinerary as apiDeleteItinerary } from "../service/api.admin.service.jsx";
+import {
+  DeleteItinerary as apiDeleteItinerary,
+  GetMyFavoritePlaces,
+} from "../service/api.admin.service.jsx";
 import {
   getUserProfile,
   updateUserProfile,
@@ -155,97 +161,99 @@ function BlogCard({ blog, onDelete }) {
 
   return (
     <div className="group bg-white rounded-2xl border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden cursor-pointer">
-      {/* Blog Image */}
-      <div className="relative h-48 overflow-hidden">
-        {blog.media && blog.media.length > 0 ? (
-          <img
-            src={blog.media[0].url}
-            alt={blog.title || "Blog image"}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-            <FileText className="w-16 h-16 text-gray-300" />
-          </div>
-        )}
-
-        {/* Status badge */}
-        <div className="absolute top-3 left-3">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              blog.status === "PUBLISHED"
-                ? "bg-green-100 text-green-800"
-                : "bg-yellow-100 text-yellow-800"
-            }`}
-          >
-            {blog.status === "PUBLISHED" ? "Đã xuất bản" : "Bản nháp"}
-          </span>
-        </div>
-
-        {/* Action buttons */}
-        <div className="absolute top-3 right-3 flex gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(blog.id);
-            }}
-            className="bg-white/90 hover:bg-white p-2 rounded-xl shadow transition"
-          >
-            <Trash2 className="w-4 h-4 text-red-600" />
-          </button>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="bg-white/90 hover:bg-white p-2 rounded-xl shadow transition"
-          >
-            <MoreVertical className="w-4 h-4 text-gray-700" />
-          </button>
-        </div>
-      </div>
-
-      {/* Blog Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition">
-          {blog.content && blog.content.length > 100
-            ? `${blog.content.substring(0, 100)}...`
-            : blog.content || "Không có tiêu đề"}
-        </h3>
-
-        {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              {blog.viewCount || 0}
-            </span>
-            <span className="flex items-center gap-1">
-              <Heart className="w-4 h-4 text-red-500" />
-              {blog.likeCount || 0}
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle className="w-4 h-4 text-blue-500" />
-              {blog.commentCount || 0}
-            </span>
-          </div>
-        </div>
-
-        {/* Author & Date */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-2">
+      <Link to={`/blogs/${blog.id}`} className="block cursor-pointer">
+        {/* Blog Image */}
+        <div className="relative h-48 overflow-hidden">
+          {blog.media && blog.media.length > 0 ? (
             <img
-              src={blog.authorAvatar || "/imgs/image.png"}
-              className="w-6 h-6 rounded-full object-cover"
-              alt={blog.authorName}
+              src={blog.media[0].url}
+              alt={blog.title || "Blog image"}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
-            <span className="text-sm text-gray-600">{blog.authorName}</span>
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+              <FileText className="w-16 h-16 text-gray-300" />
+            </div>
+          )}
+
+          {/* Status badge */}
+          <div className="absolute top-3 left-3">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                blog.status === "PUBLISHED"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-yellow-100 text-yellow-800"
+              }`}
+            >
+              {blog.status === "PUBLISHED" ? "Đã xuất bản" : "Bản nháp"}
+            </span>
           </div>
-          <span className="text-xs text-gray-500">
-            {formatDate(blog.createdAt)}
-          </span>
+
+          {/* Action buttons */}
+          <div className="absolute top-3 right-3 flex gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(blog.id);
+              }}
+              className="bg-white/90 hover:bg-white p-2 rounded-xl shadow transition"
+            >
+              <Trash2 className="w-4 h-4 text-red-600" />
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className="bg-white/90 hover:bg-white p-2 rounded-xl shadow transition"
+            >
+              <MoreVertical className="w-4 h-4 text-gray-700" />
+            </button>
+          </div>
         </div>
-      </div>
+
+        {/* Blog Content */}
+        <div className="p-4">
+          <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition">
+            {blog.content && blog.content.length > 100
+              ? `${blog.content.substring(0, 100)}...`
+              : blog.content || "Không có tiêu đề"}
+          </h3>
+
+          {/* Stats */}
+          <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1">
+                <Eye className="w-4 h-4" />
+                {blog.viewCount || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <Heart className="w-4 h-4 text-red-500" />
+                {blog.likeCount || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <MessageCircle className="w-4 h-4 text-blue-500" />
+                {blog.commentCount || 0}
+              </span>
+            </div>
+          </div>
+
+          {/* Author & Date */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2">
+              <img
+                src={blog.authorAvatar || "/imgs/image.png"}
+                className="w-6 h-6 rounded-full object-cover"
+                alt={blog.authorName}
+              />
+              <span className="text-sm text-gray-600">{blog.authorName}</span>
+            </div>
+            <span className="text-xs text-gray-500">
+              {formatDate(blog.createdAt)}
+            </span>
+          </div>
+        </div>
+      </Link>
     </div>
   );
 }
@@ -682,6 +690,73 @@ function ProfileSection({
   );
 }
 
+/* ---------------------------- Favorite Place Card ---------------------------- */
+function FavoritePlaceCard({ place }) {
+  const formatRating = (rating) => {
+    return rating?.toFixed(1) || "0.0";
+  };
+
+  return (
+    <Link
+      to={`/destination/place/${place.id}`}
+      className="group bg-white rounded-2xl border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden"
+    >
+      {/* Place Image */}
+      <div className="relative h-48 overflow-hidden">
+        <img
+          src={place.mainImage || "https://via.placeholder.com/400x300"}
+          alt={place.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+
+        {/* Rating badge */}
+        {place.rating && (
+          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1">
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+            <span className="font-semibold text-gray-900">
+              {formatRating(place.rating)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Place Content */}
+      <div className="p-4">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="font-semibold text-gray-900 text-lg line-clamp-1 group-hover:text-blue-600 transition">
+            {place.name}
+          </h3>
+        </div>
+
+        {/* Category */}
+        {place.category && (
+          <div className="mb-3">
+            <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+              {place.category.name}
+            </span>
+          </div>
+        )}
+
+        {/* Address */}
+        {place.address && (
+          <div className="flex items-start gap-2 text-sm text-gray-600 mb-3">
+            <MapPin className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+            <span className="line-clamp-2">{place.address}</span>
+          </div>
+        )}
+
+        {/* Destination */}
+        {place.destination && (
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Map className="w-4 h-4 text-gray-400" />
+            <span>{place.destination.name}</span>
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 /* ---------------------------- Main Page ---------------------------- */
 const TravelProfilePage = () => {
   const { user } = useAuth();
@@ -689,8 +764,24 @@ const TravelProfilePage = () => {
   const [sortBy, setSortBy] = useState("Ngày tạo");
   const [searchText, setSearchText] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("profile"); // "profile", "itineraries", "posts", "favorites"
+  const [activeMenu, setActiveMenu] = useState(() => {
+    // Kiểm tra xem có lưu trong localStorage không
+    const savedMenu = localStorage.getItem("profileActiveMenu");
+    return savedMenu || "profile";
+  });
 
+  const handleSetActiveMenu = (menu) => {
+    console.log("Setting active menu to:", menu);
+    setActiveMenu(menu);
+    localStorage.setItem("profileActiveMenu", menu);
+
+    // Reset các state filter khi chuyển tab
+    if (menu !== "itineraries") {
+      setActiveTab("upcoming");
+      setSearchText("");
+      setFilterOpen(false);
+    }
+  };
   // Profile state
   const [profileData, setProfileData] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -710,6 +801,47 @@ const TravelProfilePage = () => {
   const [blogsLoading, setBlogsLoading] = useState(false);
   const [blogsPage, setBlogsPage] = useState(0);
   const [hasMoreBlogs, setHasMoreBlogs] = useState(true);
+
+  const [favorites, setFavorites] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+
+  /* ---------------------------- Load Favorites ---------------------------- */
+  const loadFavorites = async () => {
+    try {
+      setFavoritesLoading(true);
+      const response = await GetMyFavoritePlaces();
+      console.log("Favorites API response:", response);
+
+      // Dựa vào response format của bạn, điều chỉnh cho phù hợp
+      // Nếu response.data là array trực tiếp
+      if (Array.isArray(response)) {
+        setFavorites(response);
+      }
+      // Nếu response.data có property content
+      else if (response.content && Array.isArray(response.content)) {
+        setFavorites(response.content);
+      }
+      // Nếu có property khác
+      else if (response.data && Array.isArray(response.data)) {
+        setFavorites(response.data);
+      } else {
+        setFavorites([]);
+      }
+    } catch (error) {
+      console.error("Error loading favorites:", error);
+      toast.error("Không thể tải danh sách yêu thích");
+      setFavorites([]);
+    } finally {
+      setFavoritesLoading(false);
+    }
+  };
+
+  // Thêm useEffect để load khi vào tab favorites
+  useEffect(() => {
+    if (activeMenu === "favorites") {
+      loadFavorites();
+    }
+  }, [activeMenu]);
 
   /* ---------------------------- Load Blogs Data ---------------------------- */
   const loadMyBlogs = async (page = 0) => {
@@ -781,13 +913,56 @@ const TravelProfilePage = () => {
     try {
       setProfileLoading(true);
       const response = await getUserProfile();
+      console.log("Profile data loaded:", response);
       setProfileData(response);
+
+      // Cache vào localStorage để sử dụng khi back
+      if (response.avatar) {
+        localStorage.setItem(
+          "userProfileCache",
+          JSON.stringify({
+            avatar: response.avatar,
+            name: response.name,
+            email: response.email,
+            timestamp: Date.now(),
+          })
+        );
+      }
     } catch (error) {
       console.error("Error loading profile:", error);
+
+      // Try to load from cache if API fails
+      const cached = localStorage.getItem("userProfileCache");
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        // Check if cache is not too old (less than 1 hour)
+        if (Date.now() - cachedData.timestamp < 3600000) {
+          setProfileData(cachedData);
+        }
+      }
     } finally {
       setProfileLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Load profile data không chỉ khi activeMenu === "profile"
+    // mà còn khi component mount (kể cả khi quay lại)
+    loadProfileData();
+
+    // Cleanup function
+    return () => {
+      // Không cleanup gì cả để giữ data
+    };
+  }, []); // Empty dependency array để chạy mỗi khi component mount
+
+  // Thêm useEffect riêng cho activeMenu
+  useEffect(() => {
+    if (activeMenu === "profile") {
+      // Refresh data khi vào tab profile
+      loadProfileData();
+    }
+  }, [activeMenu]);
 
   useEffect(() => {
     if (activeMenu === "profile") {
@@ -1202,15 +1377,49 @@ const TravelProfilePage = () => {
 
       case "favorites":
         return (
-          <div className="bg-white rounded-2xl p-8">
-            <h2 className="text-2xl font-bold mb-6">Yêu thích</h2>
-            <div className="text-center py-12">
-              <Heart className="w-20 h-20 mx-auto text-gray-300" />
-              <p className="mt-4 text-gray-500">Chưa có mục yêu thích nào</p>
-              <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Khám phá ngay
-              </button>
+          <div className="bg-white rounded-2xl p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Địa điểm yêu thích
+              </h1>
+              <div className="flex items-center gap-2 text-gray-600">
+                <Heart className="w-5 h-5 text-red-500" />
+                <span className="font-medium">{favorites.length} địa điểm</span>
+              </div>
             </div>
+
+            {/* Favorites List */}
+            {favoritesLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : favorites.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {favorites.map((place) => (
+                  <FavoritePlaceCard key={place.id} place={place} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                  <Heart className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Chưa có địa điểm yêu thích nào
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Khám phá và lưu lại những địa điểm bạn yêu thích!
+                </p>
+                <button
+                  onClick={() => (window.location.href = "/explore")}
+                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium inline-flex items-center gap-2"
+                >
+                  <Compass className="w-5 h-5" />
+                  Khám phá ngay
+                </button>
+              </div>
+            )}
           </div>
         );
 
@@ -1245,56 +1454,50 @@ const TravelProfilePage = () => {
               {/* Menu Items */}
               <nav className="space-y-1">
                 <button
-                  onClick={() => setActiveMenu("profile")}
+                  onClick={() => handleSetActiveMenu("profile")}
                   className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg ${
                     activeMenu === "profile"
                       ? "bg-blue-50 text-blue-600 font-medium"
                       : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="text-lg">🎟️</span>
+                  <User className="w-5 h-5" />
                   <span>Hồ sơ</span>
                 </button>
 
                 <button
-                  onClick={() => setActiveMenu("itineraries")}
+                  onClick={() => handleSetActiveMenu("itineraries")}
                   className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg ${
                     activeMenu === "itineraries"
                       ? "bg-blue-50 text-blue-600 font-medium shadow-sm"
                       : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="text-lg">📋</span>
+                  <Map className="w-5 h-5" />
                   <span>Hành trình</span>
-                  <span className="ml-auto bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-sm">
-                    {itineraries.length}
-                  </span>
                 </button>
 
                 <button
-                  onClick={() => setActiveMenu("posts")}
+                  onClick={() => handleSetActiveMenu("posts")}
                   className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg ${
                     activeMenu === "posts"
                       ? "bg-blue-50 text-blue-600 font-medium"
                       : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="text-lg">📅</span>
+                  <FileText className="w-5 h-5" />
                   <span>Bài viết</span>
-                  <span className="ml-auto bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-sm">
-                    {blogs.length}
-                  </span>
                 </button>
 
                 <button
-                  onClick={() => setActiveMenu("favorites")}
+                  onClick={() => handleSetActiveMenu("favorites")}
                   className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg ${
                     activeMenu === "favorites"
                       ? "bg-blue-50 text-blue-600 font-medium"
                       : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="text-lg">❤️</span>
+                  <Heart className="w-5 h-5" />
                   <span>Yêu thích</span>
                 </button>
               </nav>

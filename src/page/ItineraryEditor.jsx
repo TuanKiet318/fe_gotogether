@@ -1,5 +1,6 @@
 // ...existing code...
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Client } from '@stomp/stompjs';
 import { useParams, useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import { LeafletMap } from "../components/LeafletMap.jsx";
@@ -13,6 +14,7 @@ import {
   MapPin,
   Navigation,
   AlertTriangle,
+  Camera,
 } from "lucide-react";
 import instance from "../service/axios.admin.customize";
 import ShareModal from "../components/ShareModal.jsx";
@@ -50,6 +52,19 @@ import "../styles/timeline.css";
 
 /* ------------------- HELPER ------------------- */
 // ...existing helper functions...
+
+function getCurrentUserId() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    // Decode JWT payload (cách đơn giản)
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.id || payload.sub; // Tùy thuộc cấu trúc token của bạn
+  } catch (e) {
+    return null;
+  }
+}
+
 function generateDays(startDate, endDate, items) {
   if (!startDate || !endDate) return [];
   const start = new Date(startDate);
@@ -168,11 +183,230 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   const [mediaCaption, setMediaCaption] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [timelinePositions, setTimelinePositions] = useState({});
 
   const calculateProgress = (dayIndex, itemIndex, totalDays, itemsInDay) => {
     const dayProgress = dayIndex / Math.max(1, totalDays - 1);
     const itemStepInDay = itemsInDay > 1 ? 1 / totalDays / itemsInDay : 0;
     return dayProgress + itemIndex * itemStepInDay;
+  };
+
+  const [isItineraryEnded, setIsItineraryEnded] = useState(false);
+  const [isItineraryInProgress, setIsItineraryInProgress] = useState(false);
+
+
+  const refreshWarnings = async () => {
+    if (!itineraryId) return {};
+
+    try {
+      setLoadingWarnings(true);
+
+      const resp = await fetch(
+        `http://localhost:8080/api/itineraries/${itineraryId}/warnings?timezone=Asia/Ho_Chi_Minh`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      const json = await resp.json();
+      console.log("RAW RESPONSE:", json);
+
+      const warningsByDay = json?.data?.warningsByDay || {};
+      setWarningsByDay(warningsByDay);
+
+      return warningsByDay;
+    } catch (err) {
+      console.error("refreshWarnings failed:", err);
+      setWarningsByDay({});
+      return {};
+    } finally {
+      setLoadingWarnings(false);
+    }
+  };
+
+  const handleRealtimeSync = useCallback((event) => {
+    const { action, triggerBy, data } = event;
+    const myUserId = getCurrentUserId();
+
+    // Bỏ qua nếu sự kiện này do chính mình vừa thực hiện (UI đã tự cập nhật rồi)
+    if (String(triggerBy) === String(myUserId)) {
+      return;
+    }
+
+    console.log("Realtime Sync Event:", action, data);
+
+    setItinerary((prevItinerary) => {
+      if (!prevItinerary) return prevItinerary;
+
+      // Copy mảng days hiện tại để không làm mutate state trực tiếp
+      const newDays = prevItinerary.days.map(day => ({
+        ...day,
+        items: [...day.items]
+      }));
+
+      switch (action) {
+        case "CREATE": {
+          const targetDay = newDays.find(d => d.dayNumber === data.dayNumber);
+          if (targetDay) {
+            // Kiểm tra xem có bị trùng id không (tránh lỗi duplicate key)
+            const exists = targetDay.items.some(item => item.id === data.id);
+            if (!exists) {
+              // Map data từ Backend sang format FE cần
+              const newItem = {
+                ...data,
+                placeId: data.place?.id || data.placeId,
+                placeName: data.place?.name || data.placeName || "Địa điểm chưa xác định",
+                placeAddress: data.place?.address || data.placeAddress || "",
+                placeImage: data.place?.mainImage || data.placeImage || "https://via.placeholder.com/150",
+                lat: data.place?.lat || data.lat,
+                lng: data.place?.lng || data.lng,
+                isNew: false,
+                isModified: false,
+              };
+              targetDay.items.push(newItem);
+              targetDay.items.sort((a, b) => (a.orderInDay || 0) - (b.orderInDay || 0));
+            }
+          }
+          break;
+        }
+
+        case "UPDATE": {
+          // 1. Tìm lại item cũ trước khi xóa nó, để bảo lưu hình ảnh, tọa độ, địa chỉ...
+          let oldItem = null;
+          for (let day of prevItinerary.days) {
+            const found = day.items.find(item => item.id === data.id);
+            if (found) {
+              oldItem = found;
+              break;
+            }
+          }
+
+          // 2. Xóa item ở vị trí cũ (phòng trường hợp đổi ngày bằng drag-drop)
+          for (let day of newDays) {
+            day.items = day.items.filter(item => item.id !== data.id);
+          }
+
+          // 3. Thêm/cập nhật vào ngày mới
+          const targetDay = newDays.find(d => d.dayNumber === data.dayNumber);
+          if (targetDay) {
+            const updatedItem = {
+              ...oldItem, // Giữ lại toàn bộ thông tin cũ (placeImage, lat, lng...)
+              ...data,    // Ghi đè bằng thông tin mới từ WebSocket
+
+              // Lớp phòng thủ: Ưu tiên data từ WS (nếu có), nếu không thì lấy từ oldItem
+              placeId: data.place?.id || data.placeId || oldItem?.placeId,
+              placeName: data.place?.name || data.placeName || oldItem?.placeName,
+              placeAddress: data.place?.address || data.placeAddress || oldItem?.placeAddress,
+              placeImage: data.place?.mainImage || data.placeImage || oldItem?.placeImage,
+              lat: data.place?.lat || data.lat || oldItem?.lat,
+              lng: data.place?.lng || data.lng || oldItem?.lng,
+            };
+
+            targetDay.items.push(updatedItem);
+            targetDay.items.sort((a, b) => (a.orderInDay || 0) - (b.orderInDay || 0));
+          }
+          break;
+        }
+
+        case "DELETE": {
+          // data lúc này là itemId bị xóa
+          for (let day of newDays) {
+            day.items = day.items.filter(item => item.id !== data);
+          }
+          break;
+        }
+
+        default: break;
+      }
+
+      return { ...prevItinerary, days: newDays };
+    });
+
+    // Cập nhật lại warnings vì lịch trình vừa bị người khác thay đổi
+    refreshWarnings();
+
+  }, [refreshWarnings]);
+
+  useEffect(() => {
+    if (!itineraryId) return;
+
+    // Khởi tạo Client STOMP
+    const stompClient = new Client({
+      // Sửa lại URL cho khớp với backend của bạn (Lưu ý dùng ws:// hoặc wss://)
+      brokerURL: 'ws://localhost:8080/ws-native',
+
+      // Nếu backend bắt buộc có token ở header khi connect WebSocket:
+      /*
+      connectHeaders: {
+         Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      */
+
+      debug: function (str) {
+        // console.log("STOMP: " + str); // Bật lên nếu muốn debug kết nối
+      },
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+    });
+
+    stompClient.onConnect = (frame) => {
+      console.log('Connected to Realtime Itinerary Sync');
+      // Subscribe vào room của itinerary cụ thể
+      stompClient.subscribe(`/topic/itineraries/${itineraryId}`, (message) => {
+        if (message.body) {
+          const event = JSON.parse(message.body);
+          handleRealtimeSync(event);
+        }
+      });
+    };
+
+    stompClient.onStompError = (frame) => {
+      console.error('Broker reported error: ' + frame.headers['message']);
+      console.error('Additional details: ' + frame.body);
+    };
+
+    // Kích hoạt kết nối
+    stompClient.activate();
+
+    // Cleanup khi rời khỏi trang
+    return () => {
+      stompClient.deactivate();
+    };
+  }, [itineraryId, handleRealtimeSync]);
+
+  // Hàm kiểm tra trạng thái lịch trình
+  const checkItineraryStatus = (startDate, endDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    // Lịch trình đã kết thúc
+    if (today > end) {
+      setIsItineraryEnded(true);
+      setIsItineraryInProgress(false);
+      return "ended";
+    }
+
+    // Lịch trình đang diễn ra
+    if (today >= start && today <= end) {
+      setIsItineraryEnded(false);
+      setIsItineraryInProgress(true);
+      return "in-progress";
+    }
+
+    // Lịch trình chưa diễn ra
+    setIsItineraryEnded(false);
+    setIsItineraryInProgress(false);
+    return "upcoming";
   };
 
   // State for current position
@@ -286,37 +520,35 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   // Initialize positions on mount
   useEffect(() => {
-    if (!allTimelineItems.length) return;
+    if (!allTimelineItems.length || viewMode !== "overview") return;
 
-    const timer = setTimeout(() => {
-      const path = document.getElementById("curve-path");
-      if (!path) return;
+    const path = document.getElementById("curve-path");
+    if (!path) return;
 
-      const totalLength = path.getTotalLength();
+    const totalLength = path.getTotalLength();
+    const positions = {};
 
-      allTimelineItems.forEach((item) => {
+    allTimelineItems.forEach((item) => {
+      const point = path.getPointAtLength(totalLength * item.progress);
+      positions[item.id] = {
+        left: point.x,
+        top: point.y + 40,
+      };
+    });
+
+    // Lưu vị trí các day marker
+    allTimelineItems.forEach((item) => {
+      if (item.isDayStart) {
         const point = path.getPointAtLength(totalLength * item.progress);
+        positions[`day-marker-${item.dayNumber}`] = {
+          left: point.x,
+          top: point.y - 80,
+        };
+      }
+    });
 
-        const element = document.getElementById(`timeline-item-${item.id}`);
-        if (element) {
-          element.style.left = `${point.x}px`;
-          element.style.top = `${point.y + 40}px`;
-        }
-
-        if (item.isDayStart) {
-          const dayMarker = document.getElementById(
-            `day-marker-${item.dayNumber}`
-          );
-          if (dayMarker) {
-            dayMarker.style.left = `${point.x}px`;
-            dayMarker.style.top = `${point.y - 80}px`;
-          }
-        }
-      });
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [allTimelineItems]);
+    setTimelinePositions(positions);
+  }, [allTimelineItems, viewMode]);
 
   useEffect(() => {
     if (itineraryId && viewMode === "media") {
@@ -333,38 +565,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- HELPERS FOR WARNINGS ----- */
   // Only keep refreshWarnings - normalize various backend shapes into { "1": [...], ... }
-  const refreshWarnings = async () => {
-    if (!itineraryId) return {};
 
-    try {
-      setLoadingWarnings(true);
-
-      const resp = await fetch(
-        `http://localhost:8080/api/itineraries/${itineraryId}/warnings?timezone=Asia/Ho_Chi_Minh`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      const json = await resp.json();
-      console.log("RAW RESPONSE:", json);
-
-      const warningsByDay = json?.data?.warningsByDay || {};
-      setWarningsByDay(warningsByDay);
-
-      return warningsByDay;
-    } catch (err) {
-      console.error("refreshWarnings failed:", err);
-      setWarningsByDay({});
-      return {};
-    } finally {
-      setLoadingWarnings(false);
-    }
-  };
 
   /* ----- FETCH ITINERARY + WARNINGS ----- */
   useEffect(() => {
@@ -388,6 +589,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
           data.endDate,
           data.items || []
         );
+
+        // Kiểm tra trạng thái lịch trình
+        checkItineraryStatus(data.startDate, data.endDate);
 
         setItinerary({
           id: data.id,
@@ -663,7 +867,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleDateClick = () => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     setSelectedStartDate(new Date(itinerary.startDate));
     setSelectedEndDate(new Date(itinerary.endDate));
     setCurrentMonth(new Date(itinerary.startDate));
@@ -689,7 +893,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleUpdateDates = async () => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!selectedStartDate || !selectedEndDate) {
       alert("Vui lòng chọn ngày bắt đầu và kết thúc");
       return;
@@ -766,7 +970,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- QUẢN LÝ NGÀY (THÊM / XOÁ) ----- */
   const handleAddDayBefore = async (dayNumber) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!itineraryId) return;
     try {
       await insertDaysBefore(itineraryId, dayNumber, 1);
@@ -784,7 +988,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleAddDayAfter = async (dayNumber) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!itineraryId) return;
     try {
       await insertDaysAfter(itineraryId, dayNumber, 1);
@@ -801,7 +1005,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleDeleteDay = async (dayNumber) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!itineraryId) return;
     if (!window.confirm(`Bạn có chắc muốn xóa ngày ${dayNumber}?`)) return;
 
@@ -821,7 +1025,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- THÊM ĐỊA ĐIỂM VÀO NGÀY ----- */
   const handleAddPlaceToDay = async (dayNumber, place) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     const newItem = {
       placeId: place.id,
       dayNumber: dayNumber,
@@ -851,13 +1055,13 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
   };
 
   const handleTitleEdit = () => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     setEditedTitle(itinerary.title);
     setIsEditingTitle(true);
   };
 
   const handleTitleSave = async () => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
       setIsEditingTitle(false);
       return;
@@ -881,7 +1085,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- UPDATE ITEM ----- */
   const updateItem = async (itemId, updates) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
 
     const item = itinerary.days
       .flatMap((d) => d.items)
@@ -931,7 +1135,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   /* ----- REMOVE ITEM ----- */
   const removeItem = async (itemId) => {
-    if (!itinerary?.canEdit) return;
+    if (!canEditItinerary) return;
 
     const item = itinerary.days
       .flatMap((d) => d.items)
@@ -1024,7 +1228,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
   // ----- DRAG AND DROP HANDLER -----
   const handleDragEnd = async (result) => {
-    if (!itinerary?.canEdit) return; // chặn DnD khi viewer
+    if (!canEditItinerary) return; // chặn DnD khi viewer
     if (!result.destination) return;
 
     const { source, destination } = result;
@@ -1171,6 +1375,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
     }
   };
 
+  const canEditItinerary = itinerary?.canEdit && !isItineraryEnded;
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
@@ -1218,18 +1423,18 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <h1
                   onClick={handleTitleEdit}
                   className={`text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ${itinerary?.canEdit
-                      ? "cursor-pointer hover:opacity-70"
-                      : "cursor-default opacity-90"
+                    ? "cursor-pointer hover:opacity-70"
+                    : "cursor-default opacity-90"
                     } transition relative group`}
                   title={itinerary?.canEdit ? "Click để sửa tên" : "Chỉ xem"}
                 >
                   {itinerary.title}
-                  {!itinerary?.canEdit && (
+                  {!canEditItinerary && (
                     <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
                       VIEW ONLY
                     </span>
                   )}
-                  {itinerary?.canEdit && (
+                  {canEditItinerary && (
                     <span className="absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition text-gray-400 text-sm">
                       ✏️
                     </span>
@@ -1245,8 +1450,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <button
                   onClick={handleDateClick}
                   className={`text-gray-600 font-medium underline decoration-dotted transition ${itinerary?.canEdit
-                      ? "hover:text-blue-600 cursor-pointer"
-                      : "text-gray-400 cursor-not-allowed"
+                    ? "hover:text-blue-600 cursor-pointer"
+                    : "text-gray-400 cursor-not-allowed"
                     }`}
                 >
                   {itinerary.startDate}{" "}
@@ -1264,8 +1469,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             <button
               onClick={() => setViewMode("editor")}
               className={`p-2.5 rounded-md transition-all ${viewMode === "editor"
-                  ? "bg-blue-50 text-blue-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                ? "bg-blue-50 text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                 }`}
               title="Chế độ chỉnh sửa"
             >
@@ -1287,8 +1492,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             <button
               onClick={() => setViewMode("calendar")}
               className={`p-2.5 rounded-md transition-all ${viewMode === "calendar"
-                  ? "bg-blue-50 text-blue-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                ? "bg-blue-50 text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                 }`}
               title="Lịch"
             >
@@ -1312,8 +1517,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             <button
               onClick={() => setViewMode("overview")}
               className={`p-2.5 rounded-md transition-all ${viewMode === "overview"
-                  ? "bg-blue-50 text-blue-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                ? "bg-blue-50 text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                 }`}
               title="Tổng quan"
             >
@@ -1336,8 +1541,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             <button
               onClick={() => setViewMode("media")}
               className={`p-2.5 rounded-md transition-all ${viewMode === "media"
-                  ? "bg-blue-50 text-blue-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                ? "bg-blue-50 text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                 }`}
               title="Thư viện ảnh"
             >
@@ -1393,10 +1598,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             {/* Days List - Editor Mode */}
             <div
               className={`overflow-x-auto overflow-y-hidden transition-all duration-300 p-6 ${mapSize === "full"
-                  ? "w-1/4"
-                  : mapSize === "half"
-                    ? "w-1/2"
-                    : "w-3/4"
+                ? "w-1/4"
+                : mapSize === "half"
+                  ? "w-1/2"
+                  : "w-3/4"
                 }`}
             >
               <div className="flex gap-4 min-w-max h-full">
@@ -1441,14 +1646,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             {/* Nút thêm địa điểm */}
                             <button
                               onClick={() => {
-                                if (!itinerary?.canEdit) return;
+                                if (!canEditItinerary) return;
                                 setSelectedDayNumber(day.dayNumber);
                                 setShowPlaceModal(true);
                               }}
-                              disabled={!itinerary?.canEdit}
-                              className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${itinerary?.canEdit
-                                  ? "bg-blue-500 text-white hover:bg-blue-600"
-                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              disabled={!canEditItinerary}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded-2xl text-sm ${canEditItinerary
+                                ? "bg-blue-500 text-white hover:bg-blue-600"
+                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
                                 }`}
                             >
                               <Plus size={16} />
@@ -1456,7 +1661,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             </button>
 
                             {/* Menu 3 chấm chỉ khi có quyền */}
-                            {itinerary?.canEdit && (
+                            {canEditItinerary && (
                               <div className="relative" ref={menuRef}>
                                 <button
                                   onClick={() => {
@@ -1614,15 +1819,15 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           <Droppable
                             droppableId={String(day.dayNumber)}
                             type="ITEM"
-                            isDropDisabled={!itinerary?.canEdit}
+                            isDropDisabled={!canEditItinerary}
                           >
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                                 className={`space-y-3 min-h-[100px] ${snapshot.isDraggingOver
-                                    ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
-                                    : ""
+                                  ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg"
+                                  : ""
                                   }`}
                               >
                                 {day.items.map((item, index) => (
@@ -1630,7 +1835,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                     key={item.id}
                                     draggableId={String(item.id)}
                                     index={index}
-                                    isDragDisabled={!itinerary?.canEdit}
+                                    isDragDisabled={!canEditItinerary}
                                   >
                                     {(provided, snapshot) => (
                                       <>
@@ -1645,13 +1850,13 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                             setHoveredItemId(null)
                                           }
                                           className={`transition-transform ${snapshot.isDragging
-                                              ? "scale-[1.02] shadow-lg"
-                                              : ""
+                                            ? "scale-[1.02] shadow-lg"
+                                            : ""
                                             }`}
                                         >
                                           <DayItemCard
                                             item={item}
-                                            readOnly={!itinerary?.canEdit}
+                                            readOnly={!canEditItinerary}
                                             onRemove={removeItem}
                                             onUpdate={updateItem}
                                             onClick={(clickedItem) => {
@@ -1661,7 +1866,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                               });
                                             }}
                                             onSuggest={(clickedItem) => {
-                                              if (!itinerary?.canEdit) return;
+                                              if (!canEditItinerary) return;
                                               setLastAddedPlace({
                                                 id: clickedItem.placeId,
                                                 name: clickedItem.placeName,
@@ -1719,10 +1924,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             {/* Map - Editor Mode */}
             <div
               className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
-                  ? "w-3/4"
-                  : mapSize === "half"
-                    ? "w-1/2"
-                    : "w-1/4"
+                ? "w-3/4"
+                : mapSize === "half"
+                  ? "w-1/2"
+                  : "w-1/4"
                 }`}
             >
               <div className="h-full relative">
@@ -1752,8 +1957,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
                             }`}
                         >
                           {mapSize === "default" && "✓ "}Default
@@ -1767,8 +1972,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
                             }`}
                         >
                           {mapSize === "half" && "✓ "}Half
@@ -1782,8 +1987,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
                             }`}
                         >
                           {mapSize === "full" && "✓ "}Full
@@ -1931,10 +2136,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
             {/* Map - Editor Mode */}
             <div
               className={`transition-all duration-300 flex-shrink-0 ${mapSize === "full"
-                  ? "w-3/4"
-                  : mapSize === "half"
-                    ? "w-1/2"
-                    : "w-1/4"
+                ? "w-3/4"
+                : mapSize === "half"
+                  ? "w-1/2"
+                  : "w-1/4"
                 }`}
             >
               <div className="h-full relative">
@@ -1964,8 +2169,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "default"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
                             }`}
                         >
                           {mapSize === "default" && "✓ "}Default
@@ -1979,8 +2184,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "half"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
                             }`}
                         >
                           {mapSize === "half" && "✓ "}Half
@@ -1994,8 +2199,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             }));
                           }}
                           className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition ${mapSize === "full"
-                              ? "bg-blue-50 text-blue-600 font-medium"
-                              : ""
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : ""
                             }`}
                         >
                           {mapSize === "full" && "✓ "}Full
@@ -2023,7 +2228,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                      📸 Thư viện Media
+                      Thư viện Media
                     </h2>
                     <p className="text-gray-600">
                       Upload và quản lý ảnh, video cho lịch trình của bạn
@@ -2039,15 +2244,15 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                     </button>
                     <button
                       onClick={() => {
-                        if (!itinerary?.canEdit) return;
+                        if (!canEditItinerary) return;
                         setSelectedDayForMedia(null);
                         setMediaCaption("");
                         setShowMediaModal(true);
                       }}
-                      disabled={!itinerary?.canEdit}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${itinerary?.canEdit
-                          ? "bg-blue-600 text-white hover:bg-blue-700"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      disabled={!canEditItinerary}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${canEditItinerary
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
                         }`}
                     >
                       <Plus size={18} />
@@ -2118,15 +2323,15 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                         </h3>
                         <button
                           onClick={() => {
-                            if (!itinerary?.canEdit) return;
+                            if (!canEditItinerary) return;
                             setSelectedDayForMedia(day.dayNumber);
                             setMediaCaption("");
                             setShowMediaModal(true);
                           }}
-                          disabled={!itinerary?.canEdit}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${itinerary?.canEdit
-                              ? "bg-gray-900 text-white hover:bg-gray-800"
-                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          disabled={!canEditItinerary}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${canEditItinerary
+                            ? "bg-gray-900 text-white hover:bg-gray-800"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
                         >
                           <Plus size={16} />
@@ -2205,7 +2410,9 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               {/* Empty State */}
               {!loadingMedia && mediaFiles.length === 0 && (
                 <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
-                  <div className="text-6xl mb-4">📸</div>
+                  <div className="text-6xl mb-4">
+                    <Camera className="w-16 h-16 text-gray-700 mx-auto" />
+                  </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
                     Chưa có media nào
                   </h3>
@@ -2218,10 +2425,10 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       setMediaCaption("");
                       setShowMediaModal(true);
                     }}
-                    disabled={!itinerary?.canEdit}
-                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${itinerary?.canEdit
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    disabled={!canEditItinerary}
+                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${canEditItinerary
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
                   >
                     Upload Media đầu tiên
@@ -2411,6 +2618,7 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
                       {/* Timeline Items (Places) positioned on the path */}
                       {allTimelineItems.map((item, index) => {
+                        const position = timelinePositions[item.id];
                         return (
                           <React.Fragment key={item.id}>
                             {/* Day Marker (only for first item of each day) */}
@@ -2419,6 +2627,14 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                                 id={`day-marker-${item.dayNumber}`}
                                 className="absolute z-20 cursor-pointer group"
                                 style={{
+                                  left:
+                                    timelinePositions[
+                                      `day-marker-${item.dayNumber}`
+                                    ]?.left + "px" || "0px",
+                                  top:
+                                    timelinePositions[
+                                      `day-marker-${item.dayNumber}`
+                                    ]?.top + "px" || "0px",
                                   transform: "translate(-50%, -50%)",
                                 }}
                                 onClick={() => {
@@ -2458,6 +2674,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                               id={`timeline-item-${item.id}`}
                               className="absolute z-50 cursor-pointer group"
                               style={{
+                                left: position?.left + "px" || "0px",
+                                top: position?.top + "px" || "0px",
                                 transform: "translate(-50%, 0)",
                               }}
                               onClick={() => {
@@ -2632,8 +2850,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                           onClick={goToPreviousPoint} // Sẽ tạo hàm mới
                           disabled={currentPointIndex === 0}
                           className={`px-5 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 shadow-md ${currentPointIndex === 0
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90"
+                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90"
                             }`}
                         >
                           <svg
@@ -2659,8 +2877,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                             currentPointIndex >= allTimelineItems.length - 1
                           }
                           className={`px-5 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 shadow-md ${currentPointIndex >= allTimelineItems.length - 1
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
+                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
                             }`}
                         >
                           Điểm tiếp
@@ -2796,106 +3014,112 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
 
             {/* Right side - Sidebar (Stats + Map) */}
             <div className="lg:w-[400px] xl:w-[450px] flex-shrink-0">
-              <div className="sticky top-6 space-y-6">
-                {/* Overview Stats Card */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
-                    Tổng quan lịch trình
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                      <div className="text-sm text-blue-600 font-medium mb-1">
-                        Tổng số ngày
-                      </div>
-                      <div className="text-2xl font-bold text-blue-700">
-                        {itinerary.days.length}
-                      </div>
-                    </div>
-
-                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                      <div className="text-sm text-purple-600 font-medium mb-1">
-                        Tổng địa điểm
-                      </div>
-                      <div className="text-2xl font-bold text-purple-700">
-                        {itinerary.days.reduce(
-                          (sum, d) => sum + d.items.length,
-                          0
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
-                      <div className="text-sm text-emerald-600 font-medium mb-1">
-                        Tổng chi phí
-                      </div>
-                      <div className="text-xl font-bold text-emerald-700">
-                        {formatVND(grandTotal)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map Card */}
+              <div className="sticky top-6">
+                {/* Scrollable container cho nội dung sidebar */}
                 <div
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-                  style={{ height: "calc(100vh - 450px)", minHeight: "400px" }}
+                  className="space-y-6 max-h-[calc(100vh-100px)] overflow-y-auto pr-2"
+                  style={{ scrollbarWidth: "thin" }}
                 >
-                  <div className="p-4 border-b border-gray-200 bg-gray-50">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                        <circle cx="12" cy="10" r="3" />
-                      </svg>
-                      Bản đồ tổng quan
+                  {/* Overview Stats Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      Tổng quan lịch trình
                     </h3>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Xem vị trí tất cả các địa điểm
-                    </p>
+
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                        <div className="text-sm text-blue-600 font-medium mb-1">
+                          Tổng số ngày
+                        </div>
+                        <div className="text-2xl font-bold text-blue-700">
+                          {itinerary.days.length}
+                        </div>
+                      </div>
+
+                      <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                        <div className="text-sm text-purple-600 font-medium mb-1">
+                          Tổng địa điểm
+                        </div>
+                        <div className="text-2xl font-bold text-purple-700">
+                          {itinerary.days.reduce(
+                            (sum, d) => sum + d.items.length,
+                            0
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                        <div className="text-sm text-emerald-600 font-medium mb-1">
+                          Tổng chi phí
+                        </div>
+                        <div className="text-xl font-bold text-emerald-700">
+                          {formatVND(grandTotal)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div
-                    className="h-full relative"
-                    style={{ height: "calc(100% - 120px)" }}
-                  >
-                    <LeafletMap
-                      places={getRouteItems()}
-                      image={itinerary.destinationImage}
-                      hoveredPlaceId={hoveredItemId}
-                      provider="google-roadmap"
-                    />
-                  </div>
+                  {/* Map Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="p-4 border-b border-gray-200 bg-gray-50">
+                      <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        Bản đồ tổng quan
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Xem vị trí tất cả các địa điểm
+                      </p>
+                    </div>
 
-                  <div className="p-4 border-t border-gray-200 bg-gray-50">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                        <span className="text-xs text-gray-600">Điểm đến</span>
+                    {/* Map với chiều cao cố định */}
+                    <div className="h-[400px] relative">
+                      <div className="absolute inset-0">
+                        <LeafletMap
+                          places={getRouteItems()}
+                          image={itinerary.destinationImage}
+                          hoveredPlaceId={hoveredItemId}
+                          provider="google-roadmap"
+                          style={{ height: "100%", width: "100%" }}
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                        <span className="text-xs text-gray-600">
-                          Tuyến đường
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                        <span className="text-xs text-gray-600">
-                          Điểm bắt đầu
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <span className="text-xs text-gray-600">
-                          Điểm kết thúc
-                        </span>
+                    </div>
+
+                    <div className="p-4 border-t border-gray-200 bg-gray-50">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                          <span className="text-xs text-gray-600">
+                            Điểm đến
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                          <span className="text-xs text-gray-600">
+                            Tuyến đường
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                          <span className="text-xs text-gray-600">
+                            Điểm bắt đầu
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <span className="text-xs text-gray-600">
+                            Điểm kết thúc
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3071,11 +3295,11 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
               <button
                 onClick={handleUpdateDates}
                 disabled={
-                  !selectedStartDate || !selectedEndDate || !itinerary?.canEdit
+                  !selectedStartDate || !selectedEndDate || !canEditItinerary
                 }
-                className={`px-6 py-2.5 rounded-lg font-medium transition ${selectedStartDate && selectedEndDate && itinerary?.canEdit
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                className={`px-6 py-2.5 rounded-lg font-medium transition ${selectedStartDate && selectedEndDate && canEditItinerary
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
               >
                 Update
@@ -3279,8 +3503,8 @@ export default function ItineraryEditor({ itineraryId: propItineraryId }) {
                       onClick={() => handleUploadMedia(selectedFile)}
                       disabled={!selectedDayForMedia}
                       className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${selectedDayForMedia
-                          ? "bg-blue-600 text-white hover:bg-blue-700"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
                         }`}
                     >
                       Upload

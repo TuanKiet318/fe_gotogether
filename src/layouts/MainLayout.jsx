@@ -10,11 +10,11 @@ export default function MainLayout() {
 
   // 🔹 Cấu hình route cần ẩn Header
   const hideHeaderPaths = [];
-  const hideHeaderPrefixes = ["/itinerary-editor/"];
+  const hideHeaderPrefixes = ["/itinerary-editor/", "/blogs/"];
 
   // 🔹 Cấu hình route cần ẩn Footer
   const hideFooterPaths = [];
-  const hideFooterPrefixes = ["/itinerary-editor/"];
+  const hideFooterPrefixes = ["/itinerary-editor/", "/blogs/"];
 
   // 🔹 Kiểm tra có nên ẩn Header hoặc Footer
   const hideHeader =
