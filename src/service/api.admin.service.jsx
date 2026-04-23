@@ -299,11 +299,17 @@ const GetItineraryWarningsForDay = async (
  * ========================= */
 
 // Tìm kiếm lịch trình của User (dành cho Admin)
-const SearchItinerariesForAdmin = async (keyword, page = 0, size = 10) => {
-  const API = "/admin/itineraries/search";
-  return await axios.get(API, { params: { keyword, page, size } });
-};
+// const SearchItinerariesForAdmin = async (keyword, page = 0, size = 10) => {
+//   const API = "/admin/itineraries/search";
+//   return await axios.get(API, { params: { keyword, page, size } });
+// };
 
+// Tìm kiếm lịch trình của User (chỉ trong 1 địa phương cụ thể)
+const SearchItinerariesForAdmin = async (destinationId, keyword, page = 0, size = 10) => {
+  const API = "/admin/itineraries/search";
+  // Truyền thêm destinationId xuống backend
+  return await axios.get(API, { params: { destinationId, keyword, page, size } });
+};
 // Clone và Đánh dấu nổi bật lịch trình
 const CloneAndFeatureItinerary = async (data) => {
   // data bao gồm: { sourceItineraryId, overview, heroImageFiles: [] }
@@ -323,6 +329,10 @@ const CloneAndFeatureItinerary = async (data) => {
       "Content-Type": "multipart/form-data",
     },
   });
+};
+const ToggleItineraryPublic = async (itineraryId, isPublic) => {
+  const API = `/itineraries/${itineraryId}/public`;
+  return await axios.patch(API, null, { params: { value: isPublic } });
 };
 
 /* =========================
@@ -373,6 +383,7 @@ export {
   // Admin Itinerary Feature
   SearchItinerariesForAdmin,
   CloneAndFeatureItinerary,
+  ToggleItineraryPublic
 };
 // Lấy thông tin invite theo token
 const GetInviteByToken = async (token) => {
